@@ -11,6 +11,15 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Numerics;
+using System.Diagnostics;
+using GazeStream.Eyetracker;
+using GazeStream.Utilities;
+using GazeStream.Utilities.Save;
+using GazeStream.AppData;
+using GazeStream.Controls;
+using GazeStream.Utilities.Events;
+using System.Runtime.InteropServices;
 
 namespace GazeStream.Windows
 {
@@ -19,10 +28,7 @@ namespace GazeStream.Windows
     /// </summary>
     public partial class CalibrationWindow : Window
     {
-        public CalibrationWindow()
-        {
-            InitializeComponent();
-        }
+        public static CalibrationWindow I { get; private set; }
 
         Task? calibrationTask;
         bool isCalibrating;
@@ -34,12 +40,6 @@ namespace GazeStream.Windows
 
         public static int CalibrationPointProgress { get; private set; }
         public static float CalibrationPointProgress01 { get; private set; }
-
-        //User values
-
-        //System Settings
-
-
 
         public static ASeeTracker.processCallback processCB = new ASeeTracker.processCallback(process_callback);
         public static ASeeTracker.finishCallback finishCB = new ASeeTracker.finishCallback(finish_callback);
@@ -67,38 +67,37 @@ namespace GazeStream.Windows
                 new Vector2(0.95f, 0.05f),
                 new Vector2(0.05f, 0.50f)};
 
-        public CalibrationPage()
+        public CalibrationWindow()
         {
-            this.InitializeComponent();
+            InitializeComponent();
+            I = this;
+            Loaded += OnLoaded;
+            Closed += OnClosed;
         }
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        void OnLoaded(object sender, RoutedEventArgs e)
         {
             Debug.WriteLine("Landed on Calibration Page. Loading RadioButton settings.");
-            base.OnNavigatedTo(e);
             ResetPage();
             LoadToggleOptions();
         }
 
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        void OnClosed(object sender, EventArgs e)
         {
-            Debug.WriteLine("Exiting Calibration Page. Saving page settings.");
-            base.OnNavigatedFrom(e);
+            Debug.WriteLine("Calibration Window closed. Loading RadioButton settings.");
+            CancelCalibration();
         }
 
         void LoadToggleOptions()
         {
-            SetEyesSelectionRadioButton(SaveManager.GetSystemSetting(SaveKeys.LAST_EYES_SETTING_KEY, 0));
-            SetPointsSettingRadioButton(SaveManager.GetSystemSetting(SaveKeys.LAST_POINTS_SETTING_KEY, 2));
-            SetFilterSelectionRadioButton(SaveManager.GetSystemSetting(SaveKeys.LAST_FILTER_SETTING_KEY, 2));
+            SetEyesSelectionRadioButton(Settings.I.LastEyesOption.Value);
+            SetPointsSettingRadioButton(Settings.I.LastPointsOption.Value);
+            //TODO: Agregar sliders de configuracion de filtros...?
+            //Agregar toggles para el cursor ocular...?
         }
 
-        void SaveToggleOptions()
+        void SaveSettings()
         {
-            SaveManager.SetSystemSetting<int>(SaveKeys.LAST_EYES_SETTING_KEY, GetEyesSelection());
-            SaveManager.SetSystemSetting<int>(SaveKeys.LAST_POINTS_SETTING_KEY, GetPointsSelection());
-            SaveManager.SetSystemSetting<int>(SaveKeys.LAST_FILTER_SETTING_KEY, GetFilterSelection());
-            SaveManager.SaveSystemSettings();
+            Settings.I.SaveSettings();
         }
 
         public static void process_callback(int index, int percent, IntPtr context)
@@ -126,9 +125,9 @@ namespace GazeStream.Windows
         public void Back_Click(object sender, RoutedEventArgs e)
         {
             //Stop calibration
-            SaveToggleOptions();
-            PageManager.Back();
-            Debug.WriteLine("Back pressed");
+            SaveSettings();
+            this.Close();
+            Debug.WriteLine("Back pressed. Closing window.");
         }
 
         public void StartCalibration_Click(object sender, RoutedEventArgs e)
@@ -139,7 +138,15 @@ namespace GazeStream.Windows
             Debug.WriteLine("Starting calibration");
         }
 
-        async Task StartCalibrationTask()
+
+        async Task StartCalibrationTaskUsingPanelSettings()
+        {
+            int pointsArrayIndex = GetPointsSelection();
+            int eyes = GetEyesSelection();
+            await StartCalibrationTask(pointsArrayIndex, eyes);
+        }
+
+        async Task StartCalibrationTask(int pointsArrayIndex, int eyes)
         {
             if (isCalibrating) return;
             isCalibrating = true;
@@ -158,9 +165,8 @@ namespace GazeStream.Windows
                 await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2);
 
                 //Calibration
-                Vector2[] points = GetCalibrationPointsArray();
-                int eyes = GetEyesSelection();
-                await CalibrationTask(points, eyes);
+              
+                await CalibrationTask(pointsArrayIndex, eyes);
             }
             catch
             {
@@ -178,36 +184,31 @@ namespace GazeStream.Windows
         async Task ShowEyeDisplay()
         {
             EyeDisplay.Visibility = Visibility.Visible;
-            bool buttonPressed = false;
-            if (App.Instance.CurrentWindow != null)
+
+            var tcs = new TaskCompletionSource();
+
+            void OnKeyDown(object s, System.Windows.Input.KeyEventArgs e) => tcs.TrySetResult();
+            void OnMouseDown(object s, MouseButtonEventArgs e) => tcs.TrySetResult();
+            void OnTouchDown(object s, TouchEventArgs e) => tcs.TrySetResult();
+
+            this.KeyDown += OnKeyDown;
+            this.MouseDown += OnMouseDown;
+            this.TouchDown += OnTouchDown;
+
+            try
             {
-                App.Instance.CurrentWindow.Content.KeyDown += OnKeyDown;
-                App.Instance.CurrentWindow.Content.Tapped += OnTap;
-            }
-            while (!buttonPressed)
-            {
-                App.Instance.Dispatcher.TryEnqueue(() =>
+                while (!tcs.Task.IsCompleted)
                 {
                     EyeDisplay.UpdateEyeDisplay(eyesData);
-                });
-
-                await Task.Delay(16);
+                    await Task.Delay(16);
+                }
             }
-            EyeDisplay.Visibility = Visibility.Collapsed;
-            if (App.Instance.CurrentWindow != null)
+            finally
             {
-                App.Instance.CurrentWindow.Content.KeyDown -= OnKeyDown;
-                App.Instance.CurrentWindow.Content.Tapped -= OnTap;
-            }
-
-            void OnKeyDown(object sender, KeyRoutedEventArgs args)
-            {
-                buttonPressed = true;
-            }
-
-            void OnTap(object sender, TappedRoutedEventArgs args)
-            {
-                buttonPressed = true;
+                this.KeyDown -= OnKeyDown;
+                this.MouseDown -= OnMouseDown;
+                this.TouchDown -= OnTouchDown;
+                EyeDisplay.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -233,9 +234,11 @@ namespace GazeStream.Windows
             }
         }
 
-        async Task CalibrationTask(Vector2[] points, int eyes = 0)
+
+        async Task CalibrationTask(int pointsArrayIndex, int eyes = 0)
         {
             isCalibrating = true;
+            Vector2[] points = GetCalibrationPointsArray();
             Debug.WriteLine("Starting proper calibration.");
             //Acá se va a guardar el resultado de la calibración. Podemos guardar el coefficient.buf como un byte[] para usar mas tarde.
             _7i_coefficient_t coefficient = new _7i_coefficient_t();
@@ -310,15 +313,9 @@ namespace GazeStream.Windows
                 Debug.WriteLine("Calibration success!");
                 Disconnect();
                 await FadeText.ShowMessage("¡La calibración fue exitosa!");
-
-                //Chequeo para ver si podemos inicializar así por problemas de serialización del save manager.
-                if (GazeManager.I != null && GazeManager.I.joacoA11 != null)
-                {
-                    GazeManager.I.joacoA11.buff = coefficient.buf;
-                }
-                SaveToggleOptions();
+                SaveSettings();
                 SaveUserCalibration(coefficient.buf);
-                GlobalEvents.OnCalibrationSuccess.Invoke(coefficient.buf);
+                GlobalEvents.OnCalibrationSuccess.Invoke();
                 GazeManager.I?.GazeDevice?.Initialize();
             }
 
@@ -328,8 +325,8 @@ namespace GazeStream.Windows
 
         void SaveUserCalibration(byte[] calibrationBuff)
         {
-            SaveManager.SetValue<byte[]>(SaveKeys.LAST_USER_CALIBRATION_KEY, calibrationBuff);
-            SaveManager.SaveGame();
+            Settings.I.LastCalibrationBuff.Value = calibrationBuff;
+            Settings.I.SaveSettings();
         }
 
         public void CancelCalibration()
@@ -395,7 +392,7 @@ namespace GazeStream.Windows
             //Agregar animaciones
             SettingsPanel.IsHitTestVisible = false;
             SettingsPanel.Visibility = Visibility.Collapsed;
-            MainWindow.Instance?.HideOverlay();
+            //MainWindow.Instance?.HideOverlay();
             //WindowsHelper.ShowCursor(false);
 
         }
@@ -404,7 +401,7 @@ namespace GazeStream.Windows
         {
             SettingsPanel.IsHitTestVisible = true;
             SettingsPanel.Visibility = Visibility.Visible;
-            MainWindow.Instance?.ShowOverlay();
+            //MainWindow.Instance?.ShowOverlay();
             //WindowsHelper.ShowCursor(true);
         }
 
@@ -524,4 +521,20 @@ namespace GazeStream.Windows
         }
         #endregion
     }
+}
+
+public enum CalibrationMode
+{
+    Binocular3,
+    Binocular5,
+    Binocular7,
+    Binocular9,
+    Left3,
+    Left5,
+    Left7,
+    Left9,
+    Right3,
+    Right5,
+    Right7,
+    Right9
 }

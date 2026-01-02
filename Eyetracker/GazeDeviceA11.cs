@@ -8,18 +8,20 @@ using GazeStream.Utilities.Save;
 using GazeStream.Utilities.Events;
 using System.Numerics;
 using GazeStream.AppData;
-using GazeStream;
+
 public class GazeDeviceA11 : IGazeDevice
 {
     public string DeviceName => "Eyetracker Joaco A11";
     public bool IsConnected { get; private set; }
     public bool UserIsPresent => UserIsPresentStatic;
+    public EyesData Eyes => eyesCache;
 
 
     GazePoint gazePointCache;
     _7i_coefficient_t coefficient;
-    public byte[] buff = new byte[0];
-    static _7i_eye_data_ex_t eyes;
+    EyesData eyesCache = new();
+    public static _7i_eye_data_ex_t eyes;
+
     static ASeeTracker.gazeCallback gazeCB = new ASeeTracker.gazeCallback(OnGazeCallback);
     static float gaze_x = 0.0f;
     static float gaze_y = 0.0f;
@@ -55,7 +57,7 @@ public class GazeDeviceA11 : IGazeDevice
     {
         Debug.WriteLine("Setting current user calibration");
         if (!IsConnected) return;
-        if (App.Instance.ActiveUser == null) return;
+        //if (App.Instance.ActiveUser == null) return;
         Debug.WriteLine("Current user available.");
 
         if (!TryLoadCoefficient())
@@ -65,7 +67,7 @@ public class GazeDeviceA11 : IGazeDevice
             return;
         }
 
-        ASeeTracker._7i_set_smooth(10);
+        LoadSmooth();
         int startTrackingResult = ASeeTracker._7i_start_tracking(ref coefficient);
         HasValidCalibration = startTrackingResult == 0 ? true : false;
         Debug.WriteLine("Start tracking result: " + startTrackingResult);
@@ -79,8 +81,7 @@ public class GazeDeviceA11 : IGazeDevice
     private bool TryLoadCoefficient()
     {
         coefficient = new _7i_coefficient_t();
-        coefficient.buf = buff;
-        //coefficient.buf = App.Instance.ActiveUser == null? new byte[0] : SaveManager.GetValue<byte[]>(SaveKeys.LAST_USER_CALIBRATION_KEY, new byte[0]);
+        coefficient.buf = SaveManager.GetSystemSetting<byte[]>(SaveKeys.LAST_CALIBRATION_KEY, new byte[0]);
         if (coefficient.buf.Length == 0) return false;
         else return true;
     }
@@ -97,12 +98,9 @@ public class GazeDeviceA11 : IGazeDevice
             gaze_x = eyes.recom_gaze.gaze_point.x;
             gaze_y = eyes.recom_gaze.gaze_point.y;
             UserIsPresentStatic = true;
-            //Debug.Log($"Valid Point: X: {gaze_x} Y: {gaze_y} ");
-
         }
         else
         {
-            //Debug.Log($"Invalid Point: X: {eyes.recom_gaze.gaze_point.x} Y: {eyes.recom_gaze.gaze_point.y} ");
             UserIsPresentStatic = false;
             gazePointChanged = false;
         }
@@ -129,11 +127,10 @@ public class GazeDeviceA11 : IGazeDevice
         return (int)_get_valid_value((byte)_7I_EYE_GAZE_VALIDITY.ID_EYE_GAZE_POINT, eyes.right_gaze.ex_data_bit_mask);
     }
 
-
-
     public void UpdateData()
     {
         UpdateGazePoint();
+        UpdateEyeData();
     }
 
     void UpdateGazePoint()
@@ -146,29 +143,50 @@ public class GazeDeviceA11 : IGazeDevice
         gazePointCache = new GazePoint(new Vector2(gaze_x, gaze_y));
     }
 
-    static bool IsInBounds(float viewportX, float viewportY)
+    void UpdateEyeData()
     {
-        if (viewportX < 0 || viewportX > 1 || viewportY < 0 || viewportY > 1)
+
+        if (eyesCache == null)
         {
-            return false;
+            eyesCache = new EyesData();
         }
-        return true;
+        if (eyesCache.leftEye == null)
+        {
+            eyesCache.leftEye = new Eye();
+        }
+        if (eyesCache.rightEye == null)
+        {
+            eyesCache.rightEye = new Eye();
+        }
+        eyesCache.leftEye.isBlinking = eyes.left_ex_data.blink == 0 ? false : true;
+        eyesCache.leftEye.viewportX = eyes.left_pupil.pupil_center.x;
+        eyesCache.leftEye.viewportY = 1f - eyes.left_pupil.pupil_center.y;
+        eyesCache.leftEye.pupilDistanceMm = eyes.left_pupil.pupil_distance;
+        eyesCache.leftEye.pupilDiameter = eyes.left_pupil.pupil_diameter;
+        eyesCache.leftEye.pupilDiameterMm = eyes.left_pupil.pupil_diameter_mm;
+
+        eyesCache.rightEye.isBlinking = eyes.right_ex_data.blink == 0 ? false : true;
+        eyesCache.rightEye.viewportX = eyes.right_pupil.pupil_center.x;
+        eyesCache.rightEye.viewportY = 1f - eyes.right_pupil.pupil_center.y;
+        eyesCache.rightEye.pupilDistanceMm = eyes.right_pupil.pupil_distance;
+        eyesCache.rightEye.pupilDiameter = eyes.right_pupil.pupil_diameter;
+        eyesCache.rightEye.pupilDiameterMm = eyes.right_pupil.pupil_diameter_mm;
     }
 
     public static void LoadSmooth()
     {
-        int smooth = SaveManager.GetSystemSetting(SaveKeys.SMOOTH_VALUE_KEY, 10);
+        int smooth = SaveManager.GetSystemSetting(SaveKeys.SMOOTH_FILTER, 10);
         int smoothValue = Math.Clamp(smooth, 0, 10);
         int setSmoothResult = ASeeTracker._7i_set_smooth(smoothValue);
-        Debug.WriteLine("Set smooth result: " + setSmoothResult);
+        Debug.WriteLine($"Setting Smooth to: {smoothValue} SetSmooth result: " + aSeeResults.SetSmoothResultToString(setSmoothResult));
     }
 
     public static void SetSmooth(int smooth)
     {
-        int smoothValue = Math.Clamp(smooth, 0, 10);
+        int smoothValue = Math.Clamp(smooth, 1, 10);
         int setSmoothResult = ASeeTracker._7i_set_smooth(smoothValue);
-        Debug.WriteLine("Set smooth result: " + setSmoothResult);
-        SaveManager.SetSystemSetting(SaveKeys.SMOOTH_VALUE_KEY, smoothValue);
+        Debug.WriteLine($"Setting Smooth to: {smoothValue} SetSmooth result: " + aSeeResults.SetSmoothResultToString(setSmoothResult));
+        SaveManager.SetSystemSetting(SaveKeys.SMOOTH_FILTER, smoothValue);
         SaveManager.SaveSystemSettings();
         GlobalEvents.OnInvensunSmoothValueChanged.Invoke(smoothValue);
     }
@@ -176,8 +194,12 @@ public class GazeDeviceA11 : IGazeDevice
     public void Disconnect()
     {
         IsConnected = false;
-        ASeeTracker._7i_stop_tracking();
-        ASeeTracker._7i_stop();
-        ASeeTracker._7i_device_disconnect();
+        int stopTrackingResult = ASeeTracker._7i_stop_tracking();
+        Debug.WriteLine("StopTracking result: " + aSeeResults.StopTrackingResultToString(stopTrackingResult));
+        int stopResult = ASeeTracker._7i_stop();
+        Debug.WriteLine("Stop result: " + aSeeResults.StopResultToString(stopResult));
+        int disconnectResult = ASeeTracker._7i_device_disconnect();
+        Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
+
     }
 }

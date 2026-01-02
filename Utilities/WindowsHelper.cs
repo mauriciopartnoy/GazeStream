@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Interop;
 
 
-namespace JoacoDesktop.Utilities
+namespace GazeStream.Utilities
 {
     public static class WindowsHelper
     {

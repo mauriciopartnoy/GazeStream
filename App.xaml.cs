@@ -14,10 +14,14 @@ namespace GazeStream
         private TrayService trayService;
         public Dispatcher UIDispatcher { get; private set; }
         public User ActiveUser { get; private set; } = default;
+
+        public Settings SettingsManager { get; private set; }
         protected override void OnStartup(W.StartupEventArgs e)
         {
             base.OnStartup(e);
             Instance = this;
+            SettingsManager = new Settings();
+            SettingsManager.LoadSettings();
             trayService = new TrayService();
             UIDispatcher = this.Dispatcher;
 

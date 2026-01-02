@@ -6,7 +6,7 @@ using GazeStream.Utilities;
 using GazeStream.Utilities.Save;
 using GazeStream.AppData;
 using System.Windows.Threading;
-
+using GazeStream.Eyetracker.Filters;
 namespace GazeStream.Eyetracker
 {
     public class GazeManager
@@ -16,7 +16,8 @@ namespace GazeStream.Eyetracker
         public static event Action? OnGazeUpdate;
         public static event Action? OnGazeUpdateUI;
 
-        float FilterSmoothingFactor = 0.15f;
+        KalmanFilter kalmanFilter;
+        InterpolationFilter interpolationFilter;
 
         const string SAMPLE_FREQUENCY_KEY = "SampleFrequency";
 
@@ -51,6 +52,8 @@ namespace GazeStream.Eyetracker
         {
             I = this;
             timeOutTimer = new Stopwatch();
+            kalmanFilter = new();
+            interpolationFilter = new();
             LoadSettings();
             AddSupportedDevices();
             TryInitializeGazeDevice();
