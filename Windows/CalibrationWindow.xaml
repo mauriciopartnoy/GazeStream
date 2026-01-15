@@ -4,9 +4,227 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GazeStream.Windows"
+        xmlns:controls="clr-namespace:GazeStream.Controls"
         mc:Ignorable="d"
-        Title="CalibrationWindow" Height="450" Width="800">
-    <Grid>
-        
+        Title="CalibrationWindow"  
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
+        WindowState="Maximized"
+        Topmost="True">
+
+        <!--WindowStyle="None"
+        ResizeMode="NoResize"-->
+    <!-- ================= RESOURCES ================= -->
+    <Window.Resources>
+
+        <Style x:Key="OptionTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="0,8,20,8"/>
+        </Style>
+
+        <!-- Rounded button style (WPF-compatible) -->
+        <Style x:Key="CalibrationButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Width" Value="140"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{StaticResource SeriousButton}"
+                                BorderBrush="White"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="10">
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource SeriousBackground}"
+>
+
+        <!-- Overlay canvas -->
+        <Canvas x:Name="MainCanvas"
+                Background="Transparent"
+                IsHitTestVisible="False"/>
+
+        <!-- Eye display -->
+        <controls:EyeDisplay x:Name="EyeDisplay"/>
+
+        <!-- Settings panel -->
+        <Border x:Name="SettingsPanel"
+                Background="{StaticResource SeriousPanel}"
+                CornerRadius="12"
+                Padding="30"
+                MinWidth="700"
+                MinHeight="350"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Title -->
+                <TextBlock Grid.Row="0"
+                           Text="Opciones de Calibración"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="White"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,20"/>
+
+                <!-- Options grid -->
+                <Grid Grid.Row="1"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Labels -->
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="Seleccione ojos a calibrar"
+                               Style="{StaticResource OptionTitle}"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0"
+                               Text="Seleccione cantidad de puntos a calibrar"
+                               Style="{StaticResource OptionTitle}"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0"
+                               Text="Seleccione filtro de calibración"
+                               Style="{StaticResource OptionTitle}"/>
+
+                    <!-- Eyes -->
+                    <RadioButton Grid.Row="0" Grid.Column="1"
+                                 GroupName="EyesSetting"
+                                 x:Name="EyeSetting_Left"
+                                 Content="Ojo izquierdo"
+                                 Margin="10"/>
+
+                    <RadioButton Grid.Row="0" Grid.Column="2"
+                                 GroupName="EyesSetting"
+                                 x:Name="EyeSetting_Right"
+                                 Content="Ojo derecho"
+                                 Margin="10"/>
+
+                    <RadioButton Grid.Row="0" Grid.Column="3"
+                                 GroupName="EyesSetting"
+                                 x:Name="EyeSetting_Both"
+                                 Content="Ambos ojos"
+                                 IsChecked="True"
+                                 Margin="10"/>
+
+                    <!-- Points -->
+                    <RadioButton Grid.Row="1" Grid.Column="1"
+                                 GroupName="PointsSetting"
+                                 x:Name="PointsSetting_3"
+                                 Content="3 puntos"
+                                 Margin="10"/>
+
+                    <RadioButton Grid.Row="1" Grid.Column="2"
+                                 GroupName="PointsSetting"
+                                 x:Name="PointsSetting_5"
+                                 Content="5 puntos"
+                                 Margin="10"/>
+
+                    <RadioButton Grid.Row="1" Grid.Column="3"
+                                 GroupName="PointsSetting"
+                                 x:Name="PointsSetting_9"
+                                 Content="9 puntos"
+                                 IsChecked="True"
+                                 Margin="10"/>
+
+                    <!-- Filter -->
+                    <RadioButton Grid.Row="2" Grid.Column="1"
+                                 GroupName="FilterSetting"
+                                 x:Name="FilterSetting_Bajo"
+                                 Content="Bajo"
+                                 Margin="10"
+                                 Checked="FilterSetting_Checked"/>
+
+                    <RadioButton Grid.Row="2" Grid.Column="2"
+                                 GroupName="FilterSetting"
+                                 x:Name="FilterSetting_Medio"
+                                 Content="Medio"
+                                 Margin="10"
+                                 Checked="FilterSetting_Checked"/>
+
+                    <RadioButton Grid.Row="2" Grid.Column="3"
+                                 GroupName="FilterSetting"
+                                 x:Name="FilterSetting_Alto"
+                                 Content="Alto"
+                                 IsChecked="True"
+                                 Margin="10"
+                                 Checked="FilterSetting_Checked"/>
+
+                </Grid>
+
+                <!-- Buttons -->
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Margin="0,20,0,0">
+
+                    <Button x:Name="StartCalibrationButton"
+                            Style="{StaticResource CalibrationButton}"
+                            Click="StartCalibration_Click">
+                        <TextBlock Text="Iniciar Calibración"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"/>
+                    </Button>
+
+                    <Button x:Name="BackButton"
+                            Style="{StaticResource CalibrationButton}"
+                            Click="Back_Click">
+                        <TextBlock Text="Volver"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"/>
+                    </Button>
+
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <!-- Error text -->
+        <TextBlock x:Name="ErrorText"
+                   Foreground="White"
+                   VerticalAlignment="Bottom"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   Margin="0,0,0,20"
+                   IsHitTestVisible="False"/>
+
+        <!-- Fade text -->
+        <controls:FadeText x:Name="FadeText"
+                           FontSize="50"
+                           TextColor="White"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           IsHitTestVisible="False"/>
+
     </Grid>
 </Window>

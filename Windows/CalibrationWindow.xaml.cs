@@ -23,27 +23,26 @@ using System.Runtime.InteropServices;
 
 namespace GazeStream.Windows
 {
-    /// <summary>
-    /// Interaction logic for CalibrationWindow.xaml
-    /// </summary>
     public partial class CalibrationWindow : Window
     {
-        public static CalibrationWindow I { get; private set; }
-
-        Task? calibrationTask;
-        bool isCalibrating;
-        static bool pointComplete;
-        List<CalibrationPointGraphic> points = new List<CalibrationPointGraphic>();
-        static CalibrationPointGraphic? currentPoint;
-        public static _7i_eye_data_ex_t eyesData;
-
-
-        public static int CalibrationPointProgress { get; private set; }
-        public static float CalibrationPointProgress01 { get; private set; }
+        public static CalibrationWindow I { get; private set; } //Singleton Instance
 
         public static ASeeTracker.processCallback processCB = new ASeeTracker.processCallback(process_callback);
         public static ASeeTracker.finishCallback finishCB = new ASeeTracker.finishCallback(finish_callback);
         public static ASeeTracker.gazeCallback gazeCB = new ASeeTracker.gazeCallback(OnGazeCallback);
+
+        Task? calibrationTask;
+        bool isCalibrating;
+        List<CalibrationPointGraphic> points = new List<CalibrationPointGraphic>();
+        static CalibrationPointGraphic? currentPoint;
+        static bool pointComplete;
+        static _7i_eye_data_ex_t eyesData;
+        public static int CalibrationPointProgress { get; private set; }
+        public static float CalibrationPointProgress01 { get; private set; }
+
+
+
+
         Vector2[] points3 = {
                 new Vector2(0.05f, 0.95f),
                 new Vector2(0.95f, 0.95f),
@@ -73,12 +72,14 @@ namespace GazeStream.Windows
             I = this;
             Loaded += OnLoaded;
             Closed += OnClosed;
+            GlobalEvents.OnStartCalibrationCommand.Add(StartCalibration);
         }
         void OnLoaded(object sender, RoutedEventArgs e)
         {
             Debug.WriteLine("Landed on Calibration Page. Loading RadioButton settings.");
             ResetPage();
             LoadToggleOptions();
+            Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
         }
 
         void OnClosed(object sender, EventArgs e)
@@ -91,13 +92,7 @@ namespace GazeStream.Windows
         {
             SetEyesSelectionRadioButton(Settings.I.LastEyesOption.Value);
             SetPointsSettingRadioButton(Settings.I.LastPointsOption.Value);
-            //TODO: Agregar sliders de configuracion de filtros...?
-            //Agregar toggles para el cursor ocular...?
-        }
-
-        void SaveSettings()
-        {
-            Settings.I.SaveSettings();
+            SetFilterSelectionRadioButton(Settings.I.FilterProfile.Value);
         }
 
         public static void process_callback(int index, int percent, IntPtr context)
@@ -124,8 +119,6 @@ namespace GazeStream.Windows
 
         public void Back_Click(object sender, RoutedEventArgs e)
         {
-            //Stop calibration
-            SaveSettings();
             this.Close();
             Debug.WriteLine("Back pressed. Closing window.");
         }
@@ -134,11 +127,14 @@ namespace GazeStream.Windows
         {
             Debug.WriteLine("Starting calibration");
             if (isCalibrating) return;
-            calibrationTask = StartCalibrationTask();
+            calibrationTask = StartCalibrationTaskUsingPanelSettings();
             Debug.WriteLine("Starting calibration");
         }
 
-
+        void StartCalibration(int pointsArrayIndex, int eyes)
+        {
+            _= StartCalibrationTask(pointsArrayIndex, eyes);
+        }
         async Task StartCalibrationTaskUsingPanelSettings()
         {
             int pointsArrayIndex = GetPointsSelection();
@@ -150,6 +146,7 @@ namespace GazeStream.Windows
         {
             if (isCalibrating) return;
             isCalibrating = true;
+            GlobalEvents.OnCalibrationStart.Invoke();
 
             try
             {
@@ -162,10 +159,7 @@ namespace GazeStream.Windows
 
                 await FadeText.ShowMessage("Estos son tus ojos.", .5, 2);
                 await ShowEyeDisplay();
-                await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2);
-
-                //Calibration
-              
+                await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2);          
                 await CalibrationTask(pointsArrayIndex, eyes);
             }
             catch
@@ -174,9 +168,9 @@ namespace GazeStream.Windows
             }
             finally
             {
-                //Cleanup
                 ResetPage();
                 isCalibrating = false;
+                GlobalEvents.OnCalibrationFinished.Invoke();
                 Debug.WriteLine("Calibration Finished!");
             }
         }
@@ -194,13 +188,19 @@ namespace GazeStream.Windows
             this.KeyDown += OnKeyDown;
             this.MouseDown += OnMouseDown;
             this.TouchDown += OnTouchDown;
-
+            int timeoutMs = 5000; //ms
+            int timer = 0;
             try
             {
                 while (!tcs.Task.IsCompleted)
                 {
                     EyeDisplay.UpdateEyeDisplay(eyesData);
                     await Task.Delay(16);
+                    timer += 16;
+                    if (timer > timeoutMs)
+                    {
+                        tcs.TrySetResult();
+                    }
                 }
             }
             finally
@@ -214,20 +214,20 @@ namespace GazeStream.Windows
 
         public bool TryConnectEyetrackerDevice()
         {
-            //GazeManager.I.DisconnectDevice();
-            //Disconnect();
-
+            Disconnect();
             int startResult = ASeeTracker._7i_start(AppPaths.EyetrackerConfigPath);
             ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
 
             if (startResult == 0)
             {
+                GlobalEvents.OnEyetrackerConnected.Invoke();
                 ErrorText.Text = "";
                 Debug.WriteLine("Joaco Device connected.");
                 return true;
             }
             else
             {
+                GlobalEvents.OnEyetrackerConnectionFailed.Invoke();
                 ErrorText.Text = "¡Algo salió mal! No fue posible iniciar el dispositivo Joaco.";
                 Debug.WriteLine("Couldn't connect to Joaco Device. Are you using the correct SDK?");
                 return false;
@@ -237,36 +237,25 @@ namespace GazeStream.Windows
 
         async Task CalibrationTask(int pointsArrayIndex, int eyes = 0)
         {
-            isCalibrating = true;
+            Debug.WriteLine("Starting calibration.");
             Vector2[] points = GetCalibrationPointsArray();
-            Debug.WriteLine("Starting proper calibration.");
-            //Acá se va a guardar el resultado de la calibración. Podemos guardar el coefficient.buf como un byte[] para usar mas tarde.
             _7i_coefficient_t coefficient = new _7i_coefficient_t();
             int pointIndex = 1;
             int pointCount = points.Length;
 
 
-            //Seteamos el modo antes de iniciar. 0: ambos ojos, 1: ojo izq, 2: ojo der.
+            //Calibration Mode - 0: ambos ojos, 1: ojo izq, 2: ojo der.
             int setModeResult = ASeeTracker._7i_set_calibration_mode(eyes);
-            Debug.WriteLine("Set Mode result: " + setModeResult);
-
-
-            //Inicio de calibración
             int result = ASeeTracker._7i_start_calibration(pointCount);
 
             for (int i = 0; isCalibrating && i < pointCount; i++)
             {
                 pointComplete = false;
 
-                /*
-                 Primero mostramos el gráfico. Su posición en el eje Y está invertido ya que el sistema de coordenadas
-                 del Viewport de Unity tiene el origen (0,0) ABAJO-IZQ vs Invensun que lo tiene ARRIBA-IZQ.
-                 El usuario tiene 2 segundos para mirar hacia el punto antes de que inicie la calibración del mismo.
-                 */
+                //El gráfico de calibración se muestra antes para que el usuario pueda tener la mirada en la posición correcta al iniciar cada punto.              
                 SpawnCalibrationPoint(new Vector2(points[i].X, points[i].Y));
                 await Task.Delay(TimeSpan.FromSeconds(2));
 
-                //Start Point
                 _7i_point2d_t point = new _7i_point2d_t();
                 point.x = points[i].X;
                 point.y = points[i].Y;
@@ -313,17 +302,13 @@ namespace GazeStream.Windows
                 Debug.WriteLine("Calibration success!");
                 Disconnect();
                 await FadeText.ShowMessage("¡La calibración fue exitosa!");
-                SaveSettings();
-                SaveUserCalibration(coefficient.buf);
+                SaveLastCalibrationBuff(coefficient.buf);
                 GlobalEvents.OnCalibrationSuccess.Invoke();
                 GazeManager.I?.GazeDevice?.Initialize();
             }
-
-            //Cleanup
-            isCalibrating = false;
         }
 
-        void SaveUserCalibration(byte[] calibrationBuff)
+        void SaveLastCalibrationBuff(byte[] calibrationBuff)
         {
             Settings.I.LastCalibrationBuff.Value = calibrationBuff;
             Settings.I.SaveSettings();
@@ -334,7 +319,8 @@ namespace GazeStream.Windows
             if (!isCalibrating) return;
             ResetPage();
             Disconnect();
-
+            GlobalEvents.OnCalibrationCancel.Invoke();
+            GlobalEvents.OnCalibrationFinished.Invoke();
         }
 
         private void ResetPage()
@@ -344,24 +330,17 @@ namespace GazeStream.Windows
             DestroyCurrentCalibrationPoint();
             EyeDisplay.Visibility = Visibility.Collapsed;
             EnableButtons();
-            //WindowsHelper.ShowCursor(true);
-
             FadeText.HideMessage();
         }
-
-
-
 
         public void SpawnCalibrationPoint(Vector2 viewportPos)
         {
             DestroyCurrentCalibrationPoint();
-            CalibrationPointGraphic newPoint = new CalibrationPointGraphic(20, Windows.UI.Color.FromArgb(255, 0, 255, 0));
+            CalibrationPointGraphic newPoint = new CalibrationPointGraphic(20, System.Windows.Media.Color.FromArgb(255, 0, 255, 0));
             currentPoint = newPoint;
             MainCanvas.Children.Add(currentPoint.Element);
             MainCanvas.SetElementToViewportPositionActualSize(currentPoint.Element, viewportPos);
             points.Add(currentPoint);
-
-            //TODO: Animation
         }
         private void DestroyCurrentCalibrationPoint()
         {
@@ -385,24 +364,19 @@ namespace GazeStream.Windows
             ASeeTracker._7i_stop_tracking();
             ASeeTracker._7i_stop();
             ASeeTracker._7i_device_disconnect();
+            GlobalEvents.OnEyetrackerDisconnected.Invoke();
         }
 
         void DisableButtons()
         {
-            //Agregar animaciones
             SettingsPanel.IsHitTestVisible = false;
-            SettingsPanel.Visibility = Visibility.Collapsed;
-            //MainWindow.Instance?.HideOverlay();
-            //WindowsHelper.ShowCursor(false);
-
+            SettingsPanel.Visibility = Visibility.Collapsed;        
         }
 
         void EnableButtons()
         {
             SettingsPanel.IsHitTestVisible = true;
-            SettingsPanel.Visibility = Visibility.Visible;
-            //MainWindow.Instance?.ShowOverlay();
-            //WindowsHelper.ShowCursor(true);
+            SettingsPanel.Visibility = Visibility.Visible;     
         }
 
 
@@ -449,21 +423,9 @@ namespace GazeStream.Windows
             else return 2;  //Filter Alto
         }
 
-        public int GetFilterValueFromSetting()
+        public void SetFilterSelectionRadioButton(FilterProfile profile)
         {
-            int filterSetting = GetFilterSelection();
-            int filterValue = 10;
-            switch (filterSetting)
-            {
-                case 0: filterValue = 3; break;
-                case 1: filterValue = 6; break;
-                case 2: filterValue = 10; break;
-            }
-            return filterValue;
-        }
-
-        public void SetFilterSelectionRadioButton(int filterOption)
-        {
+            int filterOption = (int)profile;
             if (filterOption == 0)
             {
                 FilterSetting_Bajo.IsChecked = true;
@@ -475,6 +437,27 @@ namespace GazeStream.Windows
             else
             {
                 FilterSetting_Alto.IsChecked = true;
+            }
+        }
+
+        private void FilterSetting_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.RadioButton rb)
+            {
+                switch (rb.Name)
+                {
+                    case nameof(FilterSetting_Bajo):
+                        Settings.I.FilterProfile.Value = (FilterProfile)0;
+                        break;
+
+                    case nameof(FilterSetting_Medio):
+                        Settings.I.FilterProfile.Value = (FilterProfile)1;
+                        break;
+
+                    case nameof(FilterSetting_Alto):
+                        Settings.I.FilterProfile.Value = (FilterProfile)2;
+                        break;
+                }
             }
         }
 
@@ -521,20 +504,4 @@ namespace GazeStream.Windows
         }
         #endregion
     }
-}
-
-public enum CalibrationMode
-{
-    Binocular3,
-    Binocular5,
-    Binocular7,
-    Binocular9,
-    Left3,
-    Left5,
-    Left7,
-    Left9,
-    Right3,
-    Right5,
-    Right7,
-    Right9
 }

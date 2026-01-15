@@ -9,16 +9,16 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using GazeStream.Eyetracker;
+using GazeStream.AppData;
+using System.Diagnostics;
+using GazeStream.Utilities;
 
 namespace GazeStream.Windows
 {
-    /// <summary>
-    /// Interaction logic for OverlayWindow.xaml
-    /// </summary>
     public partial class OverlayWindow : Window
     {
-        private DispatcherTimer timer;
-
+        const float BUBBLE_OPACITY = .8f;
         public OverlayWindow()
         {
             InitializeComponent();
@@ -32,43 +32,41 @@ namespace GazeStream.Windows
             Top = 0;
             Width = SystemParameters.PrimaryScreenWidth;
             Height = SystemParameters.PrimaryScreenHeight;
+            Settings.I.BubbleToggle.OnValueChanged += OnBubbleToggled;
+            OnBubbleToggled(Settings.I.BubbleToggle.Value);
+        }
 
-            MakeClickThrough();
+        private void UpdateBubblePosition()
+        {
+            Debug.WriteLine("Update bubble position called");
+            var point = Helper.ViewportToUIElementPoint(RootCanvas, GazeManager.I.SmoothViewportPoint);
+            Canvas.SetLeft(Cursor, point.X - Cursor.Width / 2);
+            Canvas.SetTop(Cursor, point.Y - Cursor.Height / 2);
+        }
 
-            // TEMP: Follow mouse for testing
-            timer = new DispatcherTimer
+        void OnBubbleToggled(bool enabled)
+        {
+            if (enabled)
             {
-                Interval = TimeSpan.FromMilliseconds(16)
-            };
-            timer.Tick += UpdateCursorFromMouse;
-            timer.Start();
+                ShowBubble();
+            }
+            else
+            {
+                HideBubble();
+            }
         }
 
-        private void UpdateCursorFromMouse(object? sender, EventArgs e)
+        void ShowBubble()
         {
-            var pos = System.Windows.Forms.Control.MousePosition;
-
-            Canvas.SetLeft(Cursor, pos.X - Cursor.Width / 2);
-            Canvas.SetTop(Cursor, pos.Y - Cursor.Height / 2);
+            Cursor.Opacity = BUBBLE_OPACITY;
+            GazeManager.OnGazeUpdateUI -= UpdateBubblePosition;
+            GazeManager.OnGazeUpdateUI += UpdateBubblePosition;
         }
 
-        private void MakeClickThrough()
+        void HideBubble()
         {
-            var hwnd = new WindowInteropHelper(this).Handle;
-
-            int extendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-            SetWindowLong(hwnd, GWL_EXSTYLE,
-                extendedStyle | WS_EX_TRANSPARENT | WS_EX_LAYERED);
+            Cursor.Opacity = 0;
+            GazeManager.OnGazeUpdateUI -= UpdateBubblePosition;
         }
-
-        private const int GWL_EXSTYLE = -20;
-        private const int WS_EX_TRANSPARENT = 0x20;
-        private const int WS_EX_LAYERED = 0x80000;
-
-        [DllImport("user32.dll")]
-        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-        [DllImport("user32.dll")]
-        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
     }
 }

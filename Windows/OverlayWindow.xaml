@@ -7,6 +7,7 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
+        WindowState="Maximized"
         WindowStartupLocation="Manual">
 
     <Canvas x:Name="RootCanvas"
@@ -16,7 +17,7 @@
         <Ellipse x:Name="Cursor"
                  Width="20"
                  Height="20"
-                 Fill="Red"
+                 Fill="GreenYellow"
                  Opacity="0.8"/>
     </Canvas>
 </Window>

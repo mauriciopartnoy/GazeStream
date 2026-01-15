@@ -92,11 +92,11 @@ namespace GazeStream.Utilities
             return new Vector2(x, y);
         }
 
-        public static System.Windows.Point ViewportToWindowDips(Window window, Vector2 viewport)
+        public static Vector2 ViewportToWindowDips(Window window, Vector2 viewport)
         {
-            return new System.Windows.Point(
-                window.ActualWidth * viewport.X,
-                window.ActualHeight * viewport.Y
+            return new Vector2(
+                (float)window.ActualWidth * viewport.X,
+                (float)window.ActualHeight * viewport.Y
             );
         }
 

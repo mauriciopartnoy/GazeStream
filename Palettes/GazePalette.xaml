@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="SeriousButton" Color="#FF444B6A"/>
+    <SolidColorBrush x:Key="SeriousPanel" Color="#FF5E627B"/>
+    <SolidColorBrush x:Key="SeriousBackground" Color="#FF212F3C"/>
+    <SolidColorBrush x:Key="ToggleGreen" Color="#FFA0D992"/>
+    
+</ResourceDictionary>

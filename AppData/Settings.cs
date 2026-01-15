@@ -20,10 +20,14 @@ namespace GazeStream.AppData
         public LastCalibrationSetting LastCalibrationBuff { get; } = new();
         public LastCalibrationEyesSetting LastEyesOption { get; } = new();
         public LastCalibrationPointsOptionSetting LastPointsOption { get; } = new();
+        public FilterProfileSetting FilterProfile { get; } = new();
+        
 
         public Settings()
         {
+            //IMPORTANTE: Si cambiamos a un modelo de settings por perfil migrar los valores de System Settings a User Settings en el SaveManager.
             I = this;
+            SaveManager.LoadSystemSettings();
         }
 
         public void LoadSettings()
@@ -37,6 +41,8 @@ namespace GazeStream.AppData
             LastCalibrationBuff.LoadSetting();
             LastEyesOption.LoadSetting();
             LastPointsOption.LoadSetting();
+            FilterProfile.LoadSetting();
+            FilterProfile.HookProfileSettings();
         }
 
         public void SaveSettings()
@@ -48,6 +54,7 @@ namespace GazeStream.AppData
 
     public abstract class Setting<T>
     {
+        public event Action OnChanged;
         public event Action<T> OnValueChanged;
         protected abstract string SaveKey { get; }
         protected abstract T DefaultValue { get; }
@@ -60,6 +67,7 @@ namespace GazeStream.AppData
                 if (EqualityComparer<T>.Default.Equals(value)) return;
                 valueCache = NormalizeValue(value);
                 SaveSetting();
+                OnChanged?.Invoke();
                 OnValueChanged?.Invoke(valueCache);
             }
         }
@@ -78,6 +86,12 @@ namespace GazeStream.AppData
         protected virtual T NormalizeValue(T input) { return input; }
 
         
+    }
+
+    public interface ISettingsUser
+    {
+        void LoadSettings();
+        void SubscribeToSettings();
     }
 
     public class InvensunSmoothFilterSetting : Setting<int>
@@ -163,4 +177,53 @@ namespace GazeStream.AppData
         protected override string SaveKey => "BubbleToggle";
         protected override bool DefaultValue => false;
     }
+
+    //PROFILE SETTINGS
+    public class FilterProfileSetting : Setting<FilterProfile>
+    {
+        public void HookProfileSettings()
+        {
+            this.OnValueChanged += OnFilterChanged;
+            Settings.I.InterpolationFilter.OnChanged += SetCustomProfileOnFilterChange;
+            Settings.I.KalmanFilter.OnChanged += SetCustomProfileOnFilterChange;
+            Settings.I.SmoothFilter.OnChanged += SetCustomProfileOnFilterChange;
+        }
+
+        bool aplyingProfile;
+        protected override string SaveKey => "FilterProfile";
+        protected override FilterProfile DefaultValue => FilterProfile.Medio;
+
+        void OnFilterChanged(FilterProfile profile)
+        {
+            //TODO: Agregar Interpolation/Smooth Damp
+            aplyingProfile = true;
+            switch (profile)
+            {
+                case FilterProfile.Bajo:
+                    Settings.I.KalmanFilter.Value = 0;
+                    Settings.I.SmoothFilter.Value = 1;
+                    break;
+                case FilterProfile.Medio:
+                    Settings.I.KalmanFilter.Value = 20;
+                    Settings.I.SmoothFilter.Value = 10;
+                    break;
+                case FilterProfile.Alto:
+                    Settings.I.KalmanFilter.Value = 30;
+                    Settings.I.SmoothFilter.Value = 10;
+                    break;
+                case FilterProfile.Custom:
+                    break;
+            }
+            aplyingProfile = false;
+        }
+
+      
+        void SetCustomProfileOnFilterChange()
+        {
+            if (aplyingProfile) return;
+            this.Value = FilterProfile.Custom;
+        }
+    }
+
+    public enum FilterProfile { Bajo, Medio, Alto, Custom  }
 }

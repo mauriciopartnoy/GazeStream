@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using W = System.Windows;
+using GazeStream.Utilities;
+using GazeStream.Windows;
 
 namespace GazeStream
 {
@@ -12,11 +14,18 @@ namespace GazeStream
         {
             trayIcon = new NotifyIcon
             {
-                Icon = SystemIcons.Application,
+                Icon = LoadTrayIcon(),
                 Text = "Gaze Overlay",
                 Visible = true,
                 ContextMenuStrip = BuildMenu()
             };
+        }
+
+        private static Icon LoadTrayIcon()
+        {
+            var uri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/tray.ico",UriKind.Absolute);
+            using var stream = System.Windows.Application.GetResourceStream(uri)!.Stream;
+            return new Icon(stream);
         }
 
         private ContextMenuStrip BuildMenu()
@@ -39,12 +48,12 @@ namespace GazeStream
 
         private void OnCalibration(object? sender, EventArgs e)
         {
-            W.MessageBox.Show("Placeholder de calibración");
+            WindowManager.OpenWindow<CalibrationWindow>();
+            //W.MessageBox.Show("Placeholder de calibración");
         }
 
         private void OnExit(object? sender, EventArgs e)
         {
-            Dispose();
             W.Application.Current.Shutdown();
         }
 

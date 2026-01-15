@@ -9,10 +9,14 @@ namespace GazeStream.Utilities.Events
 
         //CALIBRATION EVENTS
 
-        public static readonly GlobalEvent<CalibrationMode> OnStartCalibrationCommand = new();
+        public static readonly GlobalEvent<int, int> OnStartCalibrationCommand = new();
+        public static readonly GlobalEvent OnEyetrackerConnected = new();
+        public static readonly GlobalEvent OnEyetrackerDisconnected = new();
+        public static readonly GlobalEvent OnEyetrackerConnectionFailed = new();
         public static readonly GlobalEvent OnCalibrationStart = new();
         public static readonly GlobalEvent OnCalibrationCancel = new();
         public static readonly GlobalEvent OnCalibrationSuccess = new();
+        public static readonly GlobalEvent OnCalibrationFailed = new();
         public static readonly GlobalEvent OnCalibrationFinished = new();
         public static readonly GlobalEvent OnShowEyeDisplay = new();
         public static readonly GlobalEvent OnHideEyeDisplay = new();

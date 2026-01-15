@@ -22,7 +22,7 @@ namespace GazeStream.Controls
         public static readonly DependencyProperty TextColorProperty =
             DependencyProperty.Register(
                 nameof(TextColor),
-                typeof(Brush),
+                typeof(M.Brush),
                 typeof(FadeText),
                 new PropertyMetadata(new M.SolidColorBrush(M.Colors.White)));
 
@@ -44,10 +44,7 @@ namespace GazeStream.Controls
                 MessageText.Foreground =
                     new M.SolidColorBrush(overrideColor.Value);
             }
-            else
-            {
-                MessageText.ClearValue(TextBlock.ForegroundProperty);
-            }
+            
 
             await FadeTo(1.0, fadeTime);
             await Task.Delay(TimeSpan.FromSeconds(durationSeconds));

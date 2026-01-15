@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using GazeStream.Utilities;
 
 namespace GazeStream.Eyetracker
 {
@@ -13,14 +14,8 @@ namespace GazeStream.Eyetracker
         public FrameworkElement Element { get; private set; }
         public float Progress01 { get; private set; }
 
-        private readonly DispatcherTimer rotationTimer;
         private readonly RotateTransform rotateTransform;
         private readonly ScaleTransform scaleTransform;
-
-        private float rotationSpeed;
-
-        private const float MinRotationSpeed = 5f;
-        private const float MaxRotationSpeed = 10f;
 
         public CalibrationPointGraphic(double size, System.Windows.Media.Color color)
         {
@@ -34,8 +29,8 @@ namespace GazeStream.Eyetracker
             };
 
             // --- Transforms ---
-            rotateTransform = new RotateTransform(0);
             scaleTransform = new ScaleTransform(0, 0);
+            rotateTransform = new RotateTransform(0);
 
             var transformGroup = new TransformGroup();
             transformGroup.Children.Add(scaleTransform);
@@ -44,74 +39,86 @@ namespace GazeStream.Eyetracker
             ellipse.RenderTransform = transformGroup;
             Element = ellipse;
 
-            // --- Rotation timer ---
-            rotationTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(16)
-            };
-            rotationTimer.Tick += RotateTick;
-            rotationTimer.Start();
+            var spawnStoryboard = CreateSpawnStoryboard();
+            var rotationStoryboard = CreateRotationStoryboard();
 
-            StartSpawnAnimation();
+
+            spawnStoryboard.Completed += (_, _) => rotationStoryboard.Begin(Element, true);
+            Element.Loaded += (_, _) => spawnStoryboard.Begin(Element, true);
+            Element.Unloaded += (_, _) => spawnStoryboard.Stop(Element);
+            Element.Unloaded += (_, _) => rotationStoryboard.Stop(Element);
+
+        }
+
+        Storyboard CreateRotationStoryboard()
+        {
+            Storyboard rotationStoryboard = new Storyboard();
+
+            var rotationAnimation = new DoubleAnimation
+            {
+                From = 0,
+                To = 360,
+                Duration = TimeSpan.FromSeconds(2),
+                RepeatBehavior = RepeatBehavior.Forever
+            };
+
+
+            Storyboard.SetTarget(rotationAnimation, Element);
+            Storyboard.SetTargetProperty(
+                rotationAnimation,
+                new PropertyPath(
+                    "(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)"
+                ));
+
+            rotationStoryboard.Children.Add(rotationAnimation);
+            return rotationStoryboard;
         }
 
         // =====================
         // Animations
         // =====================
 
-        private void StartSpawnAnimation()
+        Storyboard CreateSpawnStoryboard()
         {
-            var anim = new DoubleAnimation
+            Storyboard spawnStoryboard = new Storyboard();
+
+            var scaleX = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300))
             {
-                From = 0,
-                To = 1,
-                Duration = TimeSpan.FromSeconds(0.3),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                EasingFunction = new BackEase { Amplitude = 0.3 }
             };
 
-            scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, anim);
-            scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, anim);
-        }
+            var scaleY = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300))
+            {
+                EasingFunction = new BackEase { Amplitude = 0.3 }
+            };
 
-        private void RotateTick(object? sender, EventArgs e)
-        {
-            rotateTransform.Angle += rotationSpeed;
-            if (rotateTransform.Angle >= 360)
-                rotateTransform.Angle -= 360;
-        }
+            Storyboard.SetTarget(scaleX, Element);
+            Storyboard.SetTarget(scaleY, Element);
+            Storyboard.SetTargetProperty(scaleX, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"));
+            Storyboard.SetTargetProperty(scaleY, new PropertyPath("(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"));
+            spawnStoryboard.Children.Add(scaleX);
+            spawnStoryboard.Children.Add(scaleY);
 
-        // =====================
-        // Public API
-        // =====================
+            return spawnStoryboard;
+        }
 
         public void UpdateCalibrationPoint(float progress01)
         {
-            Progress01 = Math.Clamp(progress01, 0f, 1f);
-
-            rotationSpeed = Lerp(MinRotationSpeed, MaxRotationSpeed, Progress01);
-
-            double scale = Lerp(1.0, 0.2, Progress01);
-            scaleTransform.ScaleX = scale;
-            scaleTransform.ScaleY = scale;
+            App.Instance.Dispatcher.Invoke(() =>
+            {
+                Progress01 = Math.Clamp(progress01, 0f, 1f);
+                double scale = Helper.Lerp(1.0f, 0.2f, Progress01);
+                scaleTransform.ScaleX = scale;
+                scaleTransform.ScaleY = scale;
+            });
         }
 
         public void Destroy(Canvas canvas)
         {
-            rotationTimer.Stop();
             canvas.Children.Remove(Element);
 
             // Optional sound hook
             // SoundManager.Play("Pop.wav");
         }
-
-        // =====================
-        // Helpers
-        // =====================
-
-        private static float Lerp(float a, float b, float t)
-            => a + (b - a) * t;
-
-        private static double Lerp(double a, double b, float t)
-            => a + (b - a) * t;
     }
 }

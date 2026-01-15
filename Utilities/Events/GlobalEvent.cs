@@ -47,4 +47,25 @@ namespace GazeStream.Utilities.Events
             action -= subscriber;
         }
     }
+
+    public class GlobalEvent<T, U>
+    {
+        private event Action<T,U>? action;
+
+        public void Invoke(T param, U param2)
+        {
+            action?.Invoke(param, param2);
+        }
+
+        public void Add(Action<T, U> subscriber)
+        {
+            action -= subscriber;
+            action += subscriber;
+        }
+
+        public void Remove(Action<T, U> subscriber)
+        {
+            action -= subscriber;
+        }
+    }
 }

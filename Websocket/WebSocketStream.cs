@@ -13,16 +13,17 @@ using GazeStream.Eyetracker;
 using GazeStream;
 using GazeStream.AppData;
 using GazeStream.Windows;
-public class WebSocketStream 
+
+public class WebSocketStream : IDisposable
 {
     public static WebSocketStream I {get; private set;}
     WebSocketServer ws;
     WebSocketServiceHost service;
    
-    public bool streamData = false;
     public const string WEBSOCKET_PORT = "http://127.0.0.1:3000";
     public const string CALLBACK_CONNECTION_SUCCESS = "CONNECTION_SUCCESS";
     public const string CALLBACK_CONNECTION_FAILED = "CONNECTION_FAILED";
+    public const string CALLBACK_CONNECTION_DISCONNECTED = "CONNECTION_DISCONNECTED";
     public const string CALLBACK_CALIBRATION_STARTED = "CALIBRATION_STARTED";
     public const string CALLBACK_CALIBRATION_SUCCESS = "CALIBRATION_SUCCESS";
     public const string CALLBACK_CALIBRATION_FAILED = "CALIBRATION_FAILED";
@@ -44,6 +45,32 @@ public class WebSocketStream
     public WebSocketStream()
     {
         I = this;
+        SubscribeToGazeManager();
+        HookCallbacks();
+    }
+
+    private void HookCallbacks()
+    {
+        GlobalEvents.OnEyetrackerConnected.Add(() => WriteLine(CALLBACK_CONNECTION_SUCCESS));
+        GlobalEvents.OnEyetrackerConnectionFailed.Add(() => WriteLine(CALLBACK_CONNECTION_FAILED));
+        GlobalEvents.OnEyetrackerDisconnected.Add(() => WriteLine(CALLBACK_CONNECTION_DISCONNECTED));
+        GlobalEvents.OnCalibrationStart.Add(() => WriteLine(CALLBACK_CALIBRATION_STARTED));
+        GlobalEvents.OnCalibrationCancel.Add(() => WriteLine(CALLBACK_CALIBRATION_CANCELLED));
+        GlobalEvents.OnCalibrationFailed.Add(() => WriteLine(CALLBACK_CALIBRATION_FAILED));
+        GlobalEvents.OnCalibrationSuccess.Add(() => WriteLine(CALLBACK_CALIBRATION_SUCCESS));
+        GlobalEvents.OnCalibrationFinished.Add(() => WriteLine(CALLBACK_CALIBRATION_FINISHED));
+    }
+
+
+    public void SubscribeToGazeManager()
+    {
+        GazeManager.OnGazeUpdate -= OnStreamUpdate;
+        GazeManager.OnGazeUpdate += OnStreamUpdate;
+    }
+
+    public void UnsubscribeToGazeManager()
+    {
+        GazeManager.OnGazeUpdate -= OnStreamUpdate;
     }
 
     public void StartWebsocketService()
@@ -91,32 +118,27 @@ public class WebSocketStream
     void StreamGazePoint()
     {
         if (ws == null || !IsAlive) return;
-        if (!streamData) return;
         GazePoint point = GazeManager.I.GazePoint;
         if (!point.IsValid) return;
 
+        //El punto stremeado está en Screenspace a pedido. Quizá sea útil enviar el dato crudo en Viewport space también?
+
         Vector2 p = new Vector2();
         Vector2 displayRes = WindowsHelper.GetDisplayResolutionInPixels();
-
-
-        p.X = (int)Math.Round(GazeManager.I.SmoothViewportPoint.X) * (float)displayRes.X;
-        p.Y = (int)Math.Round(GazeManager.I.SmoothViewportPoint.Y) * (float)displayRes.Y;
-
+        p.X = (int)Math.Round(GazeManager.I.SmoothViewportPoint.X * (float)displayRes.X);
+        p.Y = (int)Math.Round(GazeManager.I.SmoothViewportPoint.Y * (float)displayRes.Y);
         //p.t = CurrentTimeInMilliseconds;
         string jsonPoint =  JsonConvert.SerializeObject(p);
         WriteLine(jsonPoint);
         //Debug.Log($"Smooth X: {p.xSmooth} Y: {p.ySmooth}");
     }
 
-
-
-    public void OnApplicationQuit()
+    public void Dispose()
     {
-        if (ws == null || !IsAlive) return;
         WriteLine(CALLBACK_INSTANCE_QUIT);
-        ws.Stop();
+        if (ws == null) return;   
+        ws.Stop(); 
     }
-
 }
 
 
@@ -140,6 +162,7 @@ public class GazeService : WebSocketBehavior
     {
         commandRouter = new();
         commandRouter.RegisterCommand(new SetSampleRateHzCommand());
+        commandRouter.RegisterCommand(new SetFilterProfileCommand());
         commandRouter.RegisterCommand(new SetSmoothCommand());
         commandRouter.RegisterCommand(new SetSmoothDampFilter());
         commandRouter.RegisterCommand(new SetKalmanFilterCommand());
@@ -169,6 +192,12 @@ public class GazeService : WebSocketBehavior
 
             switch (message.Data)
             {
+                case "ToggleMouseControl":
+                    Settings.I.MouseToggle.Value = !Settings.I.MouseToggle.Value;
+                break;
+                case "ToggleBubble":
+                    Settings.I.BubbleToggle.Value = !Settings.I.BubbleToggle.Value;
+                    break;
                 case "CancelCalibration":
                     CancelCalibration();
                     break;
@@ -179,58 +208,49 @@ public class GazeService : WebSocketBehavior
                     ResumeEyetrackerDataStream();
                     break;
                 case "Minimize":
-                    WindowsHelper.MinimizeWindow();
+                    WindowManager.CloseWindow<CalibrationWindow>();
                     break;
                 case "Maximize":
-                    WindowsHelper.ShowWindow();
+                    WindowManager.OpenWindow<CalibrationWindow>();
                     break;
                 case "StartCalibration3":
-                    RequestCalibration(CalibrationMode.Binocular3);
+                    RequestCalibration(0,0);
                     break;
                 case "StartCalibration5":
-                    RequestCalibration(CalibrationMode.Binocular5);
-                    break;
-                case "StartCalibration7":
-                    RequestCalibration(CalibrationMode.Binocular7);
-                    break;
+                    RequestCalibration(1,0);
+                    break;        
                 case "StartCalibration9":
-                    RequestCalibration(CalibrationMode.Binocular9);
+                    RequestCalibration(2,0);
                     break;
                 case "StartCalibrationLeft3":
-                    RequestCalibration(CalibrationMode.Left3);
+                    RequestCalibration(0,1);
                     break;
                 case "StartCalibrationLeft5":
-                    RequestCalibration(CalibrationMode.Left5);
-                    break;
-                case "StartCalibrationLeft7":
-                    RequestCalibration(CalibrationMode.Left7);
-                    break;
+                    RequestCalibration(1,1);
+                    break;              
                 case "StartCalibrationLeft9":
-                    RequestCalibration(CalibrationMode.Left9);
+                    RequestCalibration(2,1);
                     break;
                 case "StartCalibrationRight3":
-                    RequestCalibration(CalibrationMode.Right3);
+                    RequestCalibration(0,2);
                     break;
                 case "StartCalibrationRight5":
-                    RequestCalibration(CalibrationMode.Right5);
-                    break;
-                case "StartCalibrationRight7":
-                    RequestCalibration(CalibrationMode.Right7);
-                    break;
+                    RequestCalibration(1,2);
+                    break;       
                 case "StartCalibrationRight9":
-                    RequestCalibration(CalibrationMode.Right9);
+                    RequestCalibration(2,2);
                     break;
                 case "SetSmoothNone":
-                    Settings.I.SmoothFilter.Value = 1;
+                    Settings.I.FilterProfile.Value = FilterProfile.Bajo;
                     break;
                 case "SetSmoothLow":
-                    Settings.I.SmoothFilter.Value = 3;
+                    Settings.I.FilterProfile.Value = FilterProfile.Bajo;
                     break;
                 case "SetSmoothMedium":
-                    Settings.I.SmoothFilter.Value = 7;
+                    Settings.I.FilterProfile.Value = FilterProfile.Medio;
                     break;
                 case "SetSmoothHigh":
-                    Settings.I.SmoothFilter.Value = 10;
+                    Settings.I.FilterProfile.Value = FilterProfile.Alto;
                     break;
                 case "ShowEyeDisplay":
                     GlobalEvents.OnShowEyeDisplay.Invoke();
@@ -243,6 +263,7 @@ public class GazeService : WebSocketBehavior
                     break;
                 case "SetSampleRate30":
                     Settings.I.SampleRateHZ.Value = 30;
+                    WriteLine("Sample rate set to 30 Hz");
                     break;
                 case "SetSampleRate60":
                     Settings.I.SampleRateHZ.Value = 60;
@@ -253,15 +274,20 @@ public class GazeService : WebSocketBehavior
 
     }
 
-    public void SetSmooth(int value)
-    {
-        GazeDeviceA11.SetSmooth(value);
+    void ShowEyeDisplay()
+    { 
+        //TODO: Add eye display
     }
 
-    public void RequestCalibration(CalibrationMode mode)
+    void HideEyeDisplay()
+    {
+        //TODO: Add eye display
+    }
+
+    public void RequestCalibration(int pointsArray, int eyes)
     {
         WindowManager.OpenWindow<CalibrationWindow>();
-        GlobalEvents.OnStartCalibrationCommand.Invoke(mode);
+        GlobalEvents.OnStartCalibrationCommand.Invoke(pointsArray, eyes);
     }
 
     public void CancelCalibration()
@@ -271,18 +297,34 @@ public class GazeService : WebSocketBehavior
 
     public void PauseEyetrackerDataStream()
     {
-        WebSocketStream.I.streamData = false;
+        WebSocketStream.I.UnsubscribeToGazeManager();
         WriteLine("Data Stream Paused");
     }
 
     public void ResumeEyetrackerDataStream()
     {
-        WebSocketStream.I.streamData = true;
-        WriteLine("Data Stream Paused");
+        WebSocketStream.I.SubscribeToGazeManager();
+        WriteLine("Resuming Data Stream");
     }
 }
 
 //Commands
+public class SetFilterProfileCommand : BaseWebsocketCommand
+{
+    public override string Name => "SetFilterProfile";
+
+    public override Dictionary<string, ParamSchema> Schema { get; } = new()
+        {
+            {"level", new ParamSchema(typeof(int), true, 1) }
+        };
+
+    public override void Execute(JObject parameters)
+    {
+        int smoothLevel = parameters["level"].Value<int>();
+        Settings.I.FilterProfile.Value = (FilterProfile)smoothLevel;
+    }
+}
+
 public class SetSmoothCommand : BaseWebsocketCommand
 {
     public override string Name => "SetSmooth";
@@ -295,7 +337,7 @@ public class SetSmoothCommand : BaseWebsocketCommand
     public override void Execute(JObject parameters)
     {
         int smoothLevel = parameters["level"].Value<int>();
-        GazeDeviceA11.SetSmooth(smoothLevel);
+        Settings.I.SmoothFilter.Value = smoothLevel;
     }
 }
 
@@ -372,7 +414,7 @@ public class StartCalibrationCommand : BaseWebsocketCommand
     public void RequestCalibration(int points, int eyes)
     {
         WindowManager.OpenWindow<CalibrationWindow>();
-        CalibrationWindow.I.startca(points, eyes);
+        GlobalEvents.OnStartCalibrationCommand.Invoke(points, eyes);
     }
 }
 

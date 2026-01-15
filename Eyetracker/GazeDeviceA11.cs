@@ -41,11 +41,13 @@ public class GazeDeviceA11 : IGazeDevice
         if (startResult == 0)
         {
             IsConnected = true;
+            GlobalEvents.OnEyetrackerConnected.Invoke();
             SetCurrentUserCalibration();
             return true;
         }
         else
         {
+            GlobalEvents.OnEyetrackerConnectionFailed.Invoke();
             HasValidCalibration = false;
             Disconnect();
             return false;
@@ -58,7 +60,7 @@ public class GazeDeviceA11 : IGazeDevice
         Debug.WriteLine("Setting current user calibration");
         if (!IsConnected) return;
         //if (App.Instance.ActiveUser == null) return;
-        Debug.WriteLine("Current user available.");
+        //Debug.WriteLine("Current user available.");
 
         if (!TryLoadCoefficient())
         {
@@ -81,7 +83,8 @@ public class GazeDeviceA11 : IGazeDevice
     private bool TryLoadCoefficient()
     {
         coefficient = new _7i_coefficient_t();
-        coefficient.buf = SaveManager.GetSystemSetting<byte[]>(SaveKeys.LAST_CALIBRATION_KEY, new byte[0]);
+        coefficient.buf = Settings.I.LastCalibrationBuff.Value;
+        Debug.WriteLine("Loading coefficient buff. Length: " + coefficient.buf.Length);
         if (coefficient.buf.Length == 0) return false;
         else return true;
     }
@@ -175,7 +178,7 @@ public class GazeDeviceA11 : IGazeDevice
 
     public static void LoadSmooth()
     {
-        int smooth = SaveManager.GetSystemSetting(SaveKeys.SMOOTH_FILTER, 10);
+        int smooth = Settings.I.SmoothFilter.Value;
         int smoothValue = Math.Clamp(smooth, 0, 10);
         int setSmoothResult = ASeeTracker._7i_set_smooth(smoothValue);
         Debug.WriteLine($"Setting Smooth to: {smoothValue} SetSmooth result: " + aSeeResults.SetSmoothResultToString(setSmoothResult));
@@ -186,9 +189,8 @@ public class GazeDeviceA11 : IGazeDevice
         int smoothValue = Math.Clamp(smooth, 1, 10);
         int setSmoothResult = ASeeTracker._7i_set_smooth(smoothValue);
         Debug.WriteLine($"Setting Smooth to: {smoothValue} SetSmooth result: " + aSeeResults.SetSmoothResultToString(setSmoothResult));
-        SaveManager.SetSystemSetting(SaveKeys.SMOOTH_FILTER, smoothValue);
-        SaveManager.SaveSystemSettings();
-        GlobalEvents.OnInvensunSmoothValueChanged.Invoke(smoothValue);
+        Settings.I.SmoothFilter.Value = smoothValue;
+        Settings.I.SaveSettings();
     }
 
     public void Disconnect()
@@ -200,6 +202,6 @@ public class GazeDeviceA11 : IGazeDevice
         Debug.WriteLine("Stop result: " + aSeeResults.StopResultToString(stopResult));
         int disconnectResult = ASeeTracker._7i_device_disconnect();
         Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
-
+        GlobalEvents.OnEyetrackerDisconnected.Invoke();
     }
 }

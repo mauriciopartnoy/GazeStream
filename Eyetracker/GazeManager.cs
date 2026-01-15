@@ -4,25 +4,21 @@ using System;
 using System.Diagnostics;
 using GazeStream.Utilities;
 using GazeStream.Utilities.Save;
+using GazeStream.Utilities.Events;
 using GazeStream.AppData;
 using System.Windows.Threading;
 using GazeStream.Eyetracker.Filters;
+using InputSimulatorEx;
+using InputSimulatorEx.Native;
+
 namespace GazeStream.Eyetracker
 {
-    public class GazeManager
+    public class GazeManager : ISettingsUser, IDisposable
     {
         public static GazeManager? I { get; private set; }
         public static event Action<IGazeDevice>? OnGazeDeviceChanged;
         public static event Action? OnGazeUpdate;
         public static event Action? OnGazeUpdateUI;
-
-        KalmanFilter kalmanFilter;
-        InterpolationFilter interpolationFilter;
-
-        const string SAMPLE_FREQUENCY_KEY = "SampleFrequency";
-
-        public int FrequencyHz { get; private set; } = 60;
-        float frequencySeconds;
 
         List<IGazeDevice> supportedDevices = new List<IGazeDevice>();
         public IGazeDevice? GazeDevice { get; private set; }
@@ -38,10 +34,18 @@ namespace GazeStream.Eyetracker
 
         public GazeDeviceA11? joacoA11;
 
+        public bool mouseControlEnabled => Settings.I.MouseToggle.Value;
+        public bool IsCalibrating { get; private set; }
+
+        KalmanFilter kalmanFilter;
+        InterpolationFilter interpolationFilter;
+        float sampleRateSeconds;
         const float TIMEOUT_TRESHOLD = 1f;
         Stopwatch timeOutTimer;
-        Vector2 historicPoint;
-        bool hasHistoricPoint;
+        InputSimulator input;
+
+        Task loopTask;
+        CancellationTokenSource loopCts;
 
         public bool IsThisAJoacoDevice(string deviceName)
         {
@@ -52,32 +56,59 @@ namespace GazeStream.Eyetracker
         {
             I = this;
             timeOutTimer = new Stopwatch();
+            input = new InputSimulator();
             kalmanFilter = new();
             interpolationFilter = new();
             LoadSettings();
+            SubscribeToSettings();
+            SubscribeToCalibrationEvents();
+
             AddSupportedDevices();
-            TryInitializeGazeDevice();
-            StartUpdateLoop();
+            StartGazeDeviceUpdateLoop();
         }
 
-        void LoadSettings()
+        public void LoadSettings()
         {
-            FilterSmoothingFactor = SaveManager.GetSystemSetting(SaveKeys.SMOOTH_INTERPOLATION, .5f);
-            FrequencyHz = SaveManager.GetSystemSetting(SAMPLE_FREQUENCY_KEY, 80);
-            frequencySeconds = 1f / FrequencyHz;
+            UpdateInterpolationFilter(Settings.I.InterpolationFilter.Value);
+            UpdateKalmanFilter(Settings.I.KalmanFilter.Value);
+            UpdateSampleRateHZ(Settings.I.SampleRateHZ.Value);
         }
 
-        public void SetPostProcessSmoothing(float value01)
+        public void SubscribeToSettings()
         {
-            FilterSmoothingFactor = Math.Clamp(value01, 0.1f, 1f);
-            SaveManager.SetSystemSetting(SaveKeys.SMOOTH_INTERPOLATION, value01);
+            Settings.I.InterpolationFilter.OnValueChanged += UpdateInterpolationFilter;
+            Settings.I.KalmanFilter.OnValueChanged += UpdateKalmanFilter;
+            Settings.I.SampleRateHZ.OnValueChanged += UpdateSampleRateHZ;
         }
-        public void SetSampleFrequency(int frequencyHz)
+
+        public void UpdateKalmanFilter(int value)
         {
-            frequencyHz = Math.Clamp(frequencyHz, 0, 150);
-            FrequencyHz = frequencyHz;
-            frequencySeconds = 1f / FrequencyHz;
-            SaveManager.SetSystemSetting(SAMPLE_FREQUENCY_KEY, frequencyHz);
+            kalmanFilter.SetSmoothFactor(value);
+        }
+        public void UpdateInterpolationFilter(float value01)
+        {
+            interpolationFilter.Value = value01;
+        }
+        public void UpdateSampleRateHZ(int frequencyHz)
+        {
+            sampleRateSeconds = 1f / frequencyHz;
+        }
+
+        void SubscribeToCalibrationEvents()
+        {
+            GlobalEvents.OnCalibrationStart.Add(SetIsCalibratingTrue);
+            GlobalEvents.OnCalibrationCancel.Add(SetIsCalibratingFalse);
+            GlobalEvents.OnCalibrationFinished.Add(SetIsCalibratingFalse);
+        }
+
+        void SetIsCalibratingTrue()
+        {
+            IsCalibrating = true;
+        }
+
+        void SetIsCalibratingFalse()
+        {
+            IsCalibrating = false;
         }
 
         private void AddSupportedDevices()
@@ -85,41 +116,32 @@ namespace GazeStream.Eyetracker
             supportedDevices = new List<IGazeDevice>();
             joacoA11 = new GazeDeviceA11();
             supportedDevices.Add(joacoA11);
-            //Mouse...? Touch?
         }
 
-        private void StartUpdateLoop()
+        void StartGazeDeviceUpdateLoop()
         {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await UpdateLoop();
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"UpdateLoop failed: {ex}");
-                }
-            });
+            if (loopTask != null && !loopTask.IsCompleted) return;
+
+            loopCts = new CancellationTokenSource();
+            loopTask = Task.Run(() => UpdateLoop(loopCts.Token));
         }
-        async Task UpdateLoop()
+        async Task UpdateLoop(CancellationToken token)
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
-                if (GazeDevice == null) return;
+                if (IsCalibrating) return;
+                if (GazeDevice == null || !GazeDevice.IsConnected)
+                {
+                    TryInitializeGazeDevice();
+                    await Task.Delay(500, token);
+                    if (GazeDevice == null) return;
+                }
                 GazeDevice.UpdateData();
                 GetNewGazePointIfValid();
                 UpdateTimeoutTimer();
-
-                if (!GazeDevice.IsConnected)
-                {
-                    //Debug.WriteLine("Last device was disconnected. Trying to initialize another device.");
-                    TryInitializeGazeDevice();
-                    if (GazeDevice == null) return;
-                }
-
+                UpdateMousePosition();
                 SendUpdateEvents();
-                await Task.Delay(TimeSpan.FromSeconds(frequencySeconds));
+                await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
             }
         }
 
@@ -146,9 +168,10 @@ namespace GazeStream.Eyetracker
                 GazePoint = newPoint;
             }
 
-            SmoothViewportPoint = Smoothify(GazePoint.viewportPoint);
+            //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
+            SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
+            SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
             SmoothScreenPoint = Helper.ViewportToScreenPoint(SmoothViewportPoint);
-            //Debug.WriteLine("Viewport: " + GazePoint.viewportPoint + " Screen: " + SmoothScreenPoint);
         }
 
         void UpdateTimeoutTimer()
@@ -196,18 +219,33 @@ namespace GazeStream.Eyetracker
             GazeDevice = null;
         }
 
-        private Vector2 Smoothify(Vector2 point)
+        public void SetMouseControl(bool enabled)
         {
-            if (!hasHistoricPoint)
-            {
-                historicPoint = point;
-                hasHistoricPoint = true;
-            }
-            FilterSmoothingFactor = Math.Clamp(FilterSmoothingFactor, 0.1f, 1f);
-            Vector2 result = Helper.Lerp(historicPoint, point, FilterSmoothingFactor);
-            historicPoint = result;
-            return result;
+            Settings.I.MouseToggle.Value = enabled;
         }
 
+        public void ToggleMouseControl()
+        {
+            Settings.I.MouseToggle.Value = !Settings.I.MouseToggle.Value;
+        }
+
+        void UpdateMousePosition()
+        {
+            if (!mouseControlEnabled) return;
+            if (input == null) return;
+            if (!IsUserPresent) return;
+
+            (double x, double y) pos = Helper.ViewportToMousePosition(GazeManager.I.SmoothViewportPoint);
+            input.Mouse.MoveMouseToPositionOnVirtualDesktop(pos.x, pos.y);
+        }
+
+        public void Dispose()
+        {
+            if (loopCts == null) return;
+            loopCts.Cancel();
+            loopCts.Dispose();
+            loopCts = null;
+            DisconnectDevice();
+        }
     }
 }
