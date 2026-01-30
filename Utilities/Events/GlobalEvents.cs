@@ -24,5 +24,10 @@ namespace GazeStream.Utilities.Events
         //CALIBRATION EVENTS
         public static readonly GlobalEvent OnWebsocketStatusChanged = new();
         public static readonly GlobalEvent<int> OnInvensunSmoothValueChanged = new();
+
+        //SETTING CHANGED MESSAGE
+        public static readonly GlobalEvent<string> OnSettingChanged = new();
+        public static readonly GlobalEvent<string, object> OnSettingChangeCommand = new();
+
     }
 }

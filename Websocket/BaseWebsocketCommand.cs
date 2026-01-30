@@ -23,9 +23,11 @@ public class CommandRouter
         try
         {
             msg = JsonConvert.DeserializeObject<CommandMessage>(json);
+            Debug.WriteLine($"Command deserialized{msg}");
         }
         catch (Exception e)
         {
+            Debug.WriteLine("Could not deserialize command");
             return;
         }
 
@@ -35,7 +37,7 @@ public class CommandRouter
             return;
         }
 
-        JObject parameters = msg.parameters ?? new JObject();
+        JToken parameters = msg.parameters ?? new JObject();
 
         if (!command.Validate(parameters, out var error))
         {
@@ -51,15 +53,23 @@ public class CommandRouter
 public class CommandMessage
 {
     public string command;
-    public JObject parameters;
+    public JToken parameters;
 }
 public abstract class BaseWebsocketCommand
 {
    public abstract string Name { get; }
     public abstract Dictionary<string, ParamSchema> Schema { get; }
 
-    public bool Validate(JObject parameters, out string error)
+    public bool Validate(JToken parametersToken, out string error)
     {
+        if (parametersToken.Type != JTokenType.Object)
+        {
+            error = "Parameters must be a JSON object.";
+            return false;
+        }
+
+        var parameters = (JObject)parametersToken;
+
         foreach (var kvp in Schema)
         {
             string key = kvp.Key;
@@ -100,7 +110,7 @@ public abstract class BaseWebsocketCommand
         return true;
     }
 
-    public abstract void Execute(JObject parameters);
+    public abstract void Execute(JToken parameters);
 
 
 }

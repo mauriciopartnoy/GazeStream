@@ -13,6 +13,7 @@ using GazeStream.Eyetracker;
 using GazeStream;
 using GazeStream.AppData;
 using GazeStream.Windows;
+using GazeStream.Utilities.Save;
 
 public class WebSocketStream : IDisposable
 {
@@ -59,8 +60,18 @@ public class WebSocketStream : IDisposable
         GlobalEvents.OnCalibrationFailed.Add(() => WriteLine(CALLBACK_CALIBRATION_FAILED));
         GlobalEvents.OnCalibrationSuccess.Add(() => WriteLine(CALLBACK_CALIBRATION_SUCCESS));
         GlobalEvents.OnCalibrationFinished.Add(() => WriteLine(CALLBACK_CALIBRATION_FINISHED));
+
+        GlobalEvents.OnSettingChanged.Add(SendOnSettingChangedNotification);
     }
 
+    public void SendOnSettingChangedNotification(string saveKey)
+    {
+        SettingDescriptor descriptor = Settings.Descriptors[saveKey];
+        SettingDTO newSetting = new SettingDTO(descriptor.saveKey, descriptor.typeAsString, SaveManager.GetSystemSetting(descriptor.saveKey, descriptor.defaultValue));
+        GetValueMessage message = new GetValueMessage(newSetting);
+        string settingsSnapshotJson = JsonConvert.SerializeObject(message, Formatting.Indented);
+        WriteLine(settingsSnapshotJson);
+    }
 
     public void SubscribeToGazeManager()
     {
@@ -161,13 +172,11 @@ public class GazeService : WebSocketBehavior
     protected override void OnOpen()
     {
         commandRouter = new();
-        commandRouter.RegisterCommand(new SetSampleRateHzCommand());
-        commandRouter.RegisterCommand(new SetFilterProfileCommand());
-        commandRouter.RegisterCommand(new SetSmoothCommand());
-        commandRouter.RegisterCommand(new SetSmoothDampFilter());
-        commandRouter.RegisterCommand(new SetKalmanFilterCommand());
+        commandRouter.RegisterCommand(new GetValueCommand());
+        commandRouter.RegisterCommand(new SetValueCommand());     
         commandRouter.RegisterCommand(new StartCalibrationCommand());
         Debug.WriteLine("Client connected");
+        SendSettingsSnapshot();
 
     }
 
@@ -192,6 +201,9 @@ public class GazeService : WebSocketBehavior
 
             switch (message.Data)
             {
+                case "GetSettingsSnapshot":
+                    SendSettingsSnapshot();
+                break;
                 case "ToggleMouseControl":
                     Settings.I.MouseToggle.Value = !Settings.I.MouseToggle.Value;
                 break;
@@ -284,6 +296,21 @@ public class GazeService : WebSocketBehavior
         //TODO: Add eye display
     }
 
+   
+    void SendSettingsSnapshot()
+    {
+        List<SettingDTO> settings = new List<SettingDTO>();
+        foreach (SettingDescriptor s in Settings.Descriptors.Values)
+        {
+            SettingDTO newSetting = new SettingDTO(s.saveKey, s.typeAsString, SaveManager.GetSystemSetting(s.saveKey, s.defaultValue));
+            settings.Add(newSetting);
+        }
+
+        SettingsSnapshotMessage settingsSnapshot = new SettingsSnapshotMessage(settings);
+        string settingsSnapshotJson = JsonConvert.SerializeObject(settingsSnapshot, Formatting.Indented);
+        WriteLine(settingsSnapshotJson);
+    }
+
     public void RequestCalibration(int pointsArray, int eyes)
     {
         WindowManager.OpenWindow<CalibrationWindow>();
@@ -308,86 +335,91 @@ public class GazeService : WebSocketBehavior
     }
 }
 
+//Data Transfer
+
+public class SettingsSnapshotMessage
+{
+    public string messageType;
+    public List<SettingDTO> settings;
+
+    public SettingsSnapshotMessage(List<SettingDTO> settings)
+    {
+        this.messageType = "SettingsSnapshot";
+        this.settings = settings;
+    }
+}
+
+public class GetValueMessage
+{
+    public string messageType;
+    public SettingDTO setting;
+
+    public GetValueMessage(SettingDTO setting)
+    {
+        messageType = "GetValue";
+        this.setting = setting;
+    }
+
+}
+
+public class SettingDTO
+{
+    public string key;
+    public string valueType;
+    public object value;
+    public SettingDTO(string key, string valueType, object value)
+    {
+        this.key = key;
+        this.valueType = valueType;
+        this.value = value;
+    }
+}
+
 //Commands
-public class SetFilterProfileCommand : BaseWebsocketCommand
+
+public class GetValueCommand : BaseWebsocketCommand
 {
-    public override string Name => "SetFilterProfile";
+    public override string Name => "GetValue";
+    const string PARAM_KEY = "key";
 
     public override Dictionary<string, ParamSchema> Schema { get; } = new()
         {
-            {"level", new ParamSchema(typeof(int), true, 1) }
+            {PARAM_KEY, new ParamSchema(typeof(string), true, string.Empty) }
         };
 
-    public override void Execute(JObject parameters)
+    public override void Execute(JToken parameters)
     {
-        int smoothLevel = parameters["level"].Value<int>();
-        Settings.I.FilterProfile.Value = (FilterProfile)smoothLevel;
+        JObject obj = (JObject)parameters;
+        string key = obj[PARAM_KEY].ToObject<string>();
+        GlobalEvents.OnSettingChanged.Invoke(key);
     }
 }
 
-public class SetSmoothCommand : BaseWebsocketCommand
+public class SetValueCommand : BaseWebsocketCommand
 {
-    public override string Name => "SetSmooth";
+    public override string Name => "SetValue";
+    const string PARAM_KEY = "key";
+    const string PARAM_VALUE = "value";
 
     public override Dictionary<string, ParamSchema> Schema { get; } = new()
         {
-            {"level", new ParamSchema(typeof(int), true, 10) }
+            {PARAM_KEY, new ParamSchema(typeof(string), true, string.Empty)},
+            { PARAM_VALUE, new ParamSchema(typeof(object), true, default)}
         };
 
-    public override void Execute(JObject parameters)
+
+    public override void Execute(JToken parameters)
     {
-        int smoothLevel = parameters["level"].Value<int>();
-        Settings.I.SmoothFilter.Value = smoothLevel;
-    }
-}
+        Debug.WriteLine("Executing SetValue command");
+        JObject obj = (JObject)parameters;
+        string key = obj[PARAM_KEY].ToObject<string>();
 
-public class SetKalmanFilterCommand : BaseWebsocketCommand
-{
-    public override string Name => "SetKalmanFilter";
+        if (!Settings.BaseSettings.TryGetValue(key, out var setting))
+            return;
 
-    public override Dictionary<string, ParamSchema> Schema { get; } = new()
-        {
-            {"level", new ParamSchema(typeof(int), true, 15) }
-        };
-
-    public override void Execute(JObject parameters)
-    {
-        int smoothLevel = parameters["level"].Value<int>();
-        Settings.I.KalmanFilter.Value = smoothLevel;
-    }
-}
-
-public class SetSampleRateHzCommand : BaseWebsocketCommand
-{
-    public override string Name => "SetSampleRate";
-
-    public override Dictionary<string, ParamSchema> Schema { get; } = new()
-        {
-            {"hz", new ParamSchema(typeof(int), true, 30) }
-        };
-
-    public override void Execute(JObject parameters)
-    {
-        int sampleRate = parameters["hz"].Value<int>();
-        Settings.I.SampleRateHZ.Value = sampleRate;
-    }
-}
-
-public class SetSmoothDampFilter : BaseWebsocketCommand
-{
-    public override string Name => "SetSmoothDampFilter";
-
-    const string PARAM_LEVEL = "level";
-
-    public override Dictionary<string, ParamSchema> Schema { get; } = new()
-        {
-            {PARAM_LEVEL, new ParamSchema(typeof(float), true, 0.05f) }
-        };
-
-    public override void Execute(JObject parameters)
-    {
-        float smoothStep = parameters[PARAM_LEVEL].Value<float>();
-        Settings.I.InterpolationFilter.Value = smoothStep;
+        var valueToken = parameters["value"];
+        var typedValue = valueToken.ToObject(setting.Descriptor.type);
+        setting.SetValue(typedValue);
     }
 }
 
@@ -404,10 +436,11 @@ public class StartCalibrationCommand : BaseWebsocketCommand
             { PARAM_POINTS, new ParamSchema(typeof(int), true, 0)}
         };
 
-    public override void Execute(JObject parameters)
+    public override void Execute(JToken parameters)
     {
-        int points = parameters[PARAM_POINTS].Value<int>();
-        int eyes = parameters[PARAM_EYES].Value<int>();
+        JObject obj = (JObject)parameters;
+        int points = parameters[PARAM_POINTS].ToObject<int>();
+        int eyes = parameters[PARAM_EYES].ToObject<int>();
         RequestCalibration(points, eyes);
     }
 

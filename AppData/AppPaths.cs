@@ -20,6 +20,36 @@ namespace GazeStream.AppData
             }
         }
 
+        public static string CustomPath
+        {
+            get
+            {
+                string path = Path.Combine(BasePath, "custom");
+                Directory.CreateDirectory(path);
+                return path;
+            }
+        }
+
+        public static string CustomCursorsPath
+        {
+            get
+            {
+                string path = Path.Combine(CustomPath, "cursors");
+                Directory.CreateDirectory(path);
+                return path;
+            }
+        }
+
+        public static string CustomCalibrationPointsPath
+        {
+            get
+            {
+                string path = Path.Combine(CustomPath, "calibrationPoints");
+                Directory.CreateDirectory(path);
+                return path;
+            }
+        }
+
         public static string UsersPath
         {
             get

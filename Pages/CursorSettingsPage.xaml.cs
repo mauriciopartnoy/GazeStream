@@ -10,20 +10,21 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace GazeStream.Windows
+namespace GazeStream.Pages
 {
     /// <summary>
-    /// Interaction logic for OptionsWindow.xaml
+    /// Interaction logic for CursorSettingsPage.xaml
     /// </summary>
-    public partial class OptionsWindow : Window
+    public partial class CursorSettingsPage : System.Windows.Controls.UserControl
     {
-        public OptionsWindow()
+        public CursorSettingsPage()
         {
             InitializeComponent();
+            DataContext = new CursorSettingsViewModel();
         }
-
 
     }
 }

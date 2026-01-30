@@ -23,12 +23,12 @@ namespace GazeStream.Utilities.Save
 
         public T LoadFromBinary<T>(string path, T defaultValue)
         {
-            return FileOps.LoadFromBinary<T>(path, defaultValue);
+            return FileOps.LoadFromMessagePack<T>(path, defaultValue);
         }
 
         public void SaveToBinary<T>(string path, T content)
         {
-            FileOps.SaveToBinary<T>(path, content);
+            FileOps.SaveToMessagePack<T>(path, content);
         }
     }
 }

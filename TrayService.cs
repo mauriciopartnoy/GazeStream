@@ -15,7 +15,7 @@ namespace GazeStream
             trayIcon = new NotifyIcon
             {
                 Icon = LoadTrayIcon(),
-                Text = "Gaze Overlay",
+                Text = "GazeStream",
                 Visible = true,
                 ContextMenuStrip = BuildMenu()
             };
@@ -34,7 +34,7 @@ namespace GazeStream
 
             menu.Items.Add("Calibración", null, OnCalibration);
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Opciones", null, OnCalibration);
+            menu.Items.Add("Opciones", null, OnOptions);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Salir", null, OnExit);
 
@@ -43,7 +43,7 @@ namespace GazeStream
 
         private void OnOptions(object? sender, EventArgs e)
         {
-            W.MessageBox.Show("Placeholder de opciones");
+            WindowManager.OpenWindow<OptionsWindow>();
         }
 
         private void OnCalibration(object? sender, EventArgs e)

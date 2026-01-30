@@ -106,7 +106,7 @@ namespace GazeStream.Windows
         public static void OnGazeCallback(ref _7i_eye_data_ex_t eyes, IntPtr context)
         {
             eyesData = eyes;
-
+            //Debug.WriteLine($"Pupil Mm: {eyes.right_pupil.pupil_diameter_mm} PupilPos: {eyes.right_pupil.pupil_center} PupilDist: {eyes.right_pupil.pupil_distance}");
         }
 
         public static void finish_callback(int index, int error, IntPtr context)
@@ -344,6 +344,7 @@ namespace GazeStream.Windows
         }
         private void DestroyCurrentCalibrationPoint()
         {
+            Debug.WriteLine("Trying to destroy current calibration point." + (currentPoint != null));
             if (currentPoint == null) return;
             currentPoint.Destroy(MainCanvas);
             currentPoint = null;

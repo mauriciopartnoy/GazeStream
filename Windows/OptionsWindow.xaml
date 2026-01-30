@@ -4,29 +4,30 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GazeStream.Windows"
+        xmlns:pages="clr-namespace:GazeStream.Pages"
         mc:Ignorable="d"
-        Title="Opciones" Height="800" Width="500" Background="Gray">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="20">
-            <TextBlock Text="Kalman Filter" Margin="0,0,0,4"/>
-            <Slider Minimum="0"
-            Maximum="100"
-            TickFrequency="1"
-            IsSnapToTickEnabled="True"
-            Width="200"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="20">
-            <TextBlock Text="Another Filter with no name" Margin="0,0,0,4"/>
-            <Slider Minimum="0"
-     Maximum="100"
-     TickFrequency="1"
-     IsSnapToTickEnabled="True"
-     Width="200"/>
-        </StackPanel>
+        WindowState="Maximized"
+        ShowInTaskbar="True"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        Title="Opciones" Height="1080" Width="1920" Background="Gray">
+    <Grid>
+
+        <TabControl Style="{StaticResource SettingsTabControlStyle}">
+
+            <TabItem Header="Calibration">
+                <!--<local:CalibrationPage/>-->
+            </TabItem>
+
+            <TabItem Header="Profiles">
+                <!--<local:ProfilesPage/>-->
+            </TabItem>
+
+            <TabItem Header="Cursor">
+                <pages:CursorSettingsPage/>
+            </TabItem>
+        </TabControl>
+
     </Grid>
 </Window>

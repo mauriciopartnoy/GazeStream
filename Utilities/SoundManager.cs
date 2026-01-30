@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Media;
+using System.Media;
+using System.Windows.Resources;
+using System.Diagnostics;
 
 namespace GazeStream.Utilities
 {
@@ -10,6 +13,7 @@ namespace GazeStream.Utilities
 
         public static void PlayOneShot(Uri uri, double volume = 1.0)
         {
+            Debug.WriteLine("Trying to play one shot!!!!!!!!!!!");
             var player = new MediaPlayer
             {
                 Volume = volume
@@ -24,6 +28,17 @@ namespace GazeStream.Utilities
             player.MediaFailed += (_, __) => Cleanup(player);
         }
 
+        public static void PlayUISound(Uri packUri)
+        {
+            StreamResourceInfo sri =
+                System.Windows.Application.GetResourceStream(packUri);
+
+            if (sri == null)
+                return;
+
+            using var player = new SoundPlayer(sri.Stream);
+            player.Play();
+        }
         private static void Cleanup(MediaPlayer player)
         {
             player.Stop();

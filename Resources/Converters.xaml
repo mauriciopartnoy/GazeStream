@@ -1,0 +1,10 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:converters="clr-namespace:GazeStream.Converters">
+
+
+    <converters:EnumToVisibilityConverter x:Key="EnumToVisibility" />
+    <converters:EnumToVisibilityConverter x:Key="EnumToVisibility_Inverted" Invert="True" />
+
+
+</ResourceDictionary>

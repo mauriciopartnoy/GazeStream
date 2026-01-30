@@ -37,7 +37,7 @@ namespace GazeStream
             base.OnStartup(e);
             Instance = this;
             SettingsManager = new Settings();
-            SettingsManager.LoadSettings();
+            SettingsManager.Initialize();
 
             SettingsManager.SampleRateHZ.Value = 60;
 

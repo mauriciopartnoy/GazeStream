@@ -121,7 +121,7 @@ public static class FileOps
         Directory.CreateDirectory(directoryPath);
     }
 
-    public static void SaveToBinary<T>(string filePath, T content)
+    public static void SaveToMessagePack<T>(string filePath, T content)
     {
         try
         {
@@ -139,7 +139,7 @@ public static class FileOps
         }
     }
 
-    public static T LoadFromBinary<T>(string filePath, T defaultValue)
+    public static T LoadFromMessagePack<T>(string filePath, T defaultValue)
     {
         if (!File.Exists(filePath))
         {

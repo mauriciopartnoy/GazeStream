@@ -13,12 +13,13 @@ using GazeStream.Eyetracker;
 using GazeStream.AppData;
 using System.Diagnostics;
 using GazeStream.Utilities;
+using GazeStream.Utilities.Events;
 
 namespace GazeStream.Windows
 {
     public partial class OverlayWindow : Window
     {
-        const float BUBBLE_OPACITY = .8f;
+        bool isCalibrating;
         public OverlayWindow()
         {
             InitializeComponent();
@@ -34,11 +35,24 @@ namespace GazeStream.Windows
             Height = SystemParameters.PrimaryScreenHeight;
             Settings.I.BubbleToggle.OnValueChanged += OnBubbleToggled;
             OnBubbleToggled(Settings.I.BubbleToggle.Value);
+            GlobalEvents.OnCalibrationStart.Add(OnCalibrationStart);
+            GlobalEvents.OnCalibrationFinished.Add(OnCalibrationFinished);
+        }
+
+        void OnCalibrationStart()
+        {
+            isCalibrating = true;
+            HideBubble();
+        }
+
+        void OnCalibrationFinished()
+        {
+            isCalibrating = false;
+            OnBubbleToggled(Settings.I.BubbleToggle.Value);
         }
 
         private void UpdateBubblePosition()
         {
-            Debug.WriteLine("Update bubble position called");
             var point = Helper.ViewportToUIElementPoint(RootCanvas, GazeManager.I.SmoothViewportPoint);
             Canvas.SetLeft(Cursor, point.X - Cursor.Width / 2);
             Canvas.SetTop(Cursor, point.Y - Cursor.Height / 2);
@@ -58,7 +72,7 @@ namespace GazeStream.Windows
 
         void ShowBubble()
         {
-            Cursor.Opacity = BUBBLE_OPACITY;
+            Cursor.Opacity = Settings.I.BubbleOpacity.Value;
             GazeManager.OnGazeUpdateUI -= UpdateBubblePosition;
             GazeManager.OnGazeUpdateUI += UpdateBubblePosition;
         }

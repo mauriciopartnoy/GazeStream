@@ -7,12 +7,13 @@
         xmlns:controls="clr-namespace:GazeStream.Controls"
         mc:Ignorable="d"
         Title="CalibrationWindow"  
-        WindowStyle="SingleBorderWindow"
-        ResizeMode="CanResize"
         WindowState="Maximized"
-        Topmost="True">
+        ResizeMode="NoResize"
+        WindowStyle="SingleBorderWindow"
+        ShowInTaskbar="True"
+        Topmost="False">
 
-        <!--WindowStyle="None"
+    <!--WindowStyle="None"
         ResizeMode="NoResize"-->
     <!-- ================= RESOURCES ================= -->
     <Window.Resources>

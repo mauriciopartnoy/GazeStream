@@ -96,19 +96,19 @@ namespace GazeStream.Eyetracker
 
         void SubscribeToCalibrationEvents()
         {
-            GlobalEvents.OnCalibrationStart.Add(SetIsCalibratingTrue);
-            GlobalEvents.OnCalibrationCancel.Add(SetIsCalibratingFalse);
-            GlobalEvents.OnCalibrationFinished.Add(SetIsCalibratingFalse);
+            GlobalEvents.OnCalibrationStart.Add(CancelLoop);
+            GlobalEvents.OnCalibrationCancel.Add(StartGazeDeviceUpdateLoop);
+            GlobalEvents.OnCalibrationFinished.Add(StartGazeDeviceUpdateLoop);
         }
 
         void SetIsCalibratingTrue()
         {
-            IsCalibrating = true;
+            StartGazeDeviceUpdateLoop();
         }
 
         void SetIsCalibratingFalse()
         {
-            IsCalibrating = false;
+            CancelLoop();
         }
 
         private void AddSupportedDevices()
@@ -116,6 +116,11 @@ namespace GazeStream.Eyetracker
             supportedDevices = new List<IGazeDevice>();
             joacoA11 = new GazeDeviceA11();
             supportedDevices.Add(joacoA11);
+        }
+
+        void CancelLoop()
+        {
+            loopCts.Cancel();
         }
 
         void StartGazeDeviceUpdateLoop()
@@ -129,12 +134,16 @@ namespace GazeStream.Eyetracker
         {
             while (!token.IsCancellationRequested)
             {
-                if (IsCalibrating) return;
+                if (IsCalibrating)
+                {
+                    Debug.WriteLine("IsCalibrating...");
+                    continue;
+                }
                 if (GazeDevice == null || !GazeDevice.IsConnected)
                 {
                     TryInitializeGazeDevice();
                     await Task.Delay(500, token);
-                    if (GazeDevice == null) return;
+                    if (GazeDevice == null) continue;
                 }
                 GazeDevice.UpdateData();
                 GetNewGazePointIfValid();

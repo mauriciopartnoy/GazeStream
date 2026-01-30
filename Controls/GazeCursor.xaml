@@ -1,0 +1,28 @@
+﻿<UserControl x:Class="GazeStream.Controls.GazeCursor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="{Binding Size, RelativeSource={RelativeSource Self}}"
+             Height="{Binding Size, RelativeSource={RelativeSource Self}}"
+             Opacity="{Binding Opacity, RelativeSource={RelativeSource Self}}">
+
+    <Grid>
+
+        <!-- Bubble -->
+        <Ellipse
+            Fill="{Binding Color, ElementName=Root}"
+            Visibility="{Binding CursorType,
+                         ElementName=Root,
+                         Converter={StaticResource EnumToVisibility},
+                         ConverterParameter=Bubble}"/>
+
+        <!-- Custom image -->
+        <Image
+            Source="{Binding ImageSource, ElementName=Root}"
+            Stretch="Uniform"
+            Visibility="{Binding CursorType,
+                         ElementName=Root,
+                         Converter={StaticResource EnumToVisibility},
+                         ConverterParameter=CustomImage}" />
+
+    </Grid>
+</UserControl>
