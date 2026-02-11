@@ -14,18 +14,18 @@
         Title="Opciones" Height="1080" Width="1920" Background="Gray">
     <Grid>
 
-        <TabControl Style="{StaticResource SettingsTabControlStyle}">
+        <TabControl x:Name="tabControl" Style="{StaticResource SettingsTabControlStyle}" SelectionChanged="OnTabChanged">
 
-            <TabItem Header="Calibration">
-                <!--<local:CalibrationPage/>-->
-            </TabItem>
-
-            <TabItem Header="Profiles">
-                <!--<local:ProfilesPage/>-->
+            <TabItem Header="Interacción">
+                <pages:InteractionSettingsPage/>
             </TabItem>
 
             <TabItem Header="Cursor">
                 <pages:CursorSettingsPage/>
+            </TabItem>
+            
+            <TabItem Header="Placeholder">
+                <!--<local:ProfilesPage/>-->
             </TabItem>
         </TabControl>
 

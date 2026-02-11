@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace GazeStream.Pages
+namespace GazeStream.ViewModels
 {
     public abstract class BaseViewModel : INotifyPropertyChanged
     {

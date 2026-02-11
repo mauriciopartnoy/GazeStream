@@ -72,6 +72,6 @@ namespace GazeStream.Controls
         }
 
         public static readonly DependencyProperty ValueFormatProperty =
-            DependencyProperty.Register(nameof(ValueFormat), typeof(string), typeof(LabeledSlider), new PropertyMetadata("F0"));
+            DependencyProperty.Register(nameof(ValueFormat), typeof(string), typeof(LabeledSlider), new PropertyMetadata("0.00"));
     }
 }

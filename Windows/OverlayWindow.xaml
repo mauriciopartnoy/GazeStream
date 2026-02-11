@@ -1,23 +1,18 @@
 ﻿<Window x:Class="GazeStream.Windows.OverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:GazeStream.Controls"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
+        IsHitTestVisible="False"
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         WindowState="Maximized"
         WindowStartupLocation="Manual">
 
-    <Canvas x:Name="RootCanvas"
-            IsHitTestVisible="False">
-
-        <!-- Simple gaze cursor -->
-        <Ellipse x:Name="Cursor"
-                 Width="20"
-                 Height="20"
-                 Fill="GreenYellow"
-                 Opacity="0.8"/>
+    <Canvas x:Name="RootCanvas" IsHitTestVisible="False">
+        <controls:GazeCursor x:Name="Cursor" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
     </Canvas>
 </Window>

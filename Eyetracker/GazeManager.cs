@@ -10,6 +10,10 @@ using System.Windows.Threading;
 using GazeStream.Eyetracker.Filters;
 using InputSimulatorEx;
 using InputSimulatorEx.Native;
+using System.Windows;
+using GazeStream.Eyetracker;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace GazeStream.Eyetracker
 {
@@ -29,23 +33,38 @@ namespace GazeStream.Eyetracker
 
         public bool IsJoacoDevice => GazeDevice == null ? false : IsThisAJoacoDevice(GazeDevice.DeviceName);
         public GazePoint GazePoint { get; private set; }
+        public GazePoint RawGazePoint { get; private set; }
+
         public Vector2 SmoothViewportPoint { get; private set; }
         public Vector2 SmoothScreenPoint { get; private set; }
+
+        public System.Windows.Point SmoothScreenP { get; private set; }
+        public System.Windows.Point SmoothWindowP { get; private set; }
+
 
         public GazeDeviceA11? joacoA11;
 
         public bool mouseControlEnabled => Settings.I.MouseToggle.Value;
         public bool IsCalibrating { get; private set; }
 
+
+
+        public Dictionary<FrameworkElement, IGazeTarget> gazeTargets;
+        public IGazeTarget CurrentGazeTarget { get; private set; }
+
         KalmanFilter kalmanFilter;
         InterpolationFilter interpolationFilter;
         float sampleRateSeconds;
         const float TIMEOUT_TRESHOLD = 1f;
-        Stopwatch timeOutTimer;
         InputSimulator input;
-
         Task loopTask;
         CancellationTokenSource loopCts;
+
+        Stopwatch deltaTimeWatch;
+        Stopwatch timeOutTimer;
+
+        TimeSpan lastTimeSample;
+        TimeSpan deltaTime;
 
         public bool IsThisAJoacoDevice(string deviceName)
         {
@@ -56,7 +75,9 @@ namespace GazeStream.Eyetracker
         {
             I = this;
             timeOutTimer = new Stopwatch();
+            deltaTimeWatch = new Stopwatch();
             input = new InputSimulator();
+            gazeTargets = new();
             kalmanFilter = new();
             interpolationFilter = new();
             LoadSettings();
@@ -127,6 +148,9 @@ namespace GazeStream.Eyetracker
         {
             if (loopTask != null && !loopTask.IsCompleted) return;
 
+            deltaTimeWatch.Restart();
+            lastTimeSample = new TimeSpan(0);
+            deltaTime = new TimeSpan(0);
             loopCts = new CancellationTokenSource();
             loopTask = Task.Run(() => UpdateLoop(loopCts.Token));
         }
@@ -145,10 +169,12 @@ namespace GazeStream.Eyetracker
                     await Task.Delay(500, token);
                     if (GazeDevice == null) continue;
                 }
+                UpdateDeltaTime();
                 GazeDevice.UpdateData();
                 GetNewGazePointIfValid();
                 UpdateTimeoutTimer();
                 UpdateMousePosition();
+                UpdateGazeTargetsForWindow(SmoothScreenP, deltaTime.TotalSeconds, App.Instance.OverlayWindow);
                 SendUpdateEvents();
                 await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
             }
@@ -171,6 +197,7 @@ namespace GazeStream.Eyetracker
         {
             if (GazeDevice == null) return;
 
+            RawGazePoint = GazeDevice.RawGazePoint;
             GazePoint newPoint = GazeDevice.GazePoint;
             if (newPoint.IsValid)
             {
@@ -181,8 +208,19 @@ namespace GazeStream.Eyetracker
             SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
             SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
             SmoothScreenPoint = Helper.ViewportToScreenPoint(SmoothViewportPoint);
+            SmoothScreenP = Helper.ViewportToScreen(SmoothViewportPoint);
         }
 
+        void UpdateDeltaTime()
+        {
+            TimeSpan now = deltaTimeWatch.Elapsed;
+            deltaTime = now - lastTimeSample;
+            lastTimeSample = now;
+            if (deltaTime > TimeSpan.FromMilliseconds(100))
+            {
+                deltaTime = TimeSpan.FromMilliseconds(100);
+            }
+        }
         void UpdateTimeoutTimer()
         {
             if (IsUserPresent && timeOutTimer.IsRunning)
@@ -248,6 +286,41 @@ namespace GazeStream.Eyetracker
             input.Mouse.MoveMouseToPositionOnVirtualDesktop(pos.x, pos.y);
         }
 
+        public void RegisterGazeTarget(FrameworkElement element, IGazeTarget target)
+        { 
+            gazeTargets.Add(element, target);     
+        }
+
+        public void UnregisterGazeTarget(FrameworkElement element, IGazeTarget target)
+        {        
+            gazeTargets.Remove(element);
+        }
+
+        IGazeTarget _current;
+        IGazeTarget _previous;
+        public void UpdateGazeTargetsForWindow(System.Windows.Point screen, double deltaTime, Window window)
+        {
+            System.Windows.Point windowPoint = window.PointFromScreen(screen);
+
+            _current = GazeHitTest.FindGazeTarget(window, windowPoint);
+
+            if (_current != _previous)
+            {
+                _previous?.OnGazeExit();
+                _current?.OnGazeEnter();
+            }
+
+            _current?.OnGazeUpdate(deltaTime);
+
+            _previous = _current;
+        }
+
+        public void Clear()
+        {
+            CurrentGazeTarget = null;
+            gazeTargets.Clear();
+        }
+
         public void Dispose()
         {
             if (loopCts == null) return;
@@ -256,5 +329,57 @@ namespace GazeStream.Eyetracker
             loopCts = null;
             DisconnectDevice();
         }
+    }
+}
+
+//MUDAR TODO ESTO A SU PROPIA CLASE PARA LA PARTE DE INTERACCION
+public static class GazeTargetTag
+{
+    public static readonly DependencyProperty IsTargetProperty =
+        DependencyProperty.RegisterAttached(
+            "IsGazeInteractable",
+            typeof(bool),
+            typeof(GazeTargetTag),
+            new PropertyMetadata(false));
+
+    public static bool GetIsTarget(DependencyObject obj)
+        => (bool)obj.GetValue(IsTargetProperty);
+
+    public static void SetIsTarget(DependencyObject obj, bool value)
+        => obj.SetValue(IsTargetProperty, value);
+}
+
+public interface IGazeTarget
+{
+    void OnGazeEnter();
+    void OnGazeExit();
+    void OnGazeUpdate(double deltaTime);
+
+    void OnFocus();
+    void OnUnfocus();
+
+    double StartActivationTime { get; }
+    double ActivationDuration { get; }
+    double PartialActivationStayTime { get; }
+
+    bool IsGazeEnabled { get; }
+}
+
+public static class GazeHitTest
+{
+    public static IGazeTarget FindGazeTarget(Window window, System.Windows.Point windowPoint)
+    {
+        IInputElement hit = window.InputHitTest(windowPoint);
+        DependencyObject current = hit as DependencyObject;
+
+        while (current != null)
+        {
+            if (current is IGazeTarget gaze && gaze.IsGazeEnabled)
+                return gaze;
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 }

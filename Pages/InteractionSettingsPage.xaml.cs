@@ -13,20 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using GazeStream.ViewModels;
-using GazeStream.Eyetracker;
-
 namespace GazeStream.Pages
-{
-    /// <summary>
-    /// Interaction logic for CursorSettingsPage.xaml
-    /// </summary>
-    public partial class CursorSettingsPage : System.Windows.Controls.UserControl
+{ 
+    public partial class InteractionSettingsPage : System.Windows.Controls.UserControl
     {
-        public CursorSettingsPage()
+        public InteractionSettingsPage()
         {
             InitializeComponent();
-            DataContext = ViewModelsLocator.CursorSettingsViewModel;
+            DataContext = ViewModelsLocator.InteractionSettingsViewModel;
         }
-
     }
 }

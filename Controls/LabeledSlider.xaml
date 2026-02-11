@@ -26,6 +26,6 @@
         <TextBlock Grid.Column="2"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Center"
-Text="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat=F0}" />
+Text="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat=0.00}" />
     </Grid>
 </UserControl>

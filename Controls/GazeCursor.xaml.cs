@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Media;
 using M = System.Windows.Media;
+using GazeStream.ViewModels;
 
 namespace GazeStream.Controls
 {
@@ -12,10 +13,9 @@ namespace GazeStream.Controls
     {
         public GazeCursor()
         {
-            InitializeComponent();
+            InitializeComponent();    
+            DataContext = ViewModelsLocator.CursorSettingsViewModel;
         }
-
-        public CursorVisualType CursorType { get; set; }
 
         public static readonly DependencyProperty ColorProperty =
             DependencyProperty.Register(
@@ -41,6 +41,19 @@ namespace GazeStream.Controls
         {
             get => (double)GetValue(SizeProperty);
             set => SetValue(SizeProperty, value);
+        }
+
+        public static readonly DependencyProperty CursorTypeProperty =
+    DependencyProperty.Register(
+        nameof(CursorType),
+        typeof(CursorVisualType),
+        typeof(GazeCursor),
+        new PropertyMetadata(CursorVisualType.Bubble));
+
+        public CursorVisualType CursorType
+        {
+            get => (CursorVisualType)GetValue(CursorTypeProperty);
+            set => SetValue(CursorTypeProperty, value);
         }
     }
 }

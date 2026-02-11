@@ -50,20 +50,22 @@
             <!-- Size -->
             <controls:LabeledSlider
     Label="Size"
+    Foreground="Black"
     Minimum="8"
     Maximum="64"
     TickFrequency="1"
     IsSnapToTickEnabled="True"
-    Value="{Binding CursorSize}" />
+    Value="{Binding Size}" />
 
             <!-- Opacity -->
             <controls:LabeledSlider
     Label="Opacity"
+    Foreground="Black"
     Minimum="0"
     Maximum="1"
     TickFrequency="0.05"
     ValueFormat="P0"
-    Value="{Binding CursorOpacity}" />
+    Value="{Binding Opacity}" />
 
         </StackPanel>
 
@@ -79,12 +81,7 @@
                            Foreground="#888"
                            HorizontalAlignment="Left"
                            VerticalAlignment="Top"/>
-                <controls:GazeCursor
-    HorizontalAlignment="Center"
-    VerticalAlignment="Center"
-    Size="{Binding CursorSize}"
-    Opacity="{Binding CursorOpacity}"
-    Color="{Binding SelectedColor, Mode=OneWay}" />
+                <controls:GazeCursor HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <!-- Placeholder for gaze cursor -->
                 <Canvas Width="200"
                         Height="200"

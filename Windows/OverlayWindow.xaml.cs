@@ -26,6 +26,8 @@ namespace GazeStream.Windows
             Loaded += OnLoaded;
         }
 
+
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             // Fullscreen overlay
@@ -37,6 +39,17 @@ namespace GazeStream.Windows
             OnBubbleToggled(Settings.I.BubbleToggle.Value);
             GlobalEvents.OnCalibrationStart.Add(OnCalibrationStart);
             GlobalEvents.OnCalibrationFinished.Add(OnCalibrationFinished);
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+
+            var hwnd = new WindowInteropHelper(this).Handle;
+            int exStyle = WindowsHelper.GetWindowStyle(hwnd);
+            WindowsHelper.EnableClickThrough(hwnd, exStyle);
+            //SetWindowLong(hwnd, GWL_EXSTYLE,
+            //    exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
         }
 
         void OnCalibrationStart()

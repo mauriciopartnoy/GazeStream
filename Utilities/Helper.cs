@@ -151,5 +151,18 @@ namespace GazeStream.Utilities
             var bounds = Screen.PrimaryScreen.Bounds;
             return new Vector2(bounds.Width, bounds.Height);
         }
+
+        public static System.Windows.Point ViewportToScreen(Vector2 viewport)
+        {
+            return new System.Windows.Point(
+                viewport.X * SystemParameters.PrimaryScreenWidth,
+                viewport.Y * SystemParameters.PrimaryScreenHeight
+            );
+        }
+
+        public static System.Windows.Point ScreenToWindow(Window window, System.Windows.Point screen)
+        {
+            return window.PointFromScreen(screen);
+        }
     }
 }

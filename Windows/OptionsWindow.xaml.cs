@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using GazeStream.Eyetracker;
 
 namespace GazeStream.Windows
 {
@@ -24,6 +25,11 @@ namespace GazeStream.Windows
             InitializeComponent();
         }
 
-
+        private void OnTabChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //GazeManager.I.Clear();
+            //if (tabControl.SelectedContent is FrameworkElement fe)
+            //    GazeRegistration.RegisterAllInteractables(fe, GazeManager.I);
+        }
     }
 }

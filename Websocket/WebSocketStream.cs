@@ -41,7 +41,7 @@ public class WebSocketStream : IDisposable
         }
     }
 
-    bool aliveLastFrame;
+    bool wasAliveLastFrame;
 
     public WebSocketStream()
     {
@@ -62,15 +62,6 @@ public class WebSocketStream : IDisposable
         GlobalEvents.OnCalibrationFinished.Add(() => WriteLine(CALLBACK_CALIBRATION_FINISHED));
 
         GlobalEvents.OnSettingChanged.Add(SendOnSettingChangedNotification);
-    }
-
-    public void SendOnSettingChangedNotification(string saveKey)
-    {
-        SettingDescriptor descriptor = Settings.Descriptors[saveKey];
-        SettingDTO newSetting = new SettingDTO(descriptor.saveKey, descriptor.typeAsString, SaveManager.GetSystemSetting(descriptor.saveKey, descriptor.defaultValue));
-        GetValueMessage message = new GetValueMessage(newSetting);
-        string settingsSnapshotJson = JsonConvert.SerializeObject(message, Formatting.Indented);
-        WriteLine(settingsSnapshotJson);
     }
 
     public void SubscribeToGazeManager()
@@ -110,38 +101,40 @@ public class WebSocketStream : IDisposable
 
     public void OnStreamUpdate()
     {
-        if (aliveLastFrame != IsAlive)
+        if (wasAliveLastFrame != IsAlive)
         {
             GlobalEvents.OnWebsocketStatusChanged.Invoke();
         }
-        aliveLastFrame = IsAlive;
-        StreamGazePoint();
+        wasAliveLastFrame = IsAlive;
+        SendGazePointMessage();
     }
 
-    private static void PixelPointTest()
-    {
-        Vector2 displayRes = WindowsHelper.GetDisplayResolutionInPixels();
-        int xSmooth = (int)Math.Round(GazeManager.I.SmoothViewportPoint.X * (float)displayRes.X);
-        int ySmooth = (int)Math.Round(GazeManager.I.SmoothViewportPoint.Y * (float)displayRes.Y);
-        //Debug.Log($"Smooth X: {xSmooth} Y: {ySmooth}");
-    }
-
-    void StreamGazePoint()
+    void SendGazePointMessage()
     {
         if (ws == null || !IsAlive) return;
         GazePoint point = GazeManager.I.GazePoint;
+        GazePoint rawPoint = GazeManager.I.RawGazePoint;
         if (!point.IsValid) return;
-
-        //El punto stremeado está en Screenspace a pedido. Quizá sea útil enviar el dato crudo en Viewport space también?
-
-        Vector2 p = new Vector2();
-        Vector2 displayRes = WindowsHelper.GetDisplayResolutionInPixels();
-        p.X = (int)Math.Round(GazeManager.I.SmoothViewportPoint.X * (float)displayRes.X);
-        p.Y = (int)Math.Round(GazeManager.I.SmoothViewportPoint.Y * (float)displayRes.Y);
-        //p.t = CurrentTimeInMilliseconds;
+        GazePointMessage p = new GazePointMessage(point.viewportPoint.X, point.viewportPoint.Y, rawPoint.viewportPoint.X, rawPoint.viewportPoint.Y);
         string jsonPoint =  JsonConvert.SerializeObject(p);
         WriteLine(jsonPoint);
+
+        //TODO: Confirmar que no es necesaria hacer la conversión a pixeles y volar este codigo comentado.
+        //Vector2 p = new Vector2();
+        //Vector2 displayRes = WindowsHelper.GetDisplayResolutionInPixels();
+        //p.X = (int)Math.Round(GazeManager.I.SmoothViewportPoint.X * (float)displayRes.X);
+        //p.Y = (int)Math.Round(GazeManager.I.SmoothViewportPoint.Y * (float)displayRes.Y);
+        //p.t = CurrentTimeInMilliseconds;
         //Debug.Log($"Smooth X: {p.xSmooth} Y: {p.ySmooth}");
+    }
+
+    public void SendOnSettingChangedNotification(string saveKey)
+    {
+        SettingDescriptor descriptor = Settings.Descriptors[saveKey];
+        SettingDTO newSetting = new SettingDTO(descriptor.saveKey, descriptor.typeAsString, Settings.BaseSettings[descriptor.saveKey].GetValue() /*SaveManager.GetSystemSetting(descriptor.saveKey, descriptor.defaultValue)*/);
+        GetValueMessage message = new GetValueMessage(newSetting);
+        string settingsSnapshotJson = JsonConvert.SerializeObject(message, Formatting.Indented);
+        WriteLine(settingsSnapshotJson);
     }
 
     public void Dispose()
@@ -297,12 +290,13 @@ public class GazeService : WebSocketBehavior
     }
 
    
+
     void SendSettingsSnapshot()
     {
         List<SettingDTO> settings = new List<SettingDTO>();
         foreach (SettingDescriptor s in Settings.Descriptors.Values)
         {
-            SettingDTO newSetting = new SettingDTO(s.saveKey, s.typeAsString, SaveManager.GetSystemSetting(s.saveKey, s.defaultValue));
+            SettingDTO newSetting = new SettingDTO(s.saveKey, s.typeAsString, Settings.BaseSettings[s.saveKey].GetValue());
             settings.Add(newSetting);
         }
 
@@ -336,6 +330,23 @@ public class GazeService : WebSocketBehavior
 }
 
 //Data Transfer
+
+public class GazePointMessage
+{
+    public string messageType;
+    public float viewportX;
+    public float viewportY;
+    public float rawViewportX;
+    public float rawViewportY;
+    public GazePointMessage(float x, float y, float xRaw, float yRaw)
+    {
+        this.messageType = "GazePointData";
+        this.viewportX = x;
+        this.viewportY = y;
+        this.rawViewportX = xRaw;
+        this.rawViewportY = yRaw;
+    }
+}
 
 public class SettingsSnapshotMessage
 {

@@ -18,6 +18,8 @@ public class GazeDeviceA11 : IGazeDevice
 
 
     GazePoint gazePointCache;
+    GazePoint rawGazePointCache;
+
     _7i_coefficient_t coefficient;
     EyesData eyesCache = new();
     public static _7i_eye_data_ex_t eyes;
@@ -25,12 +27,15 @@ public class GazeDeviceA11 : IGazeDevice
     static ASeeTracker.gazeCallback gazeCB = new ASeeTracker.gazeCallback(OnGazeCallback);
     static float gaze_x = 0.0f;
     static float gaze_y = 0.0f;
+    static float rawGaze_x = 0.0f;
+    static float rawGaze_y = 0.0f;
     static bool gazePointChanged;
     static bool UserIsPresentStatic;
     static bool HasValidCalibration;
 
     public GazePoint GazePoint => gazePointCache;
 
+    public GazePoint RawGazePoint => rawGazePointCache;
 
     public bool Initialize()
     {
@@ -62,13 +67,7 @@ public class GazeDeviceA11 : IGazeDevice
         //if (App.Instance.ActiveUser == null) return;
         //Debug.WriteLine("Current user available.");
 
-        if (!TryLoadCoefficient())
-        {
-            HasValidCalibration = false;
-            Debug.WriteLine("Joaco Eyetracker must be calibrated before Initializing.");
-            return;
-        }
-
+        GetCoefficient();
         LoadSmooth();
         int startTrackingResult = ASeeTracker._7i_start_tracking(ref coefficient);
         HasValidCalibration = startTrackingResult == 0 ? true : false;
@@ -80,13 +79,14 @@ public class GazeDeviceA11 : IGazeDevice
         }
     }
 
-    private bool TryLoadCoefficient()
+    void GetCoefficient()
     {
         coefficient = new _7i_coefficient_t();
         coefficient.buf = Settings.I.LastCalibrationBuff.Value;
-        Debug.WriteLine("Loading coefficient buff. Length: " + coefficient.buf.Length);
-        if (coefficient.buf.Length == 0) return false;
-        else return true;
+        if (coefficient.buf == null || coefficient.buf.Length == 0)
+        {
+            coefficient.buf = GetDefaultCalibration();
+        }
     }
 
 
@@ -100,6 +100,8 @@ public class GazeDeviceA11 : IGazeDevice
             gazePointChanged = true;
             gaze_x = eyes.recom_gaze.gaze_point.x;
             gaze_y = eyes.recom_gaze.gaze_point.y;
+            rawGaze_x = eyes.recom_gaze.raw_point.x;
+            rawGaze_y = eyes.recom_gaze.raw_point.y;
             UserIsPresentStatic = true;
         }
         else
@@ -144,6 +146,7 @@ public class GazeDeviceA11 : IGazeDevice
         gaze_x = Math.Clamp(gaze_x, 0, 1);
         gaze_y = Math.Clamp(gaze_y, 0, 1);
         gazePointCache = new GazePoint(new Vector2(gaze_x, gaze_y));
+        rawGazePointCache = new GazePoint(new Vector2(rawGaze_x, rawGaze_y));
     }
 
     void UpdateEyeData()
@@ -203,5 +206,11 @@ public class GazeDeviceA11 : IGazeDevice
         int disconnectResult = ASeeTracker._7i_device_disconnect();
         Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
         GlobalEvents.OnEyetrackerDisconnected.Invoke();
+    }
+
+    public byte[] GetDefaultCalibration()
+    {
+        byte[] calibBuff = Convert.FromBase64String("jRMAAMGGAQAAAABg62EiQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAyMDI0MDkwNF8xMDI0X0NPTVBVVEVDSEFOR0UAAAAAAM3MTD0zM3M/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACamflAZmZ2QEjhqj8AAAAAAI0OlDfHXr+h53OqjivXvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAeGAStkrE/YiBl9yyt878AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0nmLIZ032j8EHn844LH8PzMzMzMzMx9AzczMzMzMEEBmZmZmZmb1P83MzMzMzBRAAAAAAAAA8D+NEwAAwYYBAAAAAIC6DCNAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADIwMjQwOTA0XzEwMjRfQ09NUFVURUNIQU5HRQAAAAAAzcxMPTMzcz8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJqZ+UBmZnZASOGqPwAAAACAkQEWMqpdP2Dq5a6CGde/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0OkpUJqfqr/RXh1bdE/zvwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABX+A/jemjfP/VofG+a+eQ/MzMzMzMzH0DNzMzMzMwQQGZmZmZmZvU/zczMzMzMFEAAAAAAAADwPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+        return calibBuff;
     }
 }

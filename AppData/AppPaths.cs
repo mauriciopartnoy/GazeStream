@@ -10,6 +10,16 @@ namespace GazeStream.AppData
         public static string BasePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), COMPANY_NAME, APP_NAME);
         public static string EyetrackerPath => Path.Combine(BasePath, "Eyetracker");
 
+        public static string CalibrationPresetsPath
+        {
+            get
+            {
+                string path = Path.Combine(EyetrackerPath, "presets");
+                Directory.CreateDirectory(path);
+                return path;
+            }
+        }
+
         public static string EyetrackerConfigPath
         {
             get

@@ -24,8 +24,11 @@ namespace GazeStream
         public User ActiveUser { get; private set; } = User.GetDefaultUser();
         public Settings SettingsManager { get; private set; }
         public WebSocketStream Websocket { get; private set; }
+        public CalibrationPresets CalibrationPresets { get; private set; }
         public GazeManager GazeManager { get; private set; }
         public TrayService Tray { get; private set; }
+
+        public OverlayWindow OverlayWindow { get; private set; }
 
         Hotkeys hotkeys;
         static Mutex? singleInstanceMutex;
@@ -43,12 +46,13 @@ namespace GazeStream
 
             Tray = new TrayService();
             UIDispatcher = this.Dispatcher;
+            CalibrationPresets = new CalibrationPresets();
             GazeManager = new GazeManager();
             Websocket = new WebSocketStream();
             Websocket.StartWebsocketService();
 
             HookHotkeys();
-            WindowManager.OpenWindow<OverlayWindow>();
+            OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
         }
 
         protected override async void OnExit(ExitEventArgs e)

@@ -8,7 +8,9 @@ using System.Runtime.CompilerServices;
 using GazeStream.AppData;
 using System.Collections.ObjectModel;
 using M = System.Windows.Media;
-namespace GazeStream.Pages
+using GazeStream.Pages;
+
+namespace GazeStream.ViewModels
 {
     public class CursorSettingsViewModel : BaseViewModel
     {
@@ -31,7 +33,7 @@ namespace GazeStream.Pages
             };
         }
 
-        public M.Brush SelectedColor
+        public M.Brush Color
         {
             get => AvailableColors[SelectedColorIndex].Color;
         }
@@ -43,12 +45,12 @@ namespace GazeStream.Pages
                 if (Settings.I.BubbleColor.Value == value) return;
                 Settings.I.BubbleColor.Value = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(SelectedColor));
+                OnPropertyChanged(nameof(Color));
 
             }
         }
 
-        public int CursorSize
+        public int Size
         {
             get => Settings.I.BubbleSize.Value;
             set
@@ -61,7 +63,7 @@ namespace GazeStream.Pages
             }
         }
 
-        public float CursorOpacity
+        public float Opacity
         {
             get => Settings.I.BubbleOpacity.Value;
             set
@@ -78,6 +80,18 @@ namespace GazeStream.Pages
         private void OnColorChanged()
         {
             OnPropertyChanged(nameof(SelectedColorIndex));
+            OnPropertyChanged(nameof(Color));
+        }
+
+        public CursorVisualType CursorType
+        {
+            get => Settings.I.CursorTypeEnum.Value;
+            set
+            {
+                if (Settings.I.CursorTypeEnum.Value == value) return;
+                Settings.I.CursorTypeEnum.Value = value;
+                OnPropertyChanged();
+            }
         }
     }
 

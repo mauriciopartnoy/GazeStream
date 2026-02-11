@@ -41,8 +41,6 @@ namespace GazeStream.Windows
         public static float CalibrationPointProgress01 { get; private set; }
 
 
-
-
         Vector2[] points3 = {
                 new Vector2(0.05f, 0.95f),
                 new Vector2(0.95f, 0.95f),
@@ -302,16 +300,25 @@ namespace GazeStream.Windows
                 Debug.WriteLine("Calibration success!");
                 Disconnect();
                 await FadeText.ShowMessage("¡La calibración fue exitosa!");
-                SaveLastCalibrationBuff(coefficient.buf);
+                Settings.I.LastEyesOption.Value = eyes;
+                Settings.I.LastPointsOption.Value = pointsArrayIndex;
+                Settings.I.LastCalibrationBuff.Value = coefficient.buf;
+                Settings.I.SaveSettings();
+                SaveCalibrationAsPreset(points.Length, eyes, coefficient.buf);
                 GlobalEvents.OnCalibrationSuccess.Invoke();
                 GazeManager.I?.GazeDevice?.Initialize();
             }
         }
 
-        void SaveLastCalibrationBuff(byte[] calibrationBuff)
+        void SaveCalibrationAsPreset(int points, int eyesBias, byte[] buff)
         {
-            Settings.I.LastCalibrationBuff.Value = calibrationBuff;
-            Settings.I.SaveSettings();
+            //if (!Settings.I.SaveCalibrationAsPresetToggle.Value) return;
+            Vector2 screenSize = Helper.GetScreenSize(this);
+            string name = $"Preset_{screenSize.X}*{screenSize.Y}";
+            EyesData eyes = new EyesData(eyesData);
+            CalibrationPreset preset = new CalibrationPreset(name, screenSize, eyes,points, eyesBias, buff);
+            CalibrationPresets.I.AddPreset(preset);
+            FileOps.OpenDirectory(AppPaths.EyetrackerPath);
         }
 
         public void CancelCalibration()

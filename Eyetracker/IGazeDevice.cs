@@ -10,5 +10,7 @@ namespace GazeStream.Eyetracker
         void UpdateData();
         bool UserIsPresent { get; }
         GazePoint GazePoint { get; }
+        GazePoint RawGazePoint { get; }
+
     }
 }
