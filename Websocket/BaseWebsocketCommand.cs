@@ -23,11 +23,17 @@ public class CommandRouter
         try
         {
             msg = JsonConvert.DeserializeObject<CommandMessage>(json);
-            Debug.WriteLine($"Command deserialized{msg}");
+            Debug.WriteLine($"Command deserialized: {msg}");
         }
         catch (Exception e)
         {
             Debug.WriteLine("Could not deserialize command");
+            return;
+        }
+
+        if (msg == null || string.IsNullOrWhiteSpace(msg.command))
+        {
+            Debug.WriteLine("Invalid command message structure.");
             return;
         }
 

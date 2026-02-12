@@ -83,13 +83,13 @@ namespace GazeStream.ViewModels
             OnPropertyChanged(nameof(Color));
         }
 
-        public CursorVisualType CursorType
+        public CursorVisualStyle CursorType
         {
-            get => Settings.I.CursorTypeEnum.Value;
+            get => Settings.I.CursorStyle.Value;
             set
             {
-                if (Settings.I.CursorTypeEnum.Value == value) return;
-                Settings.I.CursorTypeEnum.Value = value;
+                if (Settings.I.CursorStyle.Value == value) return;
+                Settings.I.CursorStyle.Value = value;
                 OnPropertyChanged();
             }
         }

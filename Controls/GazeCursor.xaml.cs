@@ -46,18 +46,18 @@ namespace GazeStream.Controls
         public static readonly DependencyProperty CursorTypeProperty =
     DependencyProperty.Register(
         nameof(CursorType),
-        typeof(CursorVisualType),
+        typeof(CursorVisualStyle),
         typeof(GazeCursor),
-        new PropertyMetadata(CursorVisualType.Bubble));
+        new PropertyMetadata(CursorVisualStyle.Bubble));
 
-        public CursorVisualType CursorType
+        public CursorVisualStyle CursorType
         {
-            get => (CursorVisualType)GetValue(CursorTypeProperty);
+            get => (CursorVisualStyle)GetValue(CursorTypeProperty);
             set => SetValue(CursorTypeProperty, value);
         }
     }
 }
-public enum CursorVisualType
+public enum CursorVisualStyle
 {
     Bubble,
     CustomImage

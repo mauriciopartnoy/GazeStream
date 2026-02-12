@@ -17,10 +17,10 @@ using GazeStream.Utilities.Save;
 
 public class WebSocketStream : IDisposable
 {
-    public static WebSocketStream I {get; private set;}
+    public static WebSocketStream I { get; private set; }
     WebSocketServer ws;
     WebSocketServiceHost service;
-   
+
     public const string WEBSOCKET_PORT = "http://127.0.0.1:3000";
     public const string CALLBACK_CONNECTION_SUCCESS = "CONNECTION_SUCCESS";
     public const string CALLBACK_CONNECTION_FAILED = "CONNECTION_FAILED";
@@ -53,8 +53,8 @@ public class WebSocketStream : IDisposable
     private void HookCallbacks()
     {
         GlobalEvents.OnEyetrackerConnected.Add(() => WriteLine(CALLBACK_CONNECTION_SUCCESS));
-        GlobalEvents.OnEyetrackerConnectionFailed.Add(() => WriteLine(CALLBACK_CONNECTION_FAILED));
-        GlobalEvents.OnEyetrackerDisconnected.Add(() => WriteLine(CALLBACK_CONNECTION_DISCONNECTED));
+        //GlobalEvents.OnEyetrackerConnectionFailed.Add(() => WriteLine(CALLBACK_CONNECTION_FAILED));
+        //GlobalEvents.OnEyetrackerDisconnected.Add(() => WriteLine(CALLBACK_CONNECTION_DISCONNECTED));
         GlobalEvents.OnCalibrationStart.Add(() => WriteLine(CALLBACK_CALIBRATION_STARTED));
         GlobalEvents.OnCalibrationCancel.Add(() => WriteLine(CALLBACK_CALIBRATION_CANCELLED));
         GlobalEvents.OnCalibrationFailed.Add(() => WriteLine(CALLBACK_CALIBRATION_FAILED));
@@ -116,7 +116,7 @@ public class WebSocketStream : IDisposable
         GazePoint rawPoint = GazeManager.I.RawGazePoint;
         if (!point.IsValid) return;
         GazePointMessage p = new GazePointMessage(point.viewportPoint.X, point.viewportPoint.Y, rawPoint.viewportPoint.X, rawPoint.viewportPoint.Y);
-        string jsonPoint =  JsonConvert.SerializeObject(p);
+        string jsonPoint = JsonConvert.SerializeObject(p);
         WriteLine(jsonPoint);
 
         //TODO: Confirmar que no es necesaria hacer la conversión a pixeles y volar este codigo comentado.
@@ -140,8 +140,8 @@ public class WebSocketStream : IDisposable
     public void Dispose()
     {
         WriteLine(CALLBACK_INSTANCE_QUIT);
-        if (ws == null) return;   
-        ws.Stop(); 
+        if (ws == null) return;
+        ws.Stop();
     }
 }
 
@@ -153,7 +153,7 @@ public class GazeService : WebSocketBehavior
 
     CommandRouter commandRouter;
     long CurrentTimeInMilliseconds => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-   
+
     public enum WebsocketCallback
     {
         Calibration_Start,
@@ -166,7 +166,7 @@ public class GazeService : WebSocketBehavior
     {
         commandRouter = new();
         commandRouter.RegisterCommand(new GetValueCommand());
-        commandRouter.RegisterCommand(new SetValueCommand());     
+        commandRouter.RegisterCommand(new SetValueCommand());
         commandRouter.RegisterCommand(new StartCalibrationCommand());
         Debug.WriteLine("Client connected");
         SendSettingsSnapshot();
@@ -196,10 +196,10 @@ public class GazeService : WebSocketBehavior
             {
                 case "GetSettingsSnapshot":
                     SendSettingsSnapshot();
-                break;
+                    break;
                 case "ToggleMouseControl":
                     Settings.I.MouseToggle.Value = !Settings.I.MouseToggle.Value;
-                break;
+                    break;
                 case "ToggleBubble":
                     Settings.I.BubbleToggle.Value = !Settings.I.BubbleToggle.Value;
                     break;
@@ -218,32 +218,35 @@ public class GazeService : WebSocketBehavior
                 case "Maximize":
                     WindowManager.OpenWindow<CalibrationWindow>();
                     break;
+                case "StartCalibration":
+                    RequestCalibration(Settings.I.LastPointsOption.Value, Settings.I.LastEyesOption.Value);
+                    break;
                 case "StartCalibration3":
-                    RequestCalibration(0,0);
+                    RequestCalibration(0, 0);
                     break;
                 case "StartCalibration5":
-                    RequestCalibration(1,0);
-                    break;        
+                    RequestCalibration(1, 0);
+                    break;
                 case "StartCalibration9":
-                    RequestCalibration(2,0);
+                    RequestCalibration(2, 0);
                     break;
                 case "StartCalibrationLeft3":
-                    RequestCalibration(0,1);
+                    RequestCalibration(0, 1);
                     break;
                 case "StartCalibrationLeft5":
-                    RequestCalibration(1,1);
-                    break;              
+                    RequestCalibration(1, 1);
+                    break;
                 case "StartCalibrationLeft9":
-                    RequestCalibration(2,1);
+                    RequestCalibration(2, 1);
                     break;
                 case "StartCalibrationRight3":
-                    RequestCalibration(0,2);
+                    RequestCalibration(0, 2);
                     break;
                 case "StartCalibrationRight5":
-                    RequestCalibration(1,2);
-                    break;       
+                    RequestCalibration(1, 2);
+                    break;
                 case "StartCalibrationRight9":
-                    RequestCalibration(2,2);
+                    RequestCalibration(2, 2);
                     break;
                 case "SetSmoothNone":
                     Settings.I.FilterProfile.Value = FilterProfile.Bajo;
@@ -280,7 +283,7 @@ public class GazeService : WebSocketBehavior
     }
 
     void ShowEyeDisplay()
-    { 
+    {
         //TODO: Add eye display
     }
 
@@ -289,7 +292,7 @@ public class GazeService : WebSocketBehavior
         //TODO: Add eye display
     }
 
-   
+
 
     void SendSettingsSnapshot()
     {

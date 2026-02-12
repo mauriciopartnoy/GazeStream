@@ -13,6 +13,7 @@ namespace GazeStream.AppData
     public class SettingKeys
     {
         public const string ACCESSIBILY_METHOD = "MetodoDeAccesibilidad";
+        public const string LANGUAGE = "Language";
         public const string VOLUME = "Volume";
 
         public const string VOICE = "Voice";
@@ -31,7 +32,7 @@ namespace GazeStream.AppData
         public const string BUBBLE_OPACITY = "BubbleOpacity";
         public const string BUBBLE_SIZE = "BubbleSize";
         public const string BUBBLE_OPACITY_ENUM = "BubbleOpacityEnum";
-        public const string CURSOR_TYPE = "CursorType";
+        public const string CURSOR_STYLE = "CursorStyle";
         public const string CURSOR_CUSTOM_PATH = "CursorCustomPath";
         public const string SHOW_RAW_GAZE = "ShowRawGazeAsDot";
 
@@ -66,7 +67,24 @@ namespace GazeStream.AppData
         public const string WORD_PREDICTION = "WordPrediction";
         public const string WORD_PREDICTION_LEARNING = "WordPredictionLearning";
 
+        public const string AUTO_HELP_CALL = "AutomaticHelpCall";
+        public const string AUTO_HELP_CALL_TIME = "AutomaticHelpCallTime";
+        public const string HELP_CALL_ACTION = "HelpCallAction";
+
     }
+    public enum FilterProfile { Bajo, Medio, Alto, Custom }
+    public enum AccessibilityMethod { Mouse, EyeTracker, Barrido, Touch }
+    public enum Voices { Hombre, Mujer, Personalizada }
+    public enum BubbleOpacityType { Regular, Oscuro, Contraste }
+    public enum CalibrationPointStyle { Point, Image, Animation }
+    public enum ColorScheme { System, Light, Dark }
+    public enum InteractionBarPosition { Left, Right, Top, Bottom }
+    public enum Size { Small, Medium, Large }
+    public enum SizeModifier { x50, x75, x100 }
+    public enum KeyboardType { QWERTY, ABC, PICTO }
+    public enum HelpCallMode { DefaultSound, CustomSound, ExecuteFile }
+    public enum Language { ESP, POR, ENG }
+
     public class Settings
     {
         public static Settings I { get; private set; }
@@ -75,6 +93,7 @@ namespace GazeStream.AppData
 
         //GENERAL
         public EnumSetting<AccessibilityMethod> AccessibilityMethod { get; } = new EnumSetting<AccessibilityMethod>(SettingKeys.ACCESSIBILY_METHOD, AppData.AccessibilityMethod.Mouse);
+        public EnumSetting<Language> Language { get; } = new EnumSetting<Language>(SettingKeys.LANGUAGE, AppData.Language.ESP);
         public IntSetting Volume { get; } = new IntSetting(SettingKeys.VOLUME, 100, new Int2(0, 100));
 
         //VOICE
@@ -98,9 +117,7 @@ namespace GazeStream.AppData
         public FloatSetting BubbleOpacity { get; } = new FloatSetting(SettingKeys.BUBBLE_OPACITY, 0.6f, new Float2(0f, 1f));
         public IntSetting BubbleSize { get; } = new IntSetting(SettingKeys.BUBBLE_SIZE, 40, new Int2(1, 200));
         public EnumSetting<BubbleOpacityType> BubbleOpacityEnum { get; } = new EnumSetting<BubbleOpacityType>(SettingKeys.BUBBLE_OPACITY_ENUM, BubbleOpacityType.Regular);
-
-        //public EnumSetting<CursorVisualType> CursorTypeEnum { get; } = new EnumSetting<CursorVisualType>(SettingKeys.CURSOR_TYPE, CursorVisualType.Bubble);
-        public Setting<CursorVisualType> CursorTypeEnum { get; } = new Setting<CursorVisualType>(SettingKeys.CURSOR_TYPE, CursorVisualType.Bubble);
+        public EnumSetting<CursorVisualStyle> CursorStyle { get; } = new EnumSetting<CursorVisualStyle>(SettingKeys.CURSOR_STYLE, CursorVisualStyle.Bubble);
         public Setting<string> CustomCursorPath { get; } = new Setting<string>(SettingKeys.CURSOR_CUSTOM_PATH, string.Empty);
         public BoolSetting ShowRawGazeAsPoint { get; } = new BoolSetting(SettingKeys.SHOW_RAW_GAZE, false);
 
@@ -128,17 +145,20 @@ namespace GazeStream.AppData
 
         //INTERACCIÓN
         public EnumSetting<ColorScheme> ColorScheme { get; } = new EnumSetting<ColorScheme>(SettingKeys.COLOR_SCHEME, AppData.ColorScheme.System);
-        public EnumSetting<ModificadorDeTamaño> UserInterfaceSize { get; } = new EnumSetting<ModificadorDeTamaño>(SettingKeys.USER_INTERFACE_SIZE, ModificadorDeTamaño.x100);
+        public EnumSetting<SizeModifier> UserInterfaceSize { get; } = new EnumSetting<SizeModifier>(SettingKeys.USER_INTERFACE_SIZE, SizeModifier.x100);
         public EnumSetting<InteractionBarPosition> BarPosition { get; } = new EnumSetting<InteractionBarPosition>(SettingKeys.INTERACTION_BAR_POSITION, AppData.InteractionBarPosition.Right);
 
         //TECLADO
-        public EnumSetting<ModificadorDeTamaño> KeyboardSize { get; } = new EnumSetting<ModificadorDeTamaño>(SettingKeys.KEYBOARD_SIZE, ModificadorDeTamaño.x100);
-        public EnumSetting<Tamaño> KeyboardFontSize { get; } = new EnumSetting<Tamaño>(SettingKeys.KEYBOARD_FONT_SIZE, Tamaño.Medio);
+        public EnumSetting<SizeModifier> KeyboardSize { get; } = new EnumSetting<SizeModifier>(SettingKeys.KEYBOARD_SIZE, SizeModifier.x100);
+        public EnumSetting<Size> KeyboardFontSize { get; } = new EnumSetting<Size>(SettingKeys.KEYBOARD_FONT_SIZE, Size.Medium);
         public EnumSetting<KeyboardType> KeyboardType { get; } = new EnumSetting<KeyboardType>(SettingKeys.KEYBOARD_TYPE, AppData.KeyboardType.QWERTY);
         public BoolSetting WordPrediction { get; } = new BoolSetting(SettingKeys.WORD_PREDICTION, true);
         public BoolSetting WordPredictionLearning { get; } = new BoolSetting(SettingKeys.WORD_PREDICTION_LEARNING, true);
 
-
+        //PEDIDO DE AYUDA
+        public BoolSetting AutoHelpCall { get; } = new BoolSetting(SettingKeys.AUTO_HELP_CALL, false);
+        public IntSetting AutoHelpCallTimeInMinutes { get; } = new IntSetting(SettingKeys.AUTO_HELP_CALL_TIME, 3);
+        public EnumSetting<HelpCallMode> HelpCallAction { get; } = new EnumSetting<HelpCallMode>(SettingKeys.HELP_CALL_ACTION, HelpCallMode.DefaultSound);
         public Settings()
         {
             //IMPORTANTE: Si cambiamos a un modelo de settings por perfil migrar los valores de System Settings a User Settings en el SaveManager.
@@ -166,6 +186,10 @@ namespace GazeStream.AppData
             HookProfileSettings();
         }
 
+        //TODO: Customs. Los customs serían sonidos o gráficos personalizables. 
+        //Podría reemplazarse un único archivo en la carpeta del usuario usando una ventana de seleccion de path para copiar y pegar la selección en una carpeta local.
+        //Ejemplos: CustomCalibrationPoint, CustomPointer, CustomHelpCall
+
         private void HookProfileSettings()
         {
             //TODO: Los profiles son una clase especial de Setting que responde a cambios en otros settings. Si escalan hacer una clase aparte. 
@@ -175,6 +199,7 @@ namespace GazeStream.AppData
         private void RegisterSettings()
         {
             RegisterSetting(AccessibilityMethod);
+            RegisterSetting(Language);
             RegisterSetting(Volume);
 
             RegisterSetting(Voice);
@@ -193,7 +218,7 @@ namespace GazeStream.AppData
             RegisterSetting(BubbleColor);
             RegisterSetting(BubbleOpacity);
             RegisterSetting(BubbleSize);
-            RegisterSetting(CursorTypeEnum);
+            RegisterSetting(CursorStyle);
             RegisterSetting(CustomCursorPath);
             RegisterSetting(ShowRawGazeAsPoint);
 
@@ -225,6 +250,10 @@ namespace GazeStream.AppData
             RegisterSetting(KeyboardType);
             RegisterSetting(WordPrediction);
             RegisterSetting(WordPredictionLearning);
+
+            RegisterSetting(AutoHelpCall);
+            RegisterSetting(AutoHelpCallTimeInMinutes);
+            RegisterSetting(HelpCallAction);
         }
 
         public void RegisterSetting(BaseSetting setting)
@@ -285,10 +314,13 @@ namespace GazeStream.AppData
         {
             if (value == null) return;
             string jsonValue = value.ToString();
+            Debug.WriteLine($"Setting Enum JsonValue: {jsonValue}");
             if (Enum.TryParse(typeof(T), jsonValue, true, out var parsed) && Enum.IsDefined(typeof(T), parsed))
             {
                 Value = (T)parsed;
-            }          
+                Debug.WriteLine($"Setting Enum JsonValue: {Value}");
+
+            }
             else
             {
                 Debug.WriteLine($"Invalid value type. Expected {typeof(T)}, got {value?.GetType()}");
@@ -465,6 +497,16 @@ namespace GazeStream.AppData
 
         }
     }
+    public class StringSetting : BaseSetting<string>
+    {
+        SettingDescriptor descriptor;
+        public override SettingDescriptor Descriptor => descriptor;
+        public StringSetting(string saveKey, string defaultValue)
+        {
+            this.descriptor = new SettingDescriptor(saveKey, typeof(string), defaultValue);
+
+        }
+    }
 
     public class LastCalibrationSetting : BaseSetting<byte[]>
     {
@@ -529,16 +571,7 @@ namespace GazeStream.AppData
         }
     }
 
-    public enum FilterProfile { Bajo, Medio, Alto, Custom  }
-    public enum AccessibilityMethod { Mouse, EyeTracker, Barrido, Touch }
-    public enum Voices {Hombre, Mujer, Personalizada }
-    public enum BubbleOpacityType {Regular, Oscuro, Contraste }
-    public enum CalibrationPointStyle {Point, Image, Animation }
-    public enum ColorScheme {System, Light, Dark }
-    public enum InteractionBarPosition {Left, Right, Top, Bottom }
-    public enum Tamaño {Chico, Medio, Grande }
-    public enum ModificadorDeTamaño {x50, x75, x100 }
-    public enum KeyboardType {QWERTY, ABC, PICTO }
+  
 
     public struct Float2
     {
