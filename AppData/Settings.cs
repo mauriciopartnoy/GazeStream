@@ -7,6 +7,7 @@ using GazeStream.Utilities.Save;
 using System.Diagnostics;
 using GazeStream.Utilities.Events;
 using GazeStream.AppData;
+using System.ComponentModel;
 
 namespace GazeStream.AppData
 {
@@ -41,7 +42,7 @@ namespace GazeStream.AppData
         public const string KALMAN_FILTER = "KalmanFilter";
         public const string INTERPOLATION_FILTER = "InterpolationFilter";
 
-        public const string LAST_CALIBRATION_BUFF = "LastCalibrationBuff";
+        public const string LAST_CALIBRATION = "LastCalibration";
         public const string LAST_CALIBRATION_EYES_OPTION = "LastCalibrationEyesOption";
         public const string LAST_CALIBRATION_POINTS_OPTION = "LastCalibrationPointsOption";
         public const string SAVE_CALIBRATION_AS_PRESET = "SaveCalibrationAsPresetToggle";
@@ -55,7 +56,10 @@ namespace GazeStream.AppData
         public const string TIEMPO_ACTIVACION_TECLADO = "TiempoDeActivacionDeTeclado";
         public const string MULTIPLICADOR_VELOCIDAD_DESACTIVACION = "MultiplicadorDeVelocidadDeDesactivacion";
         public const string TIEMPO_PERMANENCIA = "TiempoDePermanenciaDeActivacionIncompleta";
+        public const string REPEAT_ACTION_INTERVAL = "RepeatActionInterval";
         public const string MOSTRAR_PERMANENCIA = "MostrarPermanenciaDeActivacionIncompleta";
+        public const string BUTTON_ANIMATION_TYPE = "ButtonAnimationType";
+        public const string BUTTON_ANIMATION_COLOR = "ButtonAnimationColor";
 
         public const string COLOR_SCHEME = "ColorScheme";
         public const string USER_INTERFACE_SIZE = "UserInterfaceSize";
@@ -72,6 +76,9 @@ namespace GazeStream.AppData
         public const string HELP_CALL_ACTION = "HelpCallAction";
 
     }
+
+    public enum Button_Animation { Clock, Shrink, Expand, FillLeft, Frame }
+    public enum BasicColor { Rojo, Verde, Azul, Amarillo, Cyan, Magenta, Violeta, Blanco, Negro }
     public enum FilterProfile { Bajo, Medio, Alto, Custom }
     public enum AccessibilityMethod { Mouse, EyeTracker, Barrido, Touch }
     public enum Voices { Hombre, Mujer, Personalizada }
@@ -114,7 +121,9 @@ namespace GazeStream.AppData
         //BUBBLE CURSOR
         public BoolSetting BubbleToggle { get; } = new BoolSetting(SettingKeys.BUBBLE_TOGGLE, false);
         public IntSetting BubbleColor { get; } = new IntSetting(SettingKeys.BUBBLE_COLOR_SELECTION, 0);
-        public FloatSetting BubbleOpacity { get; } = new FloatSetting(SettingKeys.BUBBLE_OPACITY, 0.6f, new Float2(0f, 1f));
+        //public FloatSetting BubbleOpacity { get; } = new FloatSetting(SettingKeys.BUBBLE_OPACITY, 0.6f, new Float2(0f, 1f));
+        public DoubleSetting BubbleOpacity { get; } = new DoubleSetting(SettingKeys.BUBBLE_OPACITY, 0.6f, new Double2(0d, 1d));
+
         public IntSetting BubbleSize { get; } = new IntSetting(SettingKeys.BUBBLE_SIZE, 40, new Int2(1, 200));
         public EnumSetting<BubbleOpacityType> BubbleOpacityEnum { get; } = new EnumSetting<BubbleOpacityType>(SettingKeys.BUBBLE_OPACITY_ENUM, BubbleOpacityType.Regular);
         public EnumSetting<CursorVisualStyle> CursorStyle { get; } = new EnumSetting<CursorVisualStyle>(SettingKeys.CURSOR_STYLE, CursorVisualStyle.Bubble);
@@ -128,7 +137,7 @@ namespace GazeStream.AppData
         public FloatSetting InterpolationFilter { get; } = new FloatSetting(SettingKeys.INTERPOLATION_FILTER, 0.05f, new Float2(0, 100));
 
         //CALIBRATION 
-        public LastCalibrationSetting LastCalibrationBuff { get; } = new LastCalibrationSetting(SettingKeys.LAST_CALIBRATION_BUFF);                                 //byte[] Calibration.buff
+        public LastCalibration LastCalibrationBuff { get; } = new LastCalibration(SettingKeys.LAST_CALIBRATION, new byte[0]);                                 //byte[] Calibration.buff
         public IntSetting LastEyesOption { get; } = new IntSetting(SettingKeys.LAST_CALIBRATION_EYES_OPTION, 0);         //Index de la opción
         public IntSetting LastPointsOption { get; } = new IntSetting(SettingKeys.LAST_CALIBRATION_POINTS_OPTION, 0);     //Index de la opción
         public BoolSetting SaveCalibrationAsPresetToggle { get; } = new BoolSetting(SettingKeys.SAVE_CALIBRATION_AS_PRESET, false);
@@ -136,12 +145,15 @@ namespace GazeStream.AppData
         public Setting<string> CalibrationPointCustomImagePath { get; } = new Setting<string>(SettingKeys.CALIBRATION_POINT_CUSTOM_IMAGE, string.Empty);
 
         //GAZE BUTTON ACTIVATION
-        public FloatSetting TiempoDeInicioDeActivacion { get; } = new FloatSetting(SettingKeys.TIEMPO_INICIO_ACTIVACION, .4f, new Float2(0f, 5f));
+        public FloatSetting TiempoDeInicioDeActivacion { get; } = new FloatSetting(SettingKeys.TIEMPO_INICIO_ACTIVACION, .2f, new Float2(0f, 5f));
         public FloatSetting TiempoDeActivacion { get; } = new FloatSetting(SettingKeys.TIEMPO_ACTIVACION, 1.5f, new Float2(0f, 5f));
         public FloatSetting TiempoDeActivacionDeTeclado { get; } = new FloatSetting(SettingKeys.TIEMPO_ACTIVACION_TECLADO, 1.5f, new Float2(0f, 5f));
         public FloatSetting MultiplicadorDeVelocidadDeDesactivacion { get; } = new FloatSetting(SettingKeys.MULTIPLICADOR_VELOCIDAD_DESACTIVACION, 1.5f, new Float2(0f, 5f));
-        public FloatSetting PermanenciaDeFijacionesIncompletas { get; } = new FloatSetting(SettingKeys.TIEMPO_PERMANENCIA, .5f, new Float2(0f, 5f));
+        public FloatSetting PermanenciaDeFijacionesIncompletas { get; } = new FloatSetting(SettingKeys.TIEMPO_PERMANENCIA, .3f, new Float2(0f, 5f));
+        public FloatSetting RepeatActionInterval { get; } = new FloatSetting(SettingKeys.REPEAT_ACTION_INTERVAL, 1f, new Float2(0f, 5f));
         public BoolSetting MostrarPermanenciaDeFijacionesIncompletas { get; } = new BoolSetting(SettingKeys.MOSTRAR_PERMANENCIA, true);
+        public EnumSetting<BasicColor> ButtonAnimationColor { get; } = new EnumSetting<BasicColor>(SettingKeys.BUTTON_ANIMATION_COLOR, BasicColor.Azul);
+        public EnumSetting<Button_Animation> ButtonAnimationType { get; } = new EnumSetting<Button_Animation>(SettingKeys.BUTTON_ANIMATION_TYPE, Button_Animation.Clock);
 
         //INTERACCIÓN
         public EnumSetting<ColorScheme> ColorScheme { get; } = new EnumSetting<ColorScheme>(SettingKeys.COLOR_SCHEME, AppData.ColorScheme.System);
@@ -184,12 +196,25 @@ namespace GazeStream.AppData
             RegisterSettings();
             LoadAllSettings();
             HookProfileSettings();
+            //CreateDocumentationFile(); //TODO: Elegir un directorio para generarlo automáticamente.
         }
 
         //TODO: Customs. Los customs serían sonidos o gráficos personalizables. 
         //Podría reemplazarse un único archivo en la carpeta del usuario usando una ventana de seleccion de path para copiar y pegar la selección en una carpeta local.
         //Ejemplos: CustomCalibrationPoint, CustomPointer, CustomHelpCall
 
+        void CreateDocumentationFile()
+        {
+            var builder = new StringBuilder();
+            foreach (BaseSetting setting in BaseSettings.Values)
+            {
+                builder.Append(setting.GetDocumentationReference());
+                builder.AppendLine();
+            }
+            string content = builder.ToString();
+            FileOps.SaveToText(AppPaths.BasePath + "/documentation.txt", content);
+            FileOps.OpenDirectory(AppPaths.BasePath);
+        }
         private void HookProfileSettings()
         {
             //TODO: Los profiles son una clase especial de Setting que responde a cambios en otros settings. Si escalan hacer una clase aparte. 
@@ -239,7 +264,10 @@ namespace GazeStream.AppData
             RegisterSetting(TiempoDeActivacionDeTeclado);
             RegisterSetting(MultiplicadorDeVelocidadDeDesactivacion);
             RegisterSetting(PermanenciaDeFijacionesIncompletas);
+            RegisterSetting(RepeatActionInterval);
             RegisterSetting(MostrarPermanenciaDeFijacionesIncompletas);
+            RegisterSetting(ButtonAnimationType);
+            RegisterSetting(ButtonAnimationColor);
 
             RegisterSetting(ColorScheme);
             RegisterSetting(UserInterfaceSize);
@@ -276,12 +304,21 @@ namespace GazeStream.AppData
         }
     }
 
-    public abstract class BaseSetting
+    public abstract class BaseSetting : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void NotifyPropertyChanged(string name)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
         public abstract void SetValue(object value);
         public abstract object GetValue();
         public abstract void LoadSetting();
         public abstract SettingDescriptor Descriptor { get; }
+
+        public abstract string GetDocumentationReference();
     }
 
     public class EnumSetting<T> : BaseSetting where T : Enum
@@ -290,7 +327,7 @@ namespace GazeStream.AppData
         public event Action<T> OnValueChanged;
         public override SettingDescriptor Descriptor => descriptor;
         SettingDescriptor descriptor;
-
+        public Array EnumValues => Enum.GetValues(typeof(T));
         T valueCache;
         public T Value
         {
@@ -300,6 +337,8 @@ namespace GazeStream.AppData
                 if (EqualityComparer<T>.Default.Equals(valueCache, value)) return;
                 valueCache = value;
                 SaveSetting();
+
+                NotifyPropertyChanged(nameof(Value));
                 OnChanged?.Invoke();
                 OnValueChanged?.Invoke(valueCache);
                 GlobalEvents.OnSettingChanged.Invoke(Descriptor.saveKey);
@@ -310,6 +349,21 @@ namespace GazeStream.AppData
             descriptor = new SettingDescriptor(saveKey, typeof(T), defaultValue);
         }
 
+        public override string GetDocumentationReference()
+        {
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {descriptor.saveKey}");
+            builder.AppendLine($"Type: {descriptor.typeAsString}");
+            builder.Append($"Values: ");
+
+            string[] options = Enum.GetNames(typeof(T));
+            foreach (string option in options)
+            {
+                builder.Append(option + ", ");
+            }
+            return builder.ToString();
+        }
         public override void SetValue(object value)
         {
             if (value == null) return;
@@ -358,6 +412,7 @@ namespace GazeStream.AppData
                 if (EqualityComparer<T>.Default.Equals(valueCache, value)) return;
                 valueCache = NormalizeValue(value);
                 SaveSetting();
+                NotifyPropertyChanged(nameof(Value));
                 OnChanged?.Invoke();
                 OnValueChanged?.Invoke(valueCache);
                 GlobalEvents.OnSettingChanged.Invoke(Descriptor.saveKey);
@@ -396,7 +451,13 @@ namespace GazeStream.AppData
         }
         protected virtual T NormalizeValue(T input) { return input; }
 
-        
+        public override string GetDocumentationReference()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {Descriptor.saveKey}");
+            builder.AppendLine($"Type: {Descriptor.typeAsString}");
+            return builder.ToString();
+        }
     }
 
     public struct SettingDescriptor
@@ -428,9 +489,16 @@ namespace GazeStream.AppData
             this.descriptor = new SettingDescriptor(saveKey, typeof(T), defaultValue);
         }
         public override SettingDescriptor Descriptor => descriptor;
-        SettingDescriptor descriptor;      
-    }
+        SettingDescriptor descriptor;
 
+        public override string GetDocumentationReference()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {descriptor.saveKey}");
+            builder.AppendLine($"Type: {descriptor.typeAsString}");
+            return builder.ToString();
+        }
+    }
     public class IntSetting : BaseSetting<int>
     {
         SettingDescriptor descriptor;
@@ -455,6 +523,18 @@ namespace GazeStream.AppData
             Int2 clamp = clampRange.Value;
             int normalized = Math.Clamp(input, clamp.x, clamp.y);
             return normalized;
+        }
+
+        public override string GetDocumentationReference()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {descriptor.saveKey}");
+            builder.AppendLine($"Type: {descriptor.typeAsString}");
+            if (clampRange != null)
+            {
+                builder.AppendLine($"Range: {clampRange.Value.x},{clampRange.Value.y}");
+            }
+            return builder.ToString();
         }
     }
 
@@ -485,6 +565,59 @@ namespace GazeStream.AppData
             float normalized = Math.Clamp(input, clamp.x, clamp.y);
             return normalized;
         }
+
+        public override string GetDocumentationReference()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {descriptor.saveKey}");
+            builder.AppendLine($"Type: {descriptor.typeAsString}");
+            if (clampRange != null)
+            {
+                builder.AppendLine($"Range: {clampRange.Value.x},{clampRange.Value.y}");
+            }
+            return builder.ToString();
+        }
+    }
+
+    public class DoubleSetting : BaseSetting<double>
+    {
+
+        SettingDescriptor descriptor;
+        Double2? clampRange;
+        public override SettingDescriptor Descriptor => descriptor;
+
+        public DoubleSetting(string saveKey, double defaultValue = 0, Double2? clampRange = null)
+        {
+            if (clampRange.HasValue && clampRange.Value.x > clampRange.Value.y)
+            {
+                throw new Exception($"Setting value {saveKey} has an invalid value range.");
+            }
+
+
+            this.descriptor = new SettingDescriptor(saveKey, typeof(double), NormalizeValue(defaultValue));
+            this.clampRange = clampRange;
+        }
+
+        protected override double NormalizeValue(double input)
+        {
+            if (!clampRange.HasValue) return input;
+
+            Double2 clamp = clampRange.Value;
+            double normalized = Math.Clamp(input, clamp.x, clamp.y);
+            return normalized;
+        }
+
+        public override string GetDocumentationReference()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {descriptor.saveKey}");
+            builder.AppendLine($"Type: {descriptor.typeAsString}");
+            if (clampRange != null)
+            {
+                builder.AppendLine($"Range: {clampRange.Value.x},{clampRange.Value.y}");
+            }
+            return builder.ToString();
+        }
     }
 
     public class BoolSetting : BaseSetting<bool>
@@ -496,6 +629,7 @@ namespace GazeStream.AppData
             this.descriptor = new SettingDescriptor(saveKey, typeof(bool), defaultValue);
 
         }
+
     }
     public class StringSetting : BaseSetting<string>
     {
@@ -508,15 +642,65 @@ namespace GazeStream.AppData
         }
     }
 
-    public class LastCalibrationSetting : BaseSetting<byte[]>
+    public class LastCalibration : BaseSetting
     {
+        public event Action OnChanged;
+        public event Action<byte[]> OnValueChanged;
+
+        byte[] valueCache;
+        public byte[] Value
+        {
+            get { return valueCache; }
+            set
+            {
+                if (EqualityComparer<byte[]>.Default.Equals(valueCache, value)) return;
+                valueCache = value;
+                SaveSetting();
+                NotifyPropertyChanged(nameof(Value));
+                OnChanged?.Invoke();
+                OnValueChanged?.Invoke(valueCache);
+                GlobalEvents.OnSettingChanged.Invoke(Descriptor.saveKey);
+            }
+        }
         SettingDescriptor descriptor;
         public override SettingDescriptor Descriptor => descriptor;
-        public LastCalibrationSetting(string saveKey)
+        public LastCalibration(string saveKey, byte[] defaultValue)
         {
-            descriptor = new SettingDescriptor(saveKey, typeof(byte[]), new byte[0]);
+            descriptor = new SettingDescriptor(saveKey, typeof(byte[]), defaultValue);
         }
-      
+
+        public override void SetValue(object value)
+        {
+            if (value == null) return;
+            string jsonValue = value.ToString();
+            Debug.WriteLine($"Setting Enum JsonValue: {jsonValue}");
+            byte[] calibBuff = Convert.FromBase64String(jsonValue);
+            Value = calibBuff;
+        }
+        public override object GetValue()
+        {
+            return Value;
+        }
+        public override void LoadSetting()
+        {
+            Settings.RegisterDescriptor(Descriptor);
+            valueCache = SaveManager.GetSystemSetting<byte[]>(Descriptor.saveKey, (byte[])Descriptor.defaultValue);
+            OnValueChanged?.Invoke(valueCache);
+        }
+
+        void SaveSetting()
+        {
+            SaveManager.SetSystemSetting<byte[]>(Descriptor.saveKey, Value);
+            SaveManager.SaveSystemSettings();
+        }
+
+        public override string GetDocumentationReference()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {descriptor.saveKey}");
+            builder.AppendLine($"Type: {descriptor.typeAsString}");
+            return builder.ToString();
+        }
     }
 
     //PROFILE SETTINGS
@@ -569,19 +753,21 @@ namespace GazeStream.AppData
             if (aplyingProfile) return;
             this.Value = FilterProfile.Custom;
         }
-    }
 
-  
-
-    public struct Float2
-    {
-        public float x;
-        public float y;
-
-        public Float2(float x, float y)
+        public override string GetDocumentationReference()
         {
-            this.x = x;
-            this.y = y;
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine($"Key: {descriptor.saveKey}");
+            builder.AppendLine($"Type: {descriptor.typeAsString}");
+            builder.Append($"Values: ");
+
+            string[] options = Enum.GetNames(typeof(FilterProfile));
+            foreach (string option in options)
+            {
+                builder.Append(option + ", ");
+            }
+            return builder.ToString();
         }
     }
 
@@ -596,4 +782,29 @@ namespace GazeStream.AppData
             this.y = y;
         }
     }
+
+    public struct Float2
+    {
+        public float x;
+        public float y;
+
+        public Float2(float x, float y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    public struct Double2
+    {
+        public double x;
+        public double y;
+
+        public Double2(double x, double y)
+        {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
 }

@@ -32,6 +32,7 @@ namespace GazeStream.Windows
         public static ASeeTracker.gazeCallback gazeCB = new ASeeTracker.gazeCallback(OnGazeCallback);
 
         Task? calibrationTask;
+        CancellationTokenSource cts;
         bool isCalibrating;
         List<CalibrationPointGraphic> points = new List<CalibrationPointGraphic>();
         static CalibrationPointGraphic? currentPoint;
@@ -46,12 +47,19 @@ namespace GazeStream.Windows
                 new Vector2(0.95f, 0.95f),
                 new Vector2(0.50f, 0.05f)};
 
+        //Vector2[] points5 = {
+        //        new Vector2(0.50f, 0.50f),
+        //        new Vector2(0.05f, 0.95f),
+        //        new Vector2(0.95f, 0.95f),
+        //        new Vector2(0.05f, 0.05f),
+        //        new Vector2(0.95f, 0.05f)};
+
         Vector2[] points5 = {
                 new Vector2(0.50f, 0.50f),
-                new Vector2(0.05f, 0.95f),
-                new Vector2(0.95f, 0.95f),
-                new Vector2(0.05f, 0.05f),
-                new Vector2(0.95f, 0.05f)};
+                new Vector2(0.01f, 0.99f),
+                new Vector2(0.99f, 0.99f),
+                new Vector2(0.01f, 0.01f),
+                new Vector2(0.99f, 0.01f)};
 
         Vector2[] points9 = {
                 new Vector2(0.50f, 0.50f),
@@ -70,11 +78,80 @@ namespace GazeStream.Windows
             I = this;
             Loaded += OnLoaded;
             Closed += OnClosed;
-            GlobalEvents.OnStartCalibrationCommand.Add(StartCalibration);
+            PreviewKeyDown += CancelCalibrationOnKeyPress;
+            GlobalEvents.OnStartCalibrationCommand.Add(StartCalibrationAndCloseOnFinished);
+            ForceTopmost();
         }
+
+        void InitializePointArraysUsingScreenSpace()
+        {
+            Vector2 screen = new Vector2((float)this.ActualWidth, (float)this.ActualHeight); //Canvas is this size.
+            float pixelMargin = 20;
+            float left = pixelMargin / screen.X;
+            float right = 1f - left;
+            float top = pixelMargin / screen.Y;
+            float down = 1f - top;
+
+            //TODO 
+            //float marginPercent = 0.03f;
+            //float left = marginPercent;
+            //float right = 1f - marginPercent;
+            //float top = marginPercent;
+            //float down = 1f - marginPercent;
+
+            //Positions
+            Vector2 middleCenter = new Vector2(.5f, .5f);
+            Vector2 middleLeft = new Vector2(left, .5f);
+            Vector2 middleRight = new Vector2(right, .5f);
+            Vector2 lowerCenter = new Vector2(.5f, down);
+            Vector2 lowerLeft = new Vector2(left, down);
+            Vector2 lowerRight = new Vector2(right, down);
+            Vector2 upperCenter = new Vector2(.5f, top);
+            Vector2 upperLeft = new Vector2(left, top);
+            Vector2 upperRight = new Vector2(right, top);
+
+            points3 = new Vector2[3];
+            points3[0] = lowerLeft;
+            points3[1] = lowerRight;
+            points3[2] = upperCenter;
+
+            points5 = new Vector2[5];
+            points5[0] = middleCenter;
+            points5[1] = upperLeft;
+            points5[2] = upperRight;
+            points5[3] = lowerLeft;
+            points5[4] = lowerRight;
+
+            points9 = new Vector2[9];
+            points9[0] = middleCenter;
+            points9[1] = middleRight;
+            points9[2] = upperLeft;
+            points9[3] = upperCenter;
+            points9[4] = upperRight;
+            points9[5] = lowerLeft;
+            points9[6] = lowerCenter;
+            points9[7] = lowerRight;
+            points9[8] = middleLeft;
+        }
+
+        private void ForceTopmost()
+        {
+            if (!this.IsVisible)
+            {
+                this.Show();
+            }
+
+            this.WindowState = WindowState.Maximized;
+            this.Activate();
+            this.Topmost = true;  // temporarily
+            this.Topmost = false; // reset
+            this.Focus();
+        }
+
         void OnLoaded(object sender, RoutedEventArgs e)
         {
             Debug.WriteLine("Landed on Calibration Page. Loading RadioButton settings.");
+            InitializePointArraysUsingScreenSpace();
             ResetPage();
             LoadToggleOptions();
             Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
@@ -83,7 +160,17 @@ namespace GazeStream.Windows
         void OnClosed(object sender, EventArgs e)
         {
             Debug.WriteLine("Calibration Window closed. Loading RadioButton settings.");
+            GlobalEvents.OnStartCalibrationCommand.Remove(StartCalibrationAndCloseOnFinished);
             CancelCalibration();
+        }
+
+        void CancelCalibrationOnKeyPress(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                CancelCalibration();
+                e.Handled = true;
+            }
         }
 
         void LoadToggleOptions()
@@ -125,22 +212,25 @@ namespace GazeStream.Windows
         {
             Debug.WriteLine("Starting calibration");
             if (isCalibrating) return;
-            calibrationTask = StartCalibrationTaskUsingPanelSettings();
+            StartCalibrationTaskUsingPanelSettings();
             Debug.WriteLine("Starting calibration");
         }
 
-        void StartCalibration(int pointsArrayIndex, int eyes)
+        void StartCalibrationAndCloseOnFinished(int pointsArrayIndex, int eyes)
         {
-            _= StartCalibrationTask(pointsArrayIndex, eyes);
+            if (isCalibrating) { Debug.WriteLine("Is Calibrating. Cannot start new calibration."); return; }
+            cts = new CancellationTokenSource();
+            calibrationTask = StartCalibrationTask(pointsArrayIndex, eyes, true, cts.Token);
         }
-        async Task StartCalibrationTaskUsingPanelSettings()
+        void StartCalibrationTaskUsingPanelSettings()
         {
             int pointsArrayIndex = GetPointsSelection();
             int eyes = GetEyesSelection();
-            await StartCalibrationTask(pointsArrayIndex, eyes);
+            cts = new CancellationTokenSource();
+            calibrationTask = StartCalibrationTask(pointsArrayIndex, eyes, false, cts.Token);
         }
 
-        async Task StartCalibrationTask(int pointsArrayIndex, int eyes)
+        async Task StartCalibrationTask(int pointsArrayIndex, int eyes, bool closeOnFinished, CancellationToken token)
         {
             if (isCalibrating) return;
             isCalibrating = true;
@@ -155,10 +245,10 @@ namespace GazeStream.Windows
                     return;
                 }
 
-                await FadeText.ShowMessage("Estos son tus ojos.", .5, 2);
-                await ShowEyeDisplay();
-                await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2);          
-                await CalibrationTask(pointsArrayIndex, eyes);
+                await FadeText.ShowMessage("Estos son tus ojos.", .5, 2, token);
+                await ShowEyeDisplay(token);
+                await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2, token);          
+                await CalibrationTask(pointsArrayIndex, eyes, token);
             }
             catch
             {
@@ -168,12 +258,17 @@ namespace GazeStream.Windows
             {
                 ResetPage();
                 isCalibrating = false;
+                GazeManager.I?.GazeDevice?.Initialize();
                 GlobalEvents.OnCalibrationFinished.Invoke();
                 Debug.WriteLine("Calibration Finished!");
+                if (closeOnFinished)
+                {
+                    Close();
+                }
             }
         }
 
-        async Task ShowEyeDisplay()
+        async Task ShowEyeDisplay(CancellationToken token)
         {
             EyeDisplay.Visibility = Visibility.Visible;
 
@@ -193,7 +288,7 @@ namespace GazeStream.Windows
                 while (!tcs.Task.IsCompleted)
                 {
                     EyeDisplay.UpdateEyeDisplay(eyesData);
-                    await Task.Delay(16);
+                    await Task.Delay(16, token);
                     timer += 16;
                     if (timer > timeoutMs)
                     {
@@ -233,10 +328,10 @@ namespace GazeStream.Windows
         }
 
 
-        async Task CalibrationTask(int pointsArrayIndex, int eyes = 0)
+        async Task CalibrationTask(int pointsArrayIndex, int eyes, CancellationToken token)
         {
             Debug.WriteLine("Starting calibration.");
-            Vector2[] points = GetCalibrationPointsArray();
+            Vector2[] points = GetCalibrationPointsArray(pointsArrayIndex);
             _7i_coefficient_t coefficient = new _7i_coefficient_t();
             int pointIndex = 1;
             int pointCount = points.Length;
@@ -252,7 +347,7 @@ namespace GazeStream.Windows
 
                 //El gráfico de calibración se muestra antes para que el usuario pueda tener la mirada en la posición correcta al iniciar cada punto.              
                 SpawnCalibrationPoint(new Vector2(points[i].X, points[i].Y));
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(2), token);
 
                 _7i_point2d_t point = new _7i_point2d_t();
                 point.x = points[i].X;
@@ -265,7 +360,7 @@ namespace GazeStream.Windows
 
                 while (!pointComplete)
                 {
-                    await Task.Delay(16);
+                    await Task.Delay(16, token);
                 }
 
                 ++pointIndex;
@@ -299,14 +394,13 @@ namespace GazeStream.Windows
             {
                 Debug.WriteLine("Calibration success!");
                 Disconnect();
-                await FadeText.ShowMessage("¡La calibración fue exitosa!");
+                await FadeText.ShowMessage("¡La calibración fue exitosa!", .5, 2, token);
                 Settings.I.LastEyesOption.Value = eyes;
                 Settings.I.LastPointsOption.Value = pointsArrayIndex;
                 Settings.I.LastCalibrationBuff.Value = coefficient.buf;
                 Settings.I.SaveSettings();
                 SaveCalibrationAsPreset(points.Length, eyes, coefficient.buf);
                 GlobalEvents.OnCalibrationSuccess.Invoke();
-                GazeManager.I?.GazeDevice?.Initialize();
             }
         }
 
@@ -318,12 +412,13 @@ namespace GazeStream.Windows
             EyesData eyes = new EyesData(eyesData);
             CalibrationPreset preset = new CalibrationPreset(name, screenSize, eyes,points, eyesBias, buff);
             CalibrationPresets.I.AddPreset(preset);
-            FileOps.OpenDirectory(AppPaths.EyetrackerPath);
+            //FileOps.OpenDirectory(AppPaths.EyetrackerPath);
         }
 
         public void CancelCalibration()
         {
             if (!isCalibrating) return;
+            cts.Cancel();
             ResetPage();
             Disconnect();
             GlobalEvents.OnCalibrationCancel.Invoke();
@@ -334,6 +429,7 @@ namespace GazeStream.Windows
         {
             Debug.WriteLine("Resetting Page");
             isCalibrating = false;
+            pointComplete = false;
             DestroyCurrentCalibrationPoint();
             EyeDisplay.Visibility = Visibility.Collapsed;
             EnableButtons();
@@ -351,7 +447,6 @@ namespace GazeStream.Windows
         }
         private void DestroyCurrentCalibrationPoint()
         {
-            Debug.WriteLine("Trying to destroy current calibration point." + (currentPoint != null));
             if (currentPoint == null) return;
             currentPoint.Destroy(MainCanvas);
             currentPoint = null;
@@ -378,13 +473,17 @@ namespace GazeStream.Windows
         void DisableButtons()
         {
             SettingsPanel.IsHitTestVisible = false;
-            SettingsPanel.Visibility = Visibility.Collapsed;        
+            SettingsPanel.Visibility = Visibility.Collapsed;
+            CloseButton.IsHitTestVisible = false;
+            CloseButton.Visibility = Visibility.Collapsed;
         }
 
         void EnableButtons()
         {
             SettingsPanel.IsHitTestVisible = true;
-            SettingsPanel.Visibility = Visibility.Visible;     
+            SettingsPanel.Visibility = Visibility.Visible;
+            CloseButton.IsHitTestVisible = true;
+            CloseButton.Visibility = Visibility.Visible;
         }
 
 
@@ -482,11 +581,16 @@ namespace GazeStream.Windows
             else return 2; //9 points
         }
 
-        public Vector2[] GetCalibrationPointsArray()
+        public Vector2[] GetPointsUsingMenuSelection()
         {
             int pointsSetting = GetPointsSelection();
+            return GetCalibrationPointsArray(pointsSetting);
+        }
+
+        public Vector2[] GetCalibrationPointsArray(int index)
+        {
             Vector2[] points = default;
-            switch (pointsSetting)
+            switch (index)
             {
                 case 0: points = points3; break;
                 case 1: points = points5; break;

@@ -9,8 +9,6 @@
         <Border Background="Black"
                 BorderThickness="2"
                 BorderBrush="White"
-                Width="640"
-                Height="360"
                 IsHitTestVisible="False">
 
             <Grid IsHitTestVisible="False">
@@ -33,12 +31,6 @@
                              IsHitTestVisible="False"/>
 
                 </Canvas>
-
-                <TextBlock Text="Presione cualquier tecla para continuar..."
-                           Foreground="White"
-                           TextAlignment="Center"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Bottom"/>
             </Grid>
         </Border>
     </Grid>

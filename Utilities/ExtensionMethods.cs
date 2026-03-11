@@ -28,8 +28,8 @@ namespace GazeStream.Utilities
 
             if (element is FrameworkElement fe)
             {
-                Canvas.SetLeft(fe, pixelX - fe.ActualWidth / 2);
-                Canvas.SetTop(fe, pixelY - fe.ActualHeight / 2);
+                Canvas.SetLeft(fe, pixelX - fe.Width / 2);
+                Canvas.SetTop(fe, pixelY - fe.Height / 2);
             }
         }
 
@@ -53,5 +53,6 @@ namespace GazeStream.Utilities
             Canvas.SetLeft(element, pixelX - element.DesiredSize.Width / 2);
             Canvas.SetTop(element, pixelY - element.DesiredSize.Height / 2);
         }
+
     }
 }

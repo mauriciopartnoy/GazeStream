@@ -82,6 +82,42 @@ namespace GazeStream.Controls
             }
         }
 
+        public void UpdateEyeDisplay(EyesData eyes)
+        {
+            if (eyes == null) return;
+
+            leftEyePos = eyes.leftEye.GetViewportPos();
+            rightEyePos = eyes.rightEye.GetViewportPos();
+
+            leftOpen = eyes.leftEye.isBlinking;
+            rightOpen = eyes.rightEye.isBlinking;
+
+            UpdateTimeoutTimer(eyes);
+
+            LeftEyePoint.Visibility = (leftOpen && !LeftTimeout) ? Visibility.Visible : Visibility.Collapsed;
+            RightEyePoint.Visibility = (rightOpen && !RightTimeout) ? Visibility.Visible : Visibility.Collapsed;
+
+            if (eyes.leftEye.viewportY != 0)
+            {
+                SetElementToViewportPosition(LeftEyePoint, leftEyePos);
+                leftLastPos = leftEyePos;
+            }
+            else
+            {
+                SetElementToViewportPosition(LeftEyePoint, leftLastPos);
+            }
+
+            if (eyes.rightEye.viewportY != 0)
+            {
+                SetElementToViewportPosition(RightEyePoint, rightEyePos);
+                rightLastPos = rightEyePos;
+            }
+            else
+            {
+                SetElementToViewportPosition(RightEyePoint, rightLastPos);
+            }
+        }
+
         public void ResetDisplay()
         {
             leftTimer.Reset();
@@ -99,6 +135,12 @@ namespace GazeStream.Controls
         {
             UpdateTimer(leftTimer, eyes.left_pupil.pupil_center.y);
             UpdateTimer(rightTimer, eyes.right_pupil.pupil_center.y);
+        }
+
+        private void UpdateTimeoutTimer(EyesData eyes)
+        {
+            UpdateTimer(leftTimer, eyes.leftEye.viewportY);
+            UpdateTimer(rightTimer, eyes.rightEye.viewportY);
         }
 
         private static void UpdateTimer(Stopwatch timer, float y)

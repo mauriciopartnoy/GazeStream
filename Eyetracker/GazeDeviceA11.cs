@@ -22,7 +22,8 @@ public class GazeDeviceA11 : IGazeDevice
 
     _7i_coefficient_t coefficient;
     EyesData eyesCache = new();
-    public static _7i_eye_data_ex_t eyes;
+    static _7i_eye_data_ex_t eyes;
+    public static _7i_eye_data_ex_t eyesData;
 
     static ASeeTracker.gazeCallback gazeCB = new ASeeTracker.gazeCallback(OnGazeCallback);
     static float gaze_x = 0.0f;
@@ -83,9 +84,12 @@ public class GazeDeviceA11 : IGazeDevice
     {
         coefficient = new _7i_coefficient_t();
         coefficient.buf = Settings.I.LastCalibrationBuff.Value;
+        Debug.WriteLine("Las calibration buff: " + coefficient.buf.Length);
         if (coefficient.buf == null || coefficient.buf.Length == 0)
         {
+
             coefficient.buf = GetDefaultCalibration();
+            Debug.WriteLine("coe2 = " + coefficient.buf);
         }
     }
 
@@ -93,15 +97,15 @@ public class GazeDeviceA11 : IGazeDevice
     public static void OnGazeCallback(ref _7i_eye_data_ex_t eyes, IntPtr context)
     {
         if (!HasValidCalibration) return;
-
+        eyesData = eyes;
         if (1 == _is_valid_recom_eye_gaze_point(ref eyes) && eyes.recom_gaze.gaze_point.x != -1)
         {
             //if (eyes.recom_gaze.gaze_point.x == -1) return; //-1, -1 es el valor que devuelve cuando el punto es falopa.
             gazePointChanged = true;
             gaze_x = eyes.recom_gaze.gaze_point.x;
             gaze_y = eyes.recom_gaze.gaze_point.y;
-            rawGaze_x = eyes.recom_gaze.raw_point.x;
-            rawGaze_y = eyes.recom_gaze.raw_point.y;
+            rawGaze_x = (eyes.left_gaze.gaze_point.x + eyes.right_gaze.gaze_point.x) * 0.50f;
+            rawGaze_y = (eyes.left_gaze.gaze_point.y + eyes.right_gaze.gaze_point.y) * 0.50f;
             UserIsPresentStatic = true;
         }
         else
@@ -143,8 +147,6 @@ public class GazeDeviceA11 : IGazeDevice
         if (!HasValidCalibration) return;
         if (!gazePointChanged) return;
         if (!UserIsPresentStatic) return;
-        gaze_x = Math.Clamp(gaze_x, 0, 1);
-        gaze_y = Math.Clamp(gaze_y, 0, 1);
         gazePointCache = new GazePoint(new Vector2(gaze_x, gaze_y));
         rawGazePointCache = new GazePoint(new Vector2(rawGaze_x, rawGaze_y));
     }
@@ -164,19 +166,19 @@ public class GazeDeviceA11 : IGazeDevice
         {
             eyesCache.rightEye = new Eye();
         }
-        eyesCache.leftEye.isBlinking = eyes.left_ex_data.blink == 0 ? false : true;
-        eyesCache.leftEye.viewportX = eyes.left_pupil.pupil_center.x;
-        eyesCache.leftEye.viewportY = 1f - eyes.left_pupil.pupil_center.y;
-        eyesCache.leftEye.pupilDistanceMm = eyes.left_pupil.pupil_distance;
-        eyesCache.leftEye.pupilDiameter = eyes.left_pupil.pupil_diameter;
-        eyesCache.leftEye.pupilDiameterMm = eyes.left_pupil.pupil_diameter_mm;
+        eyesCache.leftEye.isBlinking = eyesData.left_ex_data.blink == 0 ? false : true;
+        eyesCache.leftEye.viewportX = eyesData.left_pupil.pupil_center.x;
+        eyesCache.leftEye.viewportY = eyesData.left_pupil.pupil_center.y;
+        eyesCache.leftEye.pupilDistanceMm = eyesData.left_pupil.pupil_distance;
+        eyesCache.leftEye.pupilDiameter = eyesData.left_pupil.pupil_diameter;
+        eyesCache.leftEye.pupilDiameterMm = eyesData.left_pupil.pupil_diameter_mm;
 
-        eyesCache.rightEye.isBlinking = eyes.right_ex_data.blink == 0 ? false : true;
-        eyesCache.rightEye.viewportX = eyes.right_pupil.pupil_center.x;
-        eyesCache.rightEye.viewportY = 1f - eyes.right_pupil.pupil_center.y;
-        eyesCache.rightEye.pupilDistanceMm = eyes.right_pupil.pupil_distance;
-        eyesCache.rightEye.pupilDiameter = eyes.right_pupil.pupil_diameter;
-        eyesCache.rightEye.pupilDiameterMm = eyes.right_pupil.pupil_diameter_mm;
+        eyesCache.rightEye.isBlinking = eyesData.right_ex_data.blink == 0 ? false : true;
+        eyesCache.rightEye.viewportX = eyesData.right_pupil.pupil_center.x;
+        eyesCache.rightEye.viewportY = eyesData.right_pupil.pupil_center.y;
+        eyesCache.rightEye.pupilDistanceMm = eyesData.right_pupil.pupil_distance;
+        eyesCache.rightEye.pupilDiameter = eyesData.right_pupil.pupil_diameter;
+        eyesCache.rightEye.pupilDiameterMm = eyesData.right_pupil.pupil_diameter_mm;
     }
 
     public static void LoadSmooth()

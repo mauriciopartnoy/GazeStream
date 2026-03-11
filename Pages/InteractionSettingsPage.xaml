@@ -4,25 +4,35 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:GazeStream.Pages"
+             xmlns:eye="clr-namespace:GazeStream.Eyetracker"
              xmlns:controls="clr-namespace:GazeStream.Controls"
+             xmlns:settings="clr-namespace:GazeStream.AppData"
+             mc:Ignorable="d"
+             d:DesignHeight="1080" d:DesignWidth="1920"
+             d:DataContext="{d:DesignInstance Type=settings:Settings}"
              >
     <Grid Background="White" Margin="24">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="240"/>
         </Grid.ColumnDefinitions>
-        <StackPanel Grid.Column="0" VerticalAlignment="Top">
-            <StackPanel.Resources>
-                <Style TargetType="{x:Type TextBlock}">
-                    <Setter Property="Margin" Value="0,10,0,0"/>
-                </Style>
-                <Style TargetType="{x:Type StackPanel}">
-                    <Setter Property="Margin" Value="10,10,0,0"/>
-                </Style>
-            </StackPanel.Resources>
-            <TextBlock Text="Opciones de Puntero"
+        <controls:ScrollPageControl Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" TargetScrollViewer="{Binding ElementName=Scroll}"/>
+        <ScrollViewer x:Name="Scroll">
+            <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                <StackPanel.Resources>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="Margin" Value="0,10,0,0"/>
+                    </Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Margin" Value="10,10,0,0"/>
+                    </Style>
+                </StackPanel.Resources>
+                <TextBlock Text="Opciones de Puntero"
                    FontSize="20"
                    FontWeight="SemiBold"/>
+                <controls:EnumSelector SelectedValue="{Binding ButtonAnimationColor.Value}" Height="200" Width="600"/>
+                <controls:EnumSelector SelectedValue="{Binding BubbleOpacityEnum.Value}" Height="400" Width="600"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding ButtonAnimationColor.Value}" Height="200"/>
 
                 <controls:LabeledSlider
 Label="Tiempo de Activación"
@@ -31,16 +41,16 @@ Minimum="0"
 Maximum="5"
 TickFrequency=".1"
 IsSnapToTickEnabled="True"
-Value="{Binding TiempoDeActivacion}" />
+Value="{Binding TiempoDeActivacion.Value}" />
 
                 <controls:LabeledSlider
-Label="Tiempo de Desactivación"
+Label="Multiplicador De Velocidad De Desactivación"
 Foreground="Black"
 Minimum="0"
 Maximum="5"
 TickFrequency=".1"
 IsSnapToTickEnabled="True"
-Value="{Binding TiempoDeDesactivacion}" />
+Value="{Binding MultiplicadorDeVelocidadDeDesactivacion.Value}" />
 
                 <controls:LabeledSlider
 Label="Tiempo de inicio de activación"
@@ -49,7 +59,7 @@ Minimum="0"
 Maximum="5"
 TickFrequency="0.1"
 ValueFormat="P0"
-Value="{Binding InicioDeActivacion}" />
+Value="{Binding TiempoDeInicioDeActivacion.Value}" />
 
                 <controls:LabeledSlider
 Label="Permanencia de fijaciones incompletas"
@@ -58,8 +68,30 @@ Minimum="0"
 Maximum="5"
 TickFrequency=".1"
 IsSnapToTickEnabled="True"
-Value="{Binding Permanencia}" />
+Value="{Binding PermanenciaDeFijacionesIncompletas.Value}" />
+                <controls:LabeledSlider
+Label="Intervalo repetir acción"
+Foreground="Black"
+Minimum="0"
+Maximum="5"
+TickFrequency=".1"
+IsSnapToTickEnabled="True"
+Value="{Binding RepeatActionInterval.Value}" />
+
+                <!--<ComboBox ItemsSource="{Binding AnimationTypes}" SelectedIndex="{Binding AnimationType}"></ComboBox>
+        <ComboBox ItemsSource="{Binding AnimationColors}" SelectedIndex="{Binding AnimationColor}"></ComboBox>-->
+                <StackPanel Orientation="Horizontal">
+                    <eye:GazeButton Width="200" Height="200" RepeatAction="True" RepeatActionIntervalOverride=".3">
+                        <ToggleButton HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="Test1" />
+                    </eye:GazeButton>
+                    <eye:GazeButton Width="150" Height="150" RepeatAction="True">
+                        <eye:GazeButton.Content>
+                            <ToggleButton HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="Test2" />
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+                </StackPanel>
             </StackPanel>
+        </ScrollViewer>
 
     </Grid>
 </UserControl>

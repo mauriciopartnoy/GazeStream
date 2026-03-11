@@ -63,7 +63,7 @@ namespace GazeStream.ViewModels
             }
         }
 
-        public float Opacity
+        public double Opacity
         {
             get => Settings.I.BubbleOpacity.Value;
             set

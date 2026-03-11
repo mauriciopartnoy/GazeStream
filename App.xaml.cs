@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System.Threading;
 using System;
+using InputSimulatorEx;
 
 namespace GazeStream
 {
@@ -28,6 +29,7 @@ namespace GazeStream
         public GazeManager GazeManager { get; private set; }
         public TrayService Tray { get; private set; }
 
+        public InputSimulator InputSim { get; private set; }
         public OverlayWindow OverlayWindow { get; private set; }
 
         Hotkeys hotkeys;
@@ -44,6 +46,7 @@ namespace GazeStream
 
             SettingsManager.SampleRateHZ.Value = 60;
 
+            InputSim = new InputSimulator();
             Tray = new TrayService();
             UIDispatcher = this.Dispatcher;
             CalibrationPresets = new CalibrationPresets();

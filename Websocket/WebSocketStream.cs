@@ -112,20 +112,29 @@ public class WebSocketStream : IDisposable
     void SendGazePointMessage()
     {
         if (ws == null || !IsAlive) return;
+        SendPointNew();
+    }
+
+    void SendPointNew()
+    {
         GazePoint point = GazeManager.I.GazePoint;
         GazePoint rawPoint = GazeManager.I.RawGazePoint;
         if (!point.IsValid) return;
         GazePointMessage p = new GazePointMessage(point.viewportPoint.X, point.viewportPoint.Y, rawPoint.viewportPoint.X, rawPoint.viewportPoint.Y);
         string jsonPoint = JsonConvert.SerializeObject(p);
         WriteLine(jsonPoint);
-
-        //TODO: Confirmar que no es necesaria hacer la conversión a pixeles y volar este codigo comentado.
-        //Vector2 p = new Vector2();
-        //Vector2 displayRes = WindowsHelper.GetDisplayResolutionInPixels();
-        //p.X = (int)Math.Round(GazeManager.I.SmoothViewportPoint.X * (float)displayRes.X);
-        //p.Y = (int)Math.Round(GazeManager.I.SmoothViewportPoint.Y * (float)displayRes.Y);
-        //p.t = CurrentTimeInMilliseconds;
         //Debug.Log($"Smooth X: {p.xSmooth} Y: {p.ySmooth}");
+    }
+
+    void SendPointOld()
+    {
+        Vector2 p = new Vector2();
+        Vector2 displayRes = WindowsHelper.GetDisplayResolutionInPixels();
+        p.X = (int)Math.Round(GazeManager.I.SmoothViewportPoint.X * (float)displayRes.X);
+        p.Y = (int)Math.Round(GazeManager.I.SmoothViewportPoint.Y * (float)displayRes.Y);
+        //p.t = CurrentTimeInMilliseconds;
+        string jsonPoint = JsonConvert.SerializeObject(p);
+        WriteLine(jsonPoint);
     }
 
     public void SendOnSettingChangedNotification(string saveKey)
@@ -197,6 +206,10 @@ public class GazeService : WebSocketBehavior
                 case "GetSettingsSnapshot":
                     SendSettingsSnapshot();
                     break;
+                case "ToggleMouseAndBubble":
+                    Settings.I.MouseToggle.Value = !Settings.I.MouseToggle.Value;
+                    Settings.I.BubbleToggle.Value = Settings.I.MouseToggle.Value;
+                    break;
                 case "ToggleMouseControl":
                     Settings.I.MouseToggle.Value = !Settings.I.MouseToggle.Value;
                     break;
@@ -261,10 +274,10 @@ public class GazeService : WebSocketBehavior
                     Settings.I.FilterProfile.Value = FilterProfile.Alto;
                     break;
                 case "ShowEyeDisplay":
-                    GlobalEvents.OnShowEyeDisplay.Invoke();
+                    WindowManager.OpenWindow<EyesWindow>();
                     break;
                 case "HideEyeDisplay":
-                    GlobalEvents.OnHideEyeDisplay.Invoke();
+                    WindowManager.CloseWindow<EyesWindow>();
                     break;
                 case "SetSampleRate20":
                     Settings.I.SampleRateHZ.Value = 20;
@@ -310,6 +323,8 @@ public class GazeService : WebSocketBehavior
 
     public void RequestCalibration(int pointsArray, int eyes)
     {
+        Settings.I.LastPointsOption.Value = pointsArray;
+        Settings.I.LastEyesOption.Value = eyes;
         WindowManager.OpenWindow<CalibrationWindow>();
         GlobalEvents.OnStartCalibrationCommand.Invoke(pointsArray, eyes);
     }

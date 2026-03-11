@@ -8,7 +8,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Palettes/GazePalette.xaml"/>
-                <ResourceDictionary Source="Resources/Styles/TabStyles.xaml"/>
+                <ResourceDictionary Source="Resources/Styles/AppStyles.xaml"/>
                 <ResourceDictionary Source="Resources/Converters.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

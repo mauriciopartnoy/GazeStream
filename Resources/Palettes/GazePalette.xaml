@@ -8,5 +8,15 @@
     <SolidColorBrush x:Key="SeriousPanel" Color="#FF5E627B"/>
     <SolidColorBrush x:Key="SeriousBackground" Color="#FF212F3C"/>
     <SolidColorBrush x:Key="ToggleGreen" Color="#FFA0D992"/>
-    
+
+    <SolidColorBrush x:Key="Rojo" Color="Red"/>
+    <SolidColorBrush x:Key="Verde" Color="GreenYellow"/>
+    <SolidColorBrush x:Key="Azul" Color="DodgerBlue"/>
+    <SolidColorBrush x:Key="Amarillo" Color="Yellow"/>
+    <SolidColorBrush x:Key="Cyan" Color="Cyan"/>
+    <SolidColorBrush x:Key="Magenta" Color="Magenta"/>
+    <SolidColorBrush x:Key="Violeta" Color="Purple"/>
+    <SolidColorBrush x:Key="Blanco" Color="White"/>
+    <SolidColorBrush x:Key="Negro" Color="Black"/>
+
 </ResourceDictionary>

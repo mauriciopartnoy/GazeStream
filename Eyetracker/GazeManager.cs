@@ -35,6 +35,7 @@ namespace GazeStream.Eyetracker
         public GazePoint GazePoint { get; private set; }
         public GazePoint RawGazePoint { get; private set; }
 
+        public EyesData? Eyes => GazeDevice == null ? null : GazeDevice.Eyes;
         public Vector2 SmoothViewportPoint { get; private set; }
         public Vector2 SmoothScreenPoint { get; private set; }
 
@@ -60,11 +61,11 @@ namespace GazeStream.Eyetracker
         Task loopTask;
         CancellationTokenSource loopCts;
 
-        Stopwatch deltaTimeWatch;
+        Stopwatch UIdeltaTimeWatch;
         Stopwatch timeOutTimer;
 
-        TimeSpan lastTimeSample;
-        TimeSpan deltaTime;
+        TimeSpan UIdeltaTimeLastSample;
+        TimeSpan UIdeltaTime;
 
         public bool IsThisAJoacoDevice(string deviceName)
         {
@@ -75,7 +76,7 @@ namespace GazeStream.Eyetracker
         {
             I = this;
             timeOutTimer = new Stopwatch();
-            deltaTimeWatch = new Stopwatch();
+            UIdeltaTimeWatch = new Stopwatch();
             input = new InputSimulator();
             gazeTargets = new();
             kalmanFilter = new();
@@ -148,9 +149,9 @@ namespace GazeStream.Eyetracker
         {
             if (loopTask != null && !loopTask.IsCompleted) return;
 
-            deltaTimeWatch.Restart();
-            lastTimeSample = new TimeSpan(0);
-            deltaTime = new TimeSpan(0);
+            UIdeltaTimeWatch.Restart();
+            UIdeltaTimeLastSample = new TimeSpan(0);
+            UIdeltaTime = new TimeSpan(0);
             loopCts = new CancellationTokenSource();
             loopTask = Task.Run(() => UpdateLoop(loopCts.Token));
         }
@@ -169,28 +170,51 @@ namespace GazeStream.Eyetracker
                     await Task.Delay(500, token);
                     if (GazeDevice == null) continue;
                 }
-                UpdateDeltaTime();
                 GazeDevice.UpdateData();
                 GetNewGazePointIfValid();
                 UpdateTimeoutTimer();
                 UpdateMousePosition();
-                UpdateGazeTargetsForWindow(SmoothScreenP, deltaTime.TotalSeconds, App.Instance.OverlayWindow);
                 SendUpdateEvents();
                 await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
             }
         }
 
-        private static void SendUpdateEvents()
+
+        private void SendUpdateEvents()
         {
             if (App.Instance == null) return;
             OnGazeUpdate?.Invoke();
-            App.Instance.Dispatcher.BeginInvoke(
-         DispatcherPriority.Render,
-         new Action(() =>
-         {
-             OnGazeUpdateUI?.Invoke();
-         })
-     );
+            UpdateGazeTargets();
+            UpdateUI();
+        }
+
+        bool updateUIqueue = false;
+        void UpdateUI()
+        {
+            if (updateUIqueue) return;
+            updateUIqueue = true;
+            App.Current.Dispatcher.BeginInvoke(
+                DispatcherPriority.Render,
+                new Action(() =>
+                {
+                    updateUIqueue = false;
+                    OnGazeUpdateUI?.Invoke();
+                    UpdateGazeTargetVisuals();
+                }));
+        }
+
+        bool updateUIqueue2 = false;
+        void UpdateGazeTargets()
+        {
+            if (updateUIqueue2) return;
+            updateUIqueue2 = true;
+            App.Current.Dispatcher.BeginInvoke(
+                DispatcherPriority.Input,
+                new Action(() =>
+                {
+                    updateUIqueue2 = false;
+                    UpdateGazeTargetsForAllWindows();
+                }));
         }
 
         void GetNewGazePointIfValid()
@@ -207,18 +231,18 @@ namespace GazeStream.Eyetracker
             //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
             SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
             SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
-            SmoothScreenPoint = Helper.ViewportToScreenPoint(SmoothViewportPoint);
-            SmoothScreenP = Helper.ViewportToScreen(SmoothViewportPoint);
+            SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
+            SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
         }
 
-        void UpdateDeltaTime()
+        void UpdateUIDeltaTime()
         {
-            TimeSpan now = deltaTimeWatch.Elapsed;
-            deltaTime = now - lastTimeSample;
-            lastTimeSample = now;
-            if (deltaTime > TimeSpan.FromMilliseconds(100))
+            TimeSpan now = UIdeltaTimeWatch.Elapsed;
+            UIdeltaTime = now - UIdeltaTimeLastSample;
+            UIdeltaTimeLastSample = now;
+            if (UIdeltaTime > TimeSpan.FromMilliseconds(100))
             {
-                deltaTime = TimeSpan.FromMilliseconds(100);
+                UIdeltaTime = TimeSpan.FromMilliseconds(100);
             }
         }
         void UpdateTimeoutTimer()
@@ -287,32 +311,89 @@ namespace GazeStream.Eyetracker
         }
 
         public void RegisterGazeTarget(FrameworkElement element, IGazeTarget target)
-        { 
-            gazeTargets.Add(element, target);     
+        {
+            gazeTargets.Add(element, target);
         }
 
         public void UnregisterGazeTarget(FrameworkElement element, IGazeTarget target)
-        {        
+        {
             gazeTargets.Remove(element);
         }
 
-        IGazeTarget _current;
+        IGazeTarget target;
         IGazeTarget _previous;
-        public void UpdateGazeTargetsForWindow(System.Windows.Point screen, double deltaTime, Window window)
+        readonly HashSet<IGazeTarget> activeGazeObjects = new();
+        void UpdateGazeTargetsForAllWindows()
         {
-            System.Windows.Point windowPoint = window.PointFromScreen(screen);
-
-            _current = GazeHitTest.FindGazeTarget(window, windowPoint);
-
-            if (_current != _previous)
+            foreach (Window w in WindowManager.Windows)
             {
-                _previous?.OnGazeExit();
-                _current?.OnGazeEnter();
+                //Debug.WriteLine($"Updating window: {w.Name} Delta time: {UIdeltaTime.TotalSeconds}");
+                if (w == null) continue;
+                UpdateGazeTargetsForWindow(SmoothScreenP, w);
+            }
+        }
+
+        IGazeTarget GetTarget(System.Windows.Point screen)
+        {
+            IGazeTarget target = null;
+            foreach (Window window in WindowManager.Windows)
+            {
+                //Debug.WriteLine($"Updating window: {w.Name} Delta time: {UIdeltaTime.TotalSeconds}");
+                if (window == null) continue;
+                System.Windows.Point windowPoint = window.PointFromScreen(screen);
+                target = GazeHitTest.FindGazeTarget(window, windowPoint);
+                if (target != null) return target;
+            }
+            return target;
+        }
+
+        public void UpdateGazeTargetsForWindow(System.Windows.Point screen, Window window)
+        {
+            target = GetTarget(screen);
+          
+            foreach (var t in activeGazeObjects)
+            {
+                if (t == target)
+                {
+                    if (t.HasGaze) continue;
+                    t.SetHasGaze(true);
+                }
+                else
+                {
+                    if (!t.HasGaze) continue;
+                    t.SetHasGaze(false);
+                }
             }
 
-            _current?.OnGazeUpdate(deltaTime);
+            if (target != null)
+            {
+                target.SetHasGaze(true);
+                if (!activeGazeObjects.Contains(target))
+                {
+                    activeGazeObjects.Add(target);
+                }
+            }
+          
+          
+            //CLEANUP
+            foreach (var t in activeGazeObjects)
+            {
+                if (!t.HasGaze && t is GazeControl gc && gc.IsFullyInactive)
+                {
+                    Debug.WriteLine("Gaze button fully inactive. Removing from list!");
+                    activeGazeObjects.Remove(t);
+                }
+            }
+        }
 
-            _previous = _current;
+        void UpdateGazeTargetVisuals()
+        {
+            UpdateUIDeltaTime();
+
+            foreach (var t in activeGazeObjects)
+            {
+                t.OnGazeUpdateInternal(UIdeltaTime.TotalSeconds);
+            }
         }
 
         public void Clear()
@@ -349,37 +430,56 @@ public static class GazeTargetTag
         => obj.SetValue(IsTargetProperty, value);
 }
 
-public interface IGazeTarget
-{
-    void OnGazeEnter();
-    void OnGazeExit();
-    void OnGazeUpdate(double deltaTime);
-
-    void OnFocus();
-    void OnUnfocus();
-
-    double StartActivationTime { get; }
-    double ActivationDuration { get; }
-    double PartialActivationStayTime { get; }
-
-    bool IsGazeEnabled { get; }
-}
 
 public static class GazeHitTest
 {
-    public static IGazeTarget FindGazeTarget(Window window, System.Windows.Point windowPoint)
+    public static IGazeTarget FindGazeTarget(Window window, System.Windows.Point point)
     {
-        IInputElement hit = window.InputHitTest(windowPoint);
-        DependencyObject current = hit as DependencyObject;
+        IGazeTarget found = null;
 
-        while (current != null)
+        HitTestResultCallback resultCallback = result =>
         {
-            if (current is IGazeTarget gaze && gaze.IsGazeEnabled)
-                return gaze;
+            //Debug.WriteLine("VisualHit: " + result.VisualHit.GetType().Name);
 
-            current = VisualTreeHelper.GetParent(current);
-        }
+            if (result.VisualHit is DependencyObject d)
+            {
+                DependencyObject current = d;
 
-        return null;
+                while (current != null)
+                {
+                    if (current is IGazeTarget gaze)
+                    {
+                        found = gaze;
+                        return HitTestResultBehavior.Stop;
+                    }
+
+                    current = VisualTreeHelper.GetParent(current);
+                }
+            }
+
+            return HitTestResultBehavior.Continue;
+        };
+
+        VisualTreeHelper.HitTest(window, null, resultCallback, new PointHitTestParameters(point));
+        //Debug.WriteLine(found == null ? "NULL TARGET" : "TARGET: " + found.ToString());
+
+        return found;
     }
+
+    //public static IGazeTarget FindGazeTarget(Window window, System.Windows.Point windowPoint)
+    //{
+    //    IInputElement hit = window.InputHitTest(windowPoint);
+    //    DependencyObject current = hit as DependencyObject;
+
+    //    while (current != null)
+    //    {
+    //        if (current is IGazeTarget gaze /*&& gaze.IsGazeEnabled*/)
+    //        {
+    //            return gaze;
+    //        }
+    //        current = VisualTreeHelper.GetParent(current);
+    //    }
+
+    //    return null;
+    //}
 }

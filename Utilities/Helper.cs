@@ -7,6 +7,8 @@ using System.Numerics;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using GazeStream.AppData;
+using M = System.Windows.Media;
 
 namespace GazeStream.Utilities
 {
@@ -65,13 +67,22 @@ namespace GazeStream.Utilities
             return new Vector2(x, y);
         }
 
-        public static Vector2 ViewportToScreenPoint(Vector2 viewportPoint)
+        public static Vector2 ViewportToScreenVector2(Vector2 viewportPoint)
         {
             Vector2 screenSize = GetPrimaryMonitorSize();
             float x = Lerp(0, screenSize.X, viewportPoint.X);
             float y = Lerp(0, screenSize.Y, viewportPoint.Y);
             return new Vector2(x, y);
         }
+
+        public static System.Windows.Point ViewportToScreenPoint(Vector2 viewportPoint)
+        {
+            Vector2 screenSize = GetPrimaryMonitorSize();
+            float x = Lerp(0, screenSize.X, viewportPoint.X);
+            float y = Lerp(0, screenSize.Y, viewportPoint.Y);
+            return new System.Windows.Point(x, y);
+        }
+
 
         public static System.Windows.Point ViewportToScreenPixels(Window window, Vector2 viewport)
         {
@@ -126,7 +137,7 @@ namespace GazeStream.Utilities
         public static System.Windows.Point PixelsToDips(Window window, System.Windows.Point pixels)
         {
             var (scaleX, scaleY) = GetDpiScale(window);
-            return new System.Windows.Point(pixels.X / scaleX,pixels.Y / scaleY);
+            return new System.Windows.Point(pixels.X / scaleX, pixels.Y / scaleY);
         }
 
 
@@ -164,5 +175,41 @@ namespace GazeStream.Utilities
         {
             return window.PointFromScreen(screen);
         }
+
+        public static M.Brush GetBrushFromBasicColorEnum(BasicColor option)
+        {
+
+            string key = option switch
+            {
+                BasicColor.Rojo => "Rojo",
+                BasicColor.Verde => "Verde",
+                BasicColor.Azul => "Azul",
+                BasicColor.Amarillo => "Amarillo",
+                BasicColor.Cyan => "Cyan",
+                BasicColor.Magenta => "Magenta",
+                BasicColor.Violeta => "Violeta",
+                BasicColor.Blanco => "Blanco",
+                BasicColor.Negro => "Negro",
+                _ => "GazeBlueBrush"
+            };
+
+            return (M.Brush)System.Windows.Application.Current.Resources[key];
+        }
+
+
+        public static void ForceTopmost(Window w)
+        {
+            if (!w.IsVisible)
+            {
+                w.Show();
+            }
+
+            w.WindowState = WindowState.Maximized;
+            w.Activate();
+            w.Topmost = true;  // temporarily
+            w.Topmost = false; // reset
+            w.Focus();
+        }
     }
+
 }

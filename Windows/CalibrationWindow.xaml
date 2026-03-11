@@ -9,7 +9,7 @@
         Title="CalibrationWindow"  
         WindowState="Maximized"
         ResizeMode="NoResize"
-        WindowStyle="SingleBorderWindow"
+        WindowStyle="None"
         ShowInTaskbar="True"
         Topmost="False">
 
@@ -50,16 +50,18 @@
         </Style>
 
     </Window.Resources>
-    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource SeriousBackground}"
->
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource SeriousBackground}">
 
+        <Button x:Name="CloseButton" Background="Red" Click="Back_Click" Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <TextBlock Text="X" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
+        </Button>
         <!-- Overlay canvas -->
         <Canvas x:Name="MainCanvas"
                 Background="Transparent"
                 IsHitTestVisible="False"/>
 
         <!-- Eye display -->
-        <controls:EyeDisplay x:Name="EyeDisplay"/>
+        <controls:EyeDisplay x:Name="EyeDisplay" Width="484" Height="484"/>
 
         <!-- Settings panel -->
         <Border x:Name="SettingsPanel"

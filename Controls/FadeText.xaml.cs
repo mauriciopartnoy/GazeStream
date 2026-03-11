@@ -34,20 +34,19 @@ namespace GazeStream.Controls
         public async Task ShowMessage(
             string message,
             double fadeTime = 0.5,
-            double durationSeconds = 2.0,
+            double durationSeconds = 2.0, CancellationToken token = default,
             M.Color? overrideColor = null)
         {
             MessageText.Text = message;
 
             if (overrideColor.HasValue)
             {
-                MessageText.Foreground =
-                    new M.SolidColorBrush(overrideColor.Value);
+                MessageText.Foreground = new M.SolidColorBrush(overrideColor.Value);
             }
-            
 
+            token.ThrowIfCancellationRequested();
             await FadeTo(1.0, fadeTime);
-            await Task.Delay(TimeSpan.FromSeconds(durationSeconds));
+            await Task.Delay(TimeSpan.FromSeconds(durationSeconds), token);
             await FadeTo(0.0, fadeTime);
         }
 

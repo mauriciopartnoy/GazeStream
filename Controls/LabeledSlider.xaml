@@ -4,18 +4,21 @@
 
     <Grid Margin="0,6,0,0">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="120"/>
+            <ColumnDefinition Width="400"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="60"/>
         </Grid.ColumnDefinitions>
 
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <!-- Label -->
-        <TextBlock Grid.Column="0"
+        <TextBlock Grid.Column="0" Grid.Row="0"
                    Text="{Binding Label, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                   VerticalAlignment="Center"/>
+                   VerticalAlignment="Center" Foreground="Black"/>
 
         <!-- Slider -->
-        <Slider Grid.Column="1"
+        <Slider Grid.Column="0" Grid.Row="1"
                 Minimum="{Binding Minimum, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Maximum="{Binding Maximum, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Value="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
@@ -23,9 +26,10 @@
                 IsSnapToTickEnabled="{Binding IsSnapToTickEnabled, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
 
         <!-- Value -->
-        <TextBlock Grid.Column="2"
+        <TextBlock Grid.Column="1" Grid.Row="1"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Center"
+                   Foreground="Black"
 Text="{Binding Value, RelativeSource={RelativeSource AncestorType=UserControl}, StringFormat=0.00}" />
     </Grid>
 </UserControl>

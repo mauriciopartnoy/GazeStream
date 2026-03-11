@@ -34,6 +34,8 @@ namespace GazeStream
 
             menu.Items.Add("Calibración", null, OnCalibration);
             menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Cámara", null, OnCamera);
+            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Opciones", null, OnOptions);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Salir", null, OnExit);
@@ -49,9 +51,12 @@ namespace GazeStream
         private void OnCalibration(object? sender, EventArgs e)
         {
             WindowManager.OpenWindow<CalibrationWindow>();
-            //W.MessageBox.Show("Placeholder de calibración");
         }
 
+        private void OnCamera(object? sender, EventArgs e)
+        {
+            WindowManager.OpenWindow<EyesWindow>();
+        }
         private void OnExit(object? sender, EventArgs e)
         {
             W.Application.Current.Shutdown();

@@ -18,13 +18,13 @@
                          ConverterParameter=Bubble}" />
 
         <!-- Custom image -->
-        <Image
+        <!--<Image
             IsHitTestVisible="False"
             Source="{Binding ImageSource}"
             Stretch="Uniform"
             Visibility="{Binding CursorType,
                          Converter={StaticResource EnumToVisibility},
-                         ConverterParameter=CustomImage}" />
+                         ConverterParameter=CustomImage}" />-->
 
     </Grid>
 </UserControl>

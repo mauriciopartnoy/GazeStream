@@ -9,6 +9,8 @@ namespace GazeStream.Utilities
     {
         private static readonly Dictionary<Type, Window> _windows = new();
 
+        public static IEnumerable<Window> Windows => _windows.Values;
+
         public static T OpenWindow<T>() where T : Window, new()
         {
             var type = typeof(T);

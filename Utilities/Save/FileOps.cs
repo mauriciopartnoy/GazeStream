@@ -14,6 +14,13 @@ public static class FileOps
         Debug.WriteLine("Saved file at: " + filePath);
     }
 
+    public static void SaveToText(string filePath, string content)
+    {
+        CreateFileDirectory(filePath);
+        File.WriteAllText(filePath, content);
+        Debug.WriteLine("Saved file at: " + filePath);
+    }
+
     public static T LoadFromJson<T>(string filePath, T defaultValue)
     {
         if (!File.Exists(filePath))

@@ -9,7 +9,7 @@ namespace GazeStream.Eyetracker
         public Vector2 viewportPoint;
         public long timeInTicks;
 
-        public Vector2 screenPoint => Helper.ViewportToScreenPoint(viewportPoint);
+        public Vector2 screenPoint => Helper.ViewportToScreenVector2(viewportPoint);
 
         public GazePoint(Vector2 viewportSpacePoint)
         {
