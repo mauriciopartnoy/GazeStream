@@ -4,6 +4,17 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     
     <!-- Brushes -->
+    <SolidColorBrush x:Key="OptionsBackground" Color="#FF14161A"/>
+    <SolidColorBrush x:Key="OptionsPanel" Color="#FF2A2E34"/>
+    <SolidColorBrush x:Key="OptionsTitle" Color="#FFE6E8EB"/>
+    <SolidColorBrush x:Key="OptionsSubTitle" Color="#FFB8BDC6"/>
+    <SolidColorBrush x:Key="ButtonBackground" Color="White"/>
+    <SolidColorBrush x:Key="ButtonForeground" Color="#222"/>
+    <SolidColorBrush x:Key="ButtonBorderIdle" Color="Transparent"/>
+    <SolidColorBrush x:Key="SelectedButtonHighlight" Color="#4CAF50"/>
+    <SolidColorBrush x:Key="MouseOverHighlight" Color="LightBlue"/>
+
+
     <SolidColorBrush x:Key="SeriousButton" Color="#FF444B6A"/>
     <SolidColorBrush x:Key="SeriousPanel" Color="#FF5E627B"/>
     <SolidColorBrush x:Key="SeriousBackground" Color="#FF212F3C"/>

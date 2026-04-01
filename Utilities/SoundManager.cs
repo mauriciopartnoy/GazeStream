@@ -45,5 +45,11 @@ namespace GazeStream.Utilities
             player.Close();
             _activePlayers.Remove(player);
         }
+
+        public static void SetSystemVolume()
+        { 
+            //TODO: Implementar nativo o usando NAudio
+        }
+
     }
 }

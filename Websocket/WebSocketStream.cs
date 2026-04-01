@@ -219,6 +219,12 @@ public class GazeService : WebSocketBehavior
                 case "CancelCalibration":
                     CancelCalibration();
                     break;
+                case "StopGazeDevice":
+                    GazeManager.I.StopGazeDeviceUpdateLoop();
+                    break;
+                case "StartGazeDevice":
+                    GazeManager.I.StartGazeDeviceUpdateLoop();
+                    break;
                 case "PauseData":
                     PauseEyetrackerDataStream();
                     break;
@@ -294,18 +300,6 @@ public class GazeService : WebSocketBehavior
         });
 
     }
-
-    void ShowEyeDisplay()
-    {
-        //TODO: Add eye display
-    }
-
-    void HideEyeDisplay()
-    {
-        //TODO: Add eye display
-    }
-
-
 
     void SendSettingsSnapshot()
     {

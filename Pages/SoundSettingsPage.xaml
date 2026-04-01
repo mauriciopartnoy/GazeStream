@@ -1,0 +1,55 @@
+﻿<UserControl x:Class="GazeStream.Pages.SoundSettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:local="clr-namespace:GazeStream.Pages"
+  xmlns:eye="clr-namespace:GazeStream.Eyetracker"
+  xmlns:controls="clr-namespace:GazeStream.Controls"
+  xmlns:settings="clr-namespace:GazeStream.AppData"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+  mc:Ignorable="d"
+  d:DataContext="{d:DesignInstance Type=settings:Settings}"
+  d:DesignHeight="1080" d:DesignWidth="1920">
+
+    <Grid Margin="24" Background="{StaticResource OptionsBackground}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="6*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT PANEL: SETTINGS -->
+        <ScrollViewer x:Name="Scroll">
+            <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                <StackPanel.Resources>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="Margin" Value="0,10,0,0"/>
+                    </Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Margin" Value="10,10,0,0"/>
+                    </Style>
+                </StackPanel.Resources>
+
+                <TextBlock Text="Volúmen de Sistema" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding VolumeOption.Value}" Height="200"/>
+                
+                <TextBlock Text="Volúmen de Voz" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding VoiceVolumeOption.Value}" Height="200"/>
+
+                <TextBlock Text="Voz" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding Voice.Value}" Height="200"/>
+
+                <TextBlock Text="Retroalimentación" Style="{StaticResource OptionTitle}"/>
+                <eye:GazeButton HorizontalAlignment="Left" Width="300" Height="200" IgnoreRestMode="True">
+                    <eye:GazeButton.Content>
+                        <controls:IconToggleButton Content="Retroalimentación" IconSize="100" IconOn="/Resources/Icons/voice.png" IconOff="/Resources/Icons/voiceOff.png" IsChecked="{Binding VoiceFeedbackToggle.Value}"/>
+                    </eye:GazeButton.Content>
+                </eye:GazeButton>
+
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <controls:ScrollPageControl Grid.Column="1"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TargetScrollViewer="{Binding ElementName=Scroll}"/>
+
+    </Grid>
+</UserControl>

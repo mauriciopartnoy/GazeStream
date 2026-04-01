@@ -3,18 +3,45 @@ using System.Windows;
 using System.Windows.Media;
 using M = System.Windows.Media;
 using GazeStream.ViewModels;
+using GazeStream.Utilities;
+using GazeStream.AppData;
+using System.ComponentModel;
 
 namespace GazeStream.Controls
 {
-    /// <summary>
-    /// Interaction logic for GazeBubble.xaml
-    /// </summary>
+
     public partial class GazeCursor : System.Windows.Controls.UserControl
     {
         public GazeCursor()
         {
-            InitializeComponent();    
-            DataContext = ViewModelsLocator.CursorSettingsViewModel;
+            InitializeComponent();
+            Loaded += GazeButton_Loaded;
+            Unloaded += GazeButton_Unloaded;
+            DataContext = Settings.I;
+        }
+
+        private void GazeButton_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (DesignerProperties.GetIsInDesignMode(this)) return;
+
+            ApplySettings();
+            Settings.I.BubbleColor.OnChanged += ApplySettings;
+
+        }
+
+        private void GazeButton_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (DesignerProperties.GetIsInDesignMode(this)) return;
+            Settings.I.BubbleColor.OnChanged -= ApplySettings;
+        }
+
+        private void ApplySettings()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                Color = Helper.GetBrushFromBasicColorEnum(Settings.I.BubbleColor.Value);
+            });
+
         }
 
         public static readonly DependencyProperty ColorProperty =
@@ -22,43 +49,13 @@ namespace GazeStream.Controls
                 nameof(Color),
                 typeof(M.Brush),
                 typeof(GazeCursor),
-                new PropertyMetadata(M.Brushes.Red));
+                new PropertyMetadata(M.Brushes.Blue));
 
         public M.Brush Color
         {
             get => (M.Brush)GetValue(ColorProperty);
             set => SetValue(ColorProperty, value);
         }
-
-        public static readonly DependencyProperty SizeProperty =
-            DependencyProperty.Register(
-                nameof(Size),
-                typeof(double),
-                typeof(GazeCursor),
-                new PropertyMetadata(40.0));
-
-        public double Size
-        {
-            get => (double)GetValue(SizeProperty);
-            set => SetValue(SizeProperty, value);
-        }
-
-        public static readonly DependencyProperty CursorTypeProperty =
-    DependencyProperty.Register(
-        nameof(CursorType),
-        typeof(CursorVisualStyle),
-        typeof(GazeCursor),
-        new PropertyMetadata(CursorVisualStyle.Bubble));
-
-        public CursorVisualStyle CursorType
-        {
-            get => (CursorVisualStyle)GetValue(CursorTypeProperty);
-            set => SetValue(CursorTypeProperty, value);
-        }
     }
 }
-public enum CursorVisualStyle
-{
-    Bubble,
-    CustomImage
-}
+

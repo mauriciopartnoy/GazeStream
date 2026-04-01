@@ -29,7 +29,7 @@ namespace GazeStream.Controls
         CancellationTokenSource cts;
 
         const int steps = 5;
-        const float time = .3f;
+        const float time = .1f;
 
         public ScrollViewer TargetScrollViewer
         {

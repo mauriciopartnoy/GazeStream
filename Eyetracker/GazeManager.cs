@@ -145,7 +145,7 @@ namespace GazeStream.Eyetracker
             loopCts.Cancel();
         }
 
-        void StartGazeDeviceUpdateLoop()
+        public void StartGazeDeviceUpdateLoop()
         {
             if (loopTask != null && !loopTask.IsCompleted) return;
 
@@ -155,6 +155,17 @@ namespace GazeStream.Eyetracker
             loopCts = new CancellationTokenSource();
             loopTask = Task.Run(() => UpdateLoop(loopCts.Token));
         }
+
+        public void StopGazeDeviceUpdateLoop()
+        {
+            loopCts.Cancel();
+            loopTask = null;
+            if (GazeDevice != null)
+            {
+                GazeDevice.Disconnect();
+            }
+        }
+
         async Task UpdateLoop(CancellationToken token)
         {
             while (!token.IsCancellationRequested)

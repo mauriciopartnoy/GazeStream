@@ -14,6 +14,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using GazeStream.ViewModels;
 using GazeStream.Eyetracker;
+using M = Microsoft.Win32;
+using GazeStream.AppData;
 
 namespace GazeStream.Pages
 {
@@ -25,8 +27,44 @@ namespace GazeStream.Pages
         public CursorSettingsPage()
         {
             InitializeComponent();
-            DataContext = ViewModelsLocator.CursorSettingsViewModel;
+            DataContext = Settings.I;
         }
 
+        //public ImageSource CursorImage
+        //{
+        //    get
+        //    {
+        //        if (string.IsNullOrEmpty(Settings.I.CustomCursorPath.Value))
+        //            return null;
+
+        //        return new BitmapImage(new Uri(CursorImagePath));
+        //    }
+        //}
+
+        void OpenCursorDialog(object sender, RoutedEventArgs args)
+        {
+            SelectCursorImage();
+        }
+
+        private void SelectCursorImage()
+        {
+            var dialog = new M.OpenFileDialog();
+
+            dialog.Title = "Select Cursor Image";
+            dialog.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.gif";
+            dialog.Multiselect = false;
+
+            if (dialog.ShowDialog() == true)
+            {
+                var image = new BitmapImage();
+
+                image.BeginInit();
+                image.UriSource = new Uri(dialog.FileName);
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.EndInit();
+
+                //CursorPreview.Source = image;
+            }
+        }
     }
 }

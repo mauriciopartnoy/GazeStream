@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Windows.Interop;
 using GazeStream.Utilities;
 using System.Windows.Input;
+using System.Diagnostics;
+
 namespace GazeStream.AppData
 {
     class Hotkeys : IDisposable
@@ -32,7 +34,7 @@ namespace GazeStream.AppData
                     (int)modifiers,
                     vk))
             {
-                throw new InvalidOperationException("Failed to register hotkey.");
+                Debug.WriteLine("Couldn't register hotkey.");
             }
 
             _actions[id] = action;

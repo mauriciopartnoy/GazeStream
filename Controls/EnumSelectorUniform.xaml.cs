@@ -53,15 +53,15 @@ namespace GazeStream.Controls
         public static readonly DependencyProperty SelectedValueProperty =
             DependencyProperty.Register(
                 nameof(SelectedValue),
-                typeof(Enum),
+                typeof(object),
                 typeof(EnumSelectorUniform),
                 new FrameworkPropertyMetadata(null,
                     FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
                     OnSelectedValueChanged));
 
-        public Enum SelectedValue
+        public object SelectedValue
         {
-            get => (Enum)GetValue(SelectedValueProperty);
+            get => GetValue(SelectedValueProperty);
             set => SetValue(SelectedValueProperty, value);
         }
 

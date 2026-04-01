@@ -1,0 +1,138 @@
+﻿<Page x:Class="GazeStream.Pages.InteractionSettings"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:GazeStream.Pages"
+      Title="InteractionSettings"
+      xmlns:eye="clr-namespace:GazeStream.Eyetracker"
+      xmlns:controls="clr-namespace:GazeStream.Controls"
+      xmlns:settings="clr-namespace:GazeStream.AppData"
+      mc:Ignorable="d" 
+      d:DataContext="{d:DesignInstance Type=settings:Settings}"
+      d:DesignHeight="1080" d:DesignWidth="1920"
+      >
+
+    <Grid Background="{StaticResource OptionsBackground}" Margin="24">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="6*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <ScrollViewer x:Name="Scroll">
+            <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                <StackPanel.Resources>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="Margin" Value="0,10,0,0"/>
+                    </Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Margin" Value="10,10,0,0"/>
+                    </Style>
+                </StackPanel.Resources>
+                <TextBlock Text="Opciones de Puntero" Style="{StaticResource OptionTitle}"/>
+                <StackPanel Orientation="Horizontal">
+
+
+                    <eye:GazeButton Width="200" Height="200">
+                        <eye:GazeButton.Content>
+                            <Button Style="{StaticResource Gaze}" Click="RestartApp_Click">
+                                <Button.Content>
+                                    <Grid>
+                                        <Image Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" Source="/Resources/Icons/power.png"/>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="22" FontWeight="SemiBold" Text="Reiniciar"/>
+                                    </Grid>
+                                </Button.Content>
+                            </Button>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+
+                    <eye:GazeButton Width="200" Height="200">
+                        <eye:GazeButton.Content>
+                            <Button Style="{StaticResource Gaze}" Click="Start_Click">
+                                <Button.Content>
+                                    <Grid>
+                                        <Image Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" Source="/Resources/Icons/view.png"/>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="22" FontWeight="SemiBold" Text="Iniciar SDK"/>
+                                    </Grid>
+                                </Button.Content>
+                            </Button>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+
+                    <eye:GazeButton Width="200" Height="200">
+                        <eye:GazeButton.Content>
+                            <Button Style="{StaticResource Gaze}" Click="Stop_Click">
+                                <Button.Content>
+                                    <Grid>
+                                        <Image Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" Source="/Resources/Icons/hide.png"/>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="22" FontWeight="SemiBold" Text="Desactivar SDK"/>
+                                    </Grid>
+                                </Button.Content>
+                            </Button>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+
+
+
+                    <eye:GazeButton Width="200" Height="200" IgnoreRestMode="True">
+                        <eye:GazeButton.Content>
+                            <controls:IconToggleButton Content="Descanso" IconSize="100" IconOn="/Resources/Icons/eyeOff.png" IconOff="/Resources/Icons/eyeOn.png" IsChecked="{Binding RestModeToggle.Value}"/>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+                    <eye:GazeButton Width="200" Height="200">
+                        <eye:GazeButton.Content>
+                            <ToggleButton Style="{StaticResource GazeStyle}" IsChecked="{Binding MouseToggle.Value}">
+                                <StackPanel>
+                                    <Image Source="/Resources/Icons/mouse.png" Width="100" Height="100"/>
+                                    <TextBlock Text="Seguimiento de Mouse" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </ToggleButton>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+                    <eye:GazeButton Width="200" Height="200">
+                        <eye:GazeButton.Content>
+                            <ToggleButton Style="{StaticResource GazeStyle}" IsChecked="{Binding BubbleToggle.Value}">
+                                <StackPanel>
+                                    <Ellipse Width="100" Height="100" Fill="Red"/>
+                                    <TextBlock Text="Mostrar Puntero"/>
+                                </StackPanel>
+                            </ToggleButton>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+                </StackPanel>
+
+
+                <TextBlock Text="Método de accesibilidad" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding AccessibilityMethod.Value}" Height="200"/>
+
+                <TextBlock Text="Tiempo de activación" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding OpcionTiempoDeActivacion.Value}" Height="200"/>
+
+                <TextBlock Text="Tiempo de inicio de activación" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding OpcionTiempoDeInicioDeActivacion.Value}" Height="200"/>
+
+                <TextBlock Text="Multiplicador de velocidad de desactivación" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding OpcionMultiplicadorDeVelocidadDeDesactivacion.Value}" Height="200"/>
+
+                <TextBlock Text="Permanencia de fijaciones incompletas" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding OpcionPermanenciaDeFijacionesIncompletas.Value}" Height="200"/>
+
+                <TextBlock Text="Animación de efectos" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding ButtonAnimationType.Value}" Height="200"/>
+
+                <TextBlock Text="Color de efectos" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding ButtonAnimationColor.Value}" Height="200"/>
+
+                <TextBlock Text="Apariencia del Sistema" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding ColorScheme.Value}" Height="200"/>
+
+                <TextBlock Text="Tamaño de fuente - Títulos" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding FontSizeTitlesOption.Value}" Height="200"/>
+
+                <TextBlock Text="Velocidad de Sampleo" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding SampleRateOption.Value}" Height="200"/>
+            </StackPanel>
+        </ScrollViewer>
+        <controls:ScrollPageControl Grid.Column="1"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TargetScrollViewer="{Binding ElementName=Scroll}"/>
+
+    </Grid>
+</Page>

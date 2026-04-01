@@ -3,13 +3,89 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:GazeStream.Eyetracker"
     xmlns:control="clr-namespace:GazeStream.Controls"
-     xmlns:converter="clr-namespace:GazeStream.Converters">
+    xmlns:converter="clr-namespace:GazeStream.Converters"
+    xmlns:data="clr-namespace:GazeStream.AppData">
 
-    <!-- TAB ITEM -->
-    <Style x:Key="SettingsTabItemStyle"
-       TargetType="TabItem">
+    <x:Static Member="data:Settings.I" x:Key="Settings"/>
 
-        <Setter Property="Height" Value="48"/>
+
+    <Style x:Key="Serious" TargetType="Button">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{StaticResource SeriousButton}"
+                          BorderBrush="White"
+                          BorderThickness="1"
+                          CornerRadius="12"
+                          Padding="10"
+                            >
+                        <ContentPresenter
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Gaze" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource ButtonForeground}"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+        
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{StaticResource ButtonBackground}"
+                      BorderBrush="White"
+                      BorderThickness="1"
+                      CornerRadius="12"
+                      Padding="10"
+                        >
+                        <ContentPresenter
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="OptionTitle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource OptionsSubTitle}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="TextAlignment" Value="Left"/>
+        <Setter Property="Margin" Value="0,8,20,8"/>
+        <Setter Property="FontSize" Value="{Binding Source={StaticResource ResourceKey=Settings}, Path=FontSizeTitles.Value}"/>
+    </Style>
+
+    <Style x:Key="OptionSubTitle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource OptionsSubTitle}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="TextAlignment" Value="Left"/>
+        <Setter Property="Margin" Value="0,8,20,8"/>
+        <Setter Property="FontSize" Value="18"/>
+    </Style>
+
+    <Style x:Key="SeriousTitle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="TextAlignment" Value="Left"/>
+        <Setter Property="Margin" Value="0,8,20,8"/>
+    </Style>
+
+    <Style x:Key="SettingsTabItemStyle" TargetType="control:GazeTabItem">
+
+        <Setter Property="Height" Value="120"/>
+        <Setter Property="Width" Value="120"/>
         <Setter Property="MinWidth" Value="140"/>
         <Setter Property="FontSize" Value="16"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -17,46 +93,47 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="20,0"/>
-
+        <Setter Property="Header" Value="Placeholder" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
-                    <Border x:Name="Border"
-                        Background="{TemplateBinding Background}"
-                        CornerRadius="8"
-                        Margin="4"
-                        Padding="{TemplateBinding Padding}">
 
-                        <!-- THIS IS THE KEY LINE -->
-                        <ContentPresenter
-                        ContentSource="Header"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        RecognizesAccessKey="True"/>
+                    <Border x:Name="Border"
+                      Background="{TemplateBinding Background}"
+                      CornerRadius="8"
+                      Margin="4"
+                      Padding="{TemplateBinding Padding}">
+
+                        <local:GazeButton
+                            Width="{TemplateBinding Width}"
+                            Height="{TemplateBinding Height}"
+                            Content="{TemplateBinding Header}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
                     </Border>
 
                     <ControlTemplate.Triggers>
 
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="Border"
-                                Property="Background"
-                                Value="#2D7DFF"/>
+                              Property="Background"
+                              Value="#2D7DFF"/>
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>
 
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Border"
-                                Property="Background"
-                                Value="#333333"/>
+                              Property="Background"
+                              Value="#333333"/>
                         </Trigger>
 
                     </ControlTemplate.Triggers>
+
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
 
     </Style>
-
 
     <!-- TAB CONTROL -->
     <Style x:Key="SettingsTabControlStyle"
@@ -112,177 +189,21 @@
         </Setter>
     </Style>
 
-    <Style x:Key="SeriousTitle" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="TextAlignment" Value="Left"/>
-        <Setter Property="Margin" Value="0,8,20,8"/>
-    </Style>
-
-    <!-- Rounded button style (WPF-compatible) -->
-    <Style x:Key="Serious" TargetType="Button">
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        <Setter Property="VerticalAlignment" Value="Stretch"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Button">
-                    <Border Background="{StaticResource SeriousButton}"
-                          BorderBrush="White"
-                          BorderThickness="1"
-                          CornerRadius="12"
-                          Padding="10"
-                            >
-                        <ContentPresenter
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-
-
     <Style TargetType="{x:Type local:GazeButton}">
 
         <Setter Property="RepeatAction" Value="False"/>
-        <Setter Property="RepeatActionIntervalOverride" Value="0"/>
-        <Setter Property="Width" Value="200"/>
-        <Setter Property="Height" Value="200"/>
-        <Setter Property="CornerRadius" Value="7"/>
-        <Setter Property="Background" Value="#222"/>
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="FontSize" Value="28"/>
-        <Setter Property="BorderBrush" Value="#444"/>
-        <Setter Property="BorderThickness" Value="2"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:GazeButton}">
-
-                    <Grid>
-                        <Border Name="mask" Background="White" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False"/>
-                        <ContentPresenter  x:Name="PART_Content" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" RecognizesAccessKey="True" 
-                        Content="{TemplateBinding Content}"
-                        ContentTemplate="{TemplateBinding ContentTemplate}"
-                        ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}" >
-                            <ContentPresenter.OpacityMask>
-                                <VisualBrush Visual="{Binding ElementName=mask}"/>
-                            </ContentPresenter.OpacityMask>
-                        </ContentPresenter>
-      
-                        <!-- Base circle -->
-                        <Border x:Name="Base"
-                            Background="Transparent"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="0"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            ClipToBounds="True" IsHitTestVisible="False">
-
-                            <Grid Opacity=".5" IsHitTestVisible="False">
-
-                                <Grid.OpacityMask>
-                                    <VisualBrush Visual="{Binding ElementName=mask}"/>
-                                </Grid.OpacityMask>
-                                
-                                <!-- Radial dwell progress -->
-                                <control:RadialProgress
-                                x:Name="RadialFill"
-                                Visibility="Collapsed"
-                                Progress01="{TemplateBinding Progress01}"
-                                Fill="{TemplateBinding AnimationColor}"                               
-                                StartAngle="-90"
-                                IsClockwise="True"
-                                    IsHitTestVisible="False"
-                                />
-
-                                <control:LateralFillPanel
-                                x:Name="LateralFill"
-                                Visibility="Collapsed"
-                                Progress01="{TemplateBinding Progress01}"
-                                FillBrush="{TemplateBinding AnimationColor}"
-                                FillDirection="LeftToRight"
-                                                                        IsHitTestVisible="False"
-
-                                />
-
-                                <control:ScaleFill Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                    <Ellipse Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Width="500" Height="500" x:Name="ExpandFill" Fill="{TemplateBinding AnimationColor}"/>
-                                </control:ScaleFill>
-
-                                <control:ScaleFill IsReversed="True" Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                    <Ellipse Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" Width="500" Height="500" x:Name="ShrinkFill" Fill="{TemplateBinding AnimationColor}"/>
-                                </control:ScaleFill>
-
-                                <control:ScaleFill Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                    <Border Visibility="Collapsed" BorderThickness="10" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="FrameFill" BorderBrush="{TemplateBinding AnimationColor}"/>
-                                </control:ScaleFill>
-                            </Grid>
-                        </Border>
-
-                        <!--<ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" RecognizesAccessKey="True"/>-->
-
-
-                    </Grid>
-
-                    <!--Triggers-->
-                    <ControlTemplate.Triggers>
-
-                        <!--Gaze Highlight-->
-                        <Trigger Property="HasGaze" Value="True">
-                            <!--<Setter TargetName="Highlight"
-                                Property="Opacity"
-                                Value="1"/>-->
-                            <Setter TargetName="Base"
-                                Property="BorderBrush"
-                                Value="#00AFFF"/>
-                        </Trigger>
-
-                        <!--Disabled-->
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="Base"
-                                Property="Opacity"
-                                Value="0.5"/>
-                        </Trigger>
-
-                        <Trigger Property="AnimationType" Value="Clock">
-                            <Setter TargetName="RadialFill" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                        <Trigger Property="AnimationType" Value="FillLeft">
-                            <Setter TargetName="LateralFill" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                        <Trigger Property="AnimationType" Value="Expand">
-                            <Setter TargetName="ExpandFill" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                        <Trigger Property="AnimationType" Value="Shrink">
-                            <Setter TargetName="ShrinkFill" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                        <Trigger Property="AnimationType" Value="Frame">
-                            <Setter TargetName="FrameFill" Property="Visibility" Value="Visible"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="GazeButtonUniform" TargetType="{x:Type local:GazeButton}">
-
-        <Setter Property="RepeatAction" Value="False"/>
+        <Setter Property="IgnoreRestMode" Value="False"/>
         <Setter Property="RepeatActionIntervalOverride" Value="0"/>
 
-        <!-- Optional for gaze usability -->
+        <Setter Property="Foreground" Value="{StaticResource ButtonForeground}"/>
+        <Setter Property="Background" Value="{StaticResource ButtonBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderIdle}"/>
+        
         <Setter Property="MinWidth" Value="120"/>
         <Setter Property="MinHeight" Value="120"/>
-
         <Setter Property="CornerRadius" Value="7"/>
-        <Setter Property="Background" Value="#222"/>
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="FontSize" Value="28"/>
-        <Setter Property="BorderBrush" Value="#444"/>
         <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="FontSize" Value="28"/>
 
         <Setter Property="Template">
             <Setter.Value>
@@ -297,7 +218,14 @@
                             IsHitTestVisible="False"/>
 
                         <!-- CONTENT -->
-
+                        <Border x:Name="Base"
+      Background="Transparent"
+      BorderBrush="{TemplateBinding BorderBrush}"
+      BorderThickness="10"
+      CornerRadius="{TemplateBinding CornerRadius}"
+      ClipToBounds="True"
+      IsHitTestVisible="False"/>
+                        
                         <ContentPresenter
                         x:Name="PART_Content"
                         HorizontalAlignment="Stretch"
@@ -316,24 +244,18 @@
 
                         <!-- BASE LAYER -->
 
-                        <Border x:Name="Base"
-                            Background="Transparent"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="0"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            ClipToBounds="True"
-                            IsHitTestVisible="False">
-
-                            <Grid Opacity=".5" IsHitTestVisible="False">
-
-                                <Grid.OpacityMask>
-                                    <VisualBrush Visual="{Binding ElementName=mask}"/>
-                                </Grid.OpacityMask>
 
 
-                                <!-- RADIAL -->
+                        <Grid Opacity=".5" IsHitTestVisible="False">
 
-                                <control:RadialProgress
+                            <Grid.OpacityMask>
+                                <VisualBrush Visual="{Binding ElementName=mask}"/>
+                            </Grid.OpacityMask>
+
+
+                            <!-- RADIAL -->
+
+                            <control:RadialProgress
                                 x:Name="RadialFill"
                                 Visibility="Collapsed"
                                 Progress01="{TemplateBinding Progress01}"
@@ -343,9 +265,9 @@
                                 IsHitTestVisible="False"/>
 
 
-                                <!-- LATERAL -->
+                            <!-- LATERAL -->
 
-                                <control:LateralFillPanel
+                            <control:LateralFillPanel
                                 x:Name="LateralFill"
                                 Visibility="Collapsed"
                                 Progress01="{TemplateBinding Progress01}"
@@ -354,47 +276,44 @@
                                 IsHitTestVisible="False"/>
 
 
-                                <!-- EXPAND -->
+                            <!-- EXPAND -->
 
-                                <control:ScaleFill Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                    <Ellipse x:Name="ExpandFill"
+                            <control:ScaleFill Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
+                                <Ellipse x:Name="ExpandFill"
                                          Visibility="Collapsed"
                                          HorizontalAlignment="Center"
                                          VerticalAlignment="Center"
                                          Width="500"
                                          Height="500"
                                          Fill="{TemplateBinding AnimationColor}"/>
-                                </control:ScaleFill>
+                            </control:ScaleFill>
 
 
-                                <!-- SHRINK -->
+                            <!-- SHRINK -->
 
-                                <control:ScaleFill IsReversed="True" Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                    <Ellipse x:Name="ShrinkFill"
+                            <control:ScaleFill IsReversed="True" Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
+                                <Ellipse x:Name="ShrinkFill"
                                          Visibility="Collapsed"
                                          HorizontalAlignment="Center"
                                          VerticalAlignment="Center"
                                          Width="500"
                                          Height="500"
                                          Fill="{TemplateBinding AnimationColor}"/>
-                                </control:ScaleFill>
+                            </control:ScaleFill>
 
 
-                                <!-- FRAME -->
+                            <!-- FRAME -->
 
-                                <control:ScaleFill Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                    <Border x:Name="FrameFill"
+                            <control:ScaleFill Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
+                                <Border x:Name="FrameFill"
                                         Visibility="Collapsed"
                                         BorderThickness="10"
                                         HorizontalAlignment="Stretch"
                                         VerticalAlignment="Stretch"
                                         BorderBrush="{TemplateBinding AnimationColor}"/>
-                                </control:ScaleFill>
+                            </control:ScaleFill>
 
-                            </Grid>
-
-                        </Border>
-
+                        </Grid>
                     </Grid>
 
 
@@ -407,7 +326,7 @@
                         <Trigger Property="HasGaze" Value="True">
                             <Setter TargetName="Base"
                                 Property="BorderBrush"
-                                Value="#00AFFF"/>
+                                Value="{StaticResource MouseOverHighlight}"/>
                         </Trigger>
 
 
@@ -456,8 +375,8 @@
         <Setter Property="Width" Value="150"/>
         <Setter Property="Height" Value="100"/>
         <Setter Property="FontSize" Value="22"/>
-        <Setter Property="Foreground" Value="Black"/>
-        <Setter Property="Background" Value="White"/>
+        <Setter Property="Foreground" Value="{StaticResource ButtonForeground}"/>
+        <Setter Property="Background" Value="{StaticResource ButtonBackground}"/>
         <Setter Property="BorderBrush" Value="#CCCCCC"/>
         <Setter Property="BorderThickness" Value="2"/>
 
@@ -510,11 +429,11 @@
 
                             <Setter TargetName="Root"
                                 Property="BorderBrush"
-                                Value="#4CAF50"/>
+                                Value="{StaticResource SelectedButtonHighlight}"/>
 
                             <Setter TargetName="Root"
                                 Property="BorderThickness"
-                                Value="3"/>
+                                Value="5"/>
 
                         </Trigger>
 
@@ -524,7 +443,7 @@
 
                             <Setter TargetName="Root"
                                 Property="BorderBrush"
-                                Value="#888"/>
+                                Value="{StaticResource MouseOverHighlight}"/>
 
                         </Trigger>
 
@@ -543,10 +462,10 @@
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="VerticalAlignment" Value="Stretch"/>
         <Setter Property="FontSize" Value="22"/>
-        <Setter Property="Foreground" Value="Black"/>
-        <Setter Property="Background" Value="White"/>
-        <Setter Property="BorderBrush" Value="#CCCCCC"/>
-        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="Foreground" Value="{StaticResource ButtonForeground}"/>
+        <Setter Property="Background" Value="{StaticResource ButtonBackground}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="7"/>
 
         <Setter Property="Template">
 
@@ -559,7 +478,7 @@
                   Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}"
                   BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="8">
+                  CornerRadius="0">
 
                         <Grid>
 
@@ -597,11 +516,7 @@
 
                             <Setter TargetName="Root"
                               Property="BorderBrush"
-                              Value="#4CAF50"/>
-
-                            <Setter TargetName="Root"
-                              Property="BorderThickness"
-                              Value="3"/>
+                              Value="{StaticResource SelectedButtonHighlight}"/>
 
                         </Trigger>
 
@@ -611,7 +526,7 @@
 
                             <Setter TargetName="Root"
                               Property="BorderBrush"
-                              Value="#888"/>
+                              Value="{StaticResource MouseOverHighlight}"/>
 
                         </Trigger>
 
@@ -624,4 +539,89 @@
         </Setter>
 
     </Style>
+
+    <Style x:Key="GazeStyle" TargetType="ToggleButton">
+
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="Foreground" Value="{StaticResource ButtonForeground}"/>
+        <Setter Property="Background" Value="{StaticResource ButtonBackground}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderIdle}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+
+        <Setter Property="Template">
+
+            <Setter.Value>
+
+                <ControlTemplate TargetType="ToggleButton">
+
+                    <Border
+                    x:Name="Root"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="7">
+
+                        <Grid>
+
+                            <!-- CONTENT -->
+
+                            <ContentPresenter
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            RecognizesAccessKey="True"/>
+
+                            <!-- CHECK ICON -->
+
+                            <TextBlock
+                            x:Name="Tick"
+                            Text="✔"
+                            FontSize="18"
+                            Margin="6"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Bottom"
+                            Visibility="Collapsed"/>
+
+                        </Grid>
+
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+
+                        <!-- SELECTED -->
+
+                        <Trigger Property="IsChecked" Value="True">
+
+                            <Setter TargetName="Tick"
+                                Property="Visibility"
+                                Value="Visible"/>
+
+                            <Setter TargetName="Root"
+                                Property="BorderBrush"
+                                Value="{StaticResource SelectedButtonHighlight}"/>
+
+                        </Trigger>
+
+                        <!-- HOVER -->
+
+                        <Trigger Property="IsMouseOver" Value="True">
+
+                            <Setter TargetName="Root"
+                                Property="BorderBrush"
+                                Value="#888"/>
+
+                        </Trigger>
+
+                    </ControlTemplate.Triggers>
+
+                </ControlTemplate>
+
+            </Setter.Value>
+
+        </Setter>
+
+    </Style>
+
+
 </ResourceDictionary>

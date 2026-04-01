@@ -14,6 +14,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using GazeStream.ViewModels;
 using GazeStream.AppData;
+using System.Diagnostics;
+using GazeStream.Eyetracker;
+
 namespace GazeStream.Pages
 { 
     public partial class InteractionSettingsPage : System.Windows.Controls.UserControl
@@ -21,13 +24,27 @@ namespace GazeStream.Pages
         public InteractionSettingsPage()
         {
             InitializeComponent();
-            //DataContext = ViewModelsLocator.InteractionSettingsViewModel;
             DataContext = Settings.I;
         }
 
         private void GazeButton_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.MessageBox.Show("Activated by gaze!");
+        }
+
+        private void RestartApp_Click(object sender, RoutedEventArgs e)
+        {
+            App.RestartApp();
+        }
+
+        private void Stop_Click(object sender, RoutedEventArgs e)
+        {
+            GazeManager.I.StopGazeDeviceUpdateLoop();
+        }
+
+        private void Start_Click(object sender, RoutedEventArgs e)
+        {
+            GazeManager.I.StartGazeDeviceUpdateLoop();
         }
     }
 }

@@ -7,9 +7,103 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\Icons\adduser.png" />
+    <None Remove="Resources\Icons\back.png" />
+    <None Remove="Resources\Icons\backward.png" />
+    <None Remove="Resources\Icons\calib.png" />
+    <None Remove="Resources\Icons\calibration.png" />
+    <None Remove="Resources\Icons\camera.png" />
+    <None Remove="Resources\Icons\carpetas.png" />
+    <None Remove="Resources\Icons\cell-signal-full.png" />
+    <None Remove="Resources\Icons\cell-signal-high.png" />
+    <None Remove="Resources\Icons\cell-signal-low.png" />
+    <None Remove="Resources\Icons\cell-signal-medium.png" />
+    <None Remove="Resources\Icons\cell-signal-none.png" />
+    <None Remove="Resources\Icons\cell-signal-slash.png" />
+    <None Remove="Resources\Icons\chat-centered-dots.png" />
+    <None Remove="Resources\Icons\chat-centered-slash.png" />
+    <None Remove="Resources\Icons\chat-centered-text.png" />
+    <None Remove="Resources\Icons\chat-circle-dots.png" />
+    <None Remove="Resources\Icons\chat-circle-slash.png" />
+    <None Remove="Resources\Icons\chat-circle-text.png" />
+    <None Remove="Resources\Icons\chat-slash.png" />
+    <None Remove="Resources\Icons\chat-text.png" />
+    <None Remove="Resources\Icons\check-circle.png" />
+    <None Remove="Resources\Icons\check.png" />
+    <None Remove="Resources\Icons\circle-fill.png" />
+    <None Remove="Resources\Icons\circle.png" />
+    <None Remove="Resources\Icons\corners-in.png" />
+    <None Remove="Resources\Icons\corners-out.png" />
+    <None Remove="Resources\Icons\crosshair.png" />
+    <None Remove="Resources\Icons\cursor-click.png" />
+    <None Remove="Resources\Icons\cursor.png" />
+    <None Remove="Resources\Icons\delete.png" />
+    <None Remove="Resources\Icons\desktop.png" />
+    <None Remove="Resources\Icons\device-rotate.png" />
+    <None Remove="Resources\Icons\down.png" />
+    <None Remove="Resources\Icons\download.png" />
+    <None Remove="Resources\Icons\edit.png" />
+    <None Remove="Resources\Icons\evaluaciones.png" />
+    <None Remove="Resources\Icons\eye-closed.png" />
+    <None Remove="Resources\Icons\eye-slash.png" />
+    <None Remove="Resources\Icons\eyeOff.png" />
+    <None Remove="Resources\Icons\eyeOn.png" />
+    <None Remove="Resources\Icons\eyetracker-options.png" />
+    <None Remove="Resources\Icons\film-strip.png" />
+    <None Remove="Resources\Icons\folder.png" />
+    <None Remove="Resources\Icons\forward.png" />
+    <None Remove="Resources\Icons\gender-female.png" />
+    <None Remove="Resources\Icons\gender-male.png" />
+    <None Remove="Resources\Icons\gender-neuter.png" />
+    <None Remove="Resources\Icons\hand-pointing.png" />
+    <None Remove="Resources\Icons\heartbeat.png" />
+    <None Remove="Resources\Icons\hide.png" />
+    <None Remove="Resources\Icons\house-line.png" />
+    <None Remove="Resources\Icons\image.png" />
+    <None Remove="Resources\Icons\images-square.png" />
+    <None Remove="Resources\Icons\informes.png" />
+    <None Remove="Resources\Icons\instagram-logo.png" />
+    <None Remove="Resources\Icons\keyboard.png" />
+    <None Remove="Resources\Icons\left.png" />
+    <None Remove="Resources\Icons\left2.png" />
+    <None Remove="Resources\Icons\menu.png" />
+    <None Remove="Resources\Icons\moon-stars.png" />
+    <None Remove="Resources\Icons\moon.png" />
+    <None Remove="Resources\Icons\mouse-scroll.png" />
+    <None Remove="Resources\Icons\mouse.png" />
+    <None Remove="Resources\Icons\mouse2.png" />
+    <None Remove="Resources\Icons\mute.png" />
+    <None Remove="Resources\Icons\neufi.png" />
+    <None Remove="Resources\Icons\neufi1.png" />
+    <None Remove="Resources\Icons\neufi2.png" />
+    <None Remove="Resources\Icons\next.png" />
+    <None Remove="Resources\Icons\options.png" />
+    <None Remove="Resources\Icons\participantes.png" />
+    <None Remove="Resources\Icons\pause.png" />
+    <None Remove="Resources\Icons\pencil-line.png" />
+    <None Remove="Resources\Icons\pencil.png" />
+    <None Remove="Resources\Icons\pencilOff.png" />
+    <None Remove="Resources\Icons\power.png" />
+    <None Remove="Resources\Icons\previous.png" />
+    <None Remove="Resources\Icons\right.png" />
+    <None Remove="Resources\Icons\scan.png" />
+    <None Remove="Resources\Icons\search.png" />
+    <None Remove="Resources\Icons\sleep.png" />
+    <None Remove="Resources\Icons\sound0.png" />
+    <None Remove="Resources\Icons\sound1.png" />
+    <None Remove="Resources\Icons\sound2.png" />
+    <None Remove="Resources\Icons\sound3.png" />
+    <None Remove="Resources\Icons\squares.png" />
+    <None Remove="Resources\Icons\stop.png" />
+    <None Remove="Resources\Icons\sun.png" />
+    <None Remove="Resources\Icons\up.png" />
+    <None Remove="Resources\Icons\userfile.png" />
+    <None Remove="Resources\Icons\view.png" />
+    <None Remove="Resources\Icons\voiceOff.png" />
     <None Remove="Resources\Sound\Pop.mp3" />
     <None Remove="Resources\Sound\pop.wav" />
   </ItemGroup>
@@ -26,7 +120,289 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\Icons\adduser.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\back.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\backward.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\calib.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\calibration.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\camera.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\carpetas.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cell-signal-full.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cell-signal-high.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cell-signal-low.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cell-signal-medium.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cell-signal-none.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cell-signal-slash.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-centered-dots.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-centered-slash.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-centered-text.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-circle-dots.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-circle-slash.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-circle-text.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-slash.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\chat-text.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\check-circle.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\check.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\circle-fill.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\circle.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\corners-in.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\corners-out.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\crosshair.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cursor-click.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cursor.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\delete.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\desktop.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\device-rotate.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\down.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\download.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\edit.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\evaluaciones.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\eye-closed.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\eye-slash.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\eyeOff.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\eyeOn.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\eyetracker-options.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\film-strip.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\folder.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\forward.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\gender-female.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\gender-male.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\gender-neuter.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\hand-pointing.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\heartbeat.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\hide.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\house-line.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\image.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\images-square.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\informes.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\instagram-logo.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\keyboard.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\left.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\left2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\menu.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\moon-stars.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\moon.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\mouse-scroll.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\mouse.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\mouse2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\mute.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\neufi.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\neufi1.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\neufi2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\next.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\options.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\participantes.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\pause.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\pencil-line.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\pencil.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\pencilOff.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\power.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\previous.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\right.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\scan.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\search.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\sleep.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\sound0.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\sound1.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\sound2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\sound3.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\squares.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\stop.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\sun.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Resources\Icons\tray.ico" />
+    <Resource Include="Resources\Icons\up.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\userfile.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\view.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\voiceOff.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\voice.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Resources\Sound\pop.mp3">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
@@ -35,6 +411,9 @@
 
   <ItemGroup>
     <None Update="aSeeX.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="EyeXFramework.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="FdDetect.dll">
@@ -50,6 +429,18 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="opencv_world320.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Tobii.EyeX.Client.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Tobii.EyeX.Client.lib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Tobii.EyeX.Client.Net20.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Tobii.EyeX.Client.Net20.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="USERSDK.dll">

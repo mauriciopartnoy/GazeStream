@@ -18,7 +18,7 @@ namespace GazeStream.ViewModels
 
         public CursorSettingsViewModel()
         {
-            Settings.I.BubbleColor.OnChanged += OnColorChanged;
+            //Settings.I.BubbleColor.OnChanged += OnColorChanged;
             AvailableColors = new ObservableCollection<ColorOption>
             {
                 new ColorOption("Rojo", M.Brushes.Red),
@@ -33,35 +33,35 @@ namespace GazeStream.ViewModels
             };
         }
 
-        public M.Brush Color
-        {
-            get => AvailableColors[SelectedColorIndex].Color;
-        }
-        public int SelectedColorIndex
-        {
-            get => Settings.I.BubbleColor.Value;
-            set
-            {
-                if (Settings.I.BubbleColor.Value == value) return;
-                Settings.I.BubbleColor.Value = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(Color));
+        //public M.Brush Color
+        //{
+        //    get =>  AvailableColors[SelectedColorIndex].Color;
+        //}
+        //public int SelectedColorIndex
+        //{
+        //    get => (int)Settings.I.BubbleColor.Value;
+        //    set
+        //    {
+        //        if ((int)Settings.I.BubbleColor.Value == value) return;
+        //        Settings.I.BubbleColor.Value = value;
+        //        OnPropertyChanged();
+        //        OnPropertyChanged(nameof(Color));
 
-            }
-        }
+        //    }
+        //}
 
-        public int Size
-        {
-            get => Settings.I.BubbleSize.Value;
-            set
-            {
-                if (Settings.I.BubbleSize.Value == value)
-                    return;
+        //public int Size
+        //{
+        //    get => Settings.I.BubbleSize.Value;
+        //    set
+        //    {
+        //        if (Settings.I.BubbleSize.Value == value)
+        //            return;
 
-                Settings.I.BubbleSize.Value = value;
-                OnPropertyChanged();
-            }
-        }
+        //        Settings.I.BubbleSize.Value = value;
+        //        OnPropertyChanged();
+        //    }
+        //}
 
         public double Opacity
         {
@@ -77,11 +77,11 @@ namespace GazeStream.ViewModels
         }
 
 
-        private void OnColorChanged()
-        {
-            OnPropertyChanged(nameof(SelectedColorIndex));
-            OnPropertyChanged(nameof(Color));
-        }
+        //private void OnColorChanged()
+        //{
+        //    OnPropertyChanged(nameof(SelectedColorIndex));
+        //    OnPropertyChanged(nameof(Color));
+        //}
 
         public CursorVisualStyle CursorType
         {

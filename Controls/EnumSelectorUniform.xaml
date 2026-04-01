@@ -2,85 +2,128 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:eye="clr-namespace:GazeStream.Eyetracker"
+             xmlns:converters="clr-namespace:GazeStream.Converters"
              x:Name="root">
 
     <UserControl.Resources>
 
-            <!-- Horizontal Layout -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <!-- Horizontal Layout -->
 
-            <ItemsPanelTemplate x:Key="HorizontalPanel">
-                <UniformGrid Rows="1"/>
-            </ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="HorizontalPanel">
+            <UniformGrid Rows="1"/>
+        </ItemsPanelTemplate>
 
-            <!-- Vertical Layout -->
+        <!-- Vertical Layout -->
 
-            <ItemsPanelTemplate x:Key="VerticalPanel">
-                <UniformGrid Columns="1"/>
-            </ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="VerticalPanel">
+            <UniformGrid Columns="1"/>
+        </ItemsPanelTemplate>
 
-            <!-- Grid Layout -->
+        <!-- Grid Layout -->
 
-            <ItemsPanelTemplate x:Key="GridPanel">
-                <UniformGrid/>
-            </ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="GridPanel">
+            <UniformGrid/>
+        </ItemsPanelTemplate>
+        <DataTemplate DataType="{x:Type converters:EnumDisplayData}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        </UserControl.Resources>
+                <!-- Color Display -->
+                <Border Width="64"
+                Height="64"
+                CornerRadius="32"
+                Background="{Binding Brush}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Visibility="{Binding HasBrush, Converter={StaticResource BoolToVisibilityConverter}}">
 
-        <ItemsControl x:Name="ItemsHost"
+                    <Ellipse Width="55"
+                     Height="55"
+                     Fill="{Binding BackgroundBrush}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- Icon -->
+                <Image Source="{Binding Icon}"
+                   Width="64"
+                   Height="64"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Visibility="{Binding HasIcon, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                <!-- Text -->
+                <TextBlock Text="{Binding Text}"
+                       Grid.Row="1"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       Margin="0,6,0,0"
+                       TextAlignment="Center"
+                       Visibility="{Binding HasText, Converter={StaticResource BoolToVisibilityConverter}}" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ItemsControl x:Name="ItemsHost"
                   ItemsSource="{Binding EnumValues, ElementName=root}">
 
-            <ItemsControl.Style>
+        <ItemsControl.Style>
 
-                <Style TargetType="ItemsControl">
+            <Style TargetType="ItemsControl">
 
-                    <Setter Property="ItemsPanel"
+                <Setter Property="ItemsPanel"
                         Value="{StaticResource HorizontalPanel}"/>
 
-                    <Style.Triggers>
+                <Style.Triggers>
 
-                        <DataTrigger Binding="{Binding LayoutMode, ElementName=root}"
+                    <DataTrigger Binding="{Binding LayoutMode, ElementName=root}"
                                  Value="Vertical">
 
-                            <Setter Property="ItemsPanel"
+                        <Setter Property="ItemsPanel"
                                 Value="{StaticResource VerticalPanel}"/>
 
-                        </DataTrigger>
+                    </DataTrigger>
 
-                        <DataTrigger Binding="{Binding LayoutMode, ElementName=root}"
+                    <DataTrigger Binding="{Binding LayoutMode, ElementName=root}"
                                  Value="Grid">
 
-                            <Setter Property="ItemsPanel"
+                        <Setter Property="ItemsPanel"
                                 Value="{StaticResource GridPanel}"/>
 
-                        </DataTrigger>
+                    </DataTrigger>
 
-                    </Style.Triggers>
+                </Style.Triggers>
 
-                </Style>
+            </Style>
 
-            </ItemsControl.Style>
+        </ItemsControl.Style>
 
-            <ItemsControl.ItemTemplate>
+        <ItemsControl.ItemTemplate>
 
-                <DataTemplate>
+            <DataTemplate>
 
-                    <eye:GazeButton Style="{StaticResource GazeButtonUniform}" Margin="{Binding ItemMargin, ElementName=root}">
+                <eye:GazeButton Margin="{Binding ItemMargin, ElementName=root}">
 
-                        <RadioButton
+                    <RadioButton
                         Style="{StaticResource EnumSelectorRadioStyleUniform}"
-                        Content="{Binding}"
+                        Content="{Binding Converter={StaticResource EnumToDisplay}}"
                         Tag="{Binding}"
                         GroupName="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Uid}"
                         Checked="RadioButton_Checked"
                         Loaded="RadioButton_Loaded"/>
 
-                    </eye:GazeButton>
+                </eye:GazeButton>
 
-                </DataTemplate>
+            </DataTemplate>
 
-            </ItemsControl.ItemTemplate>
+        </ItemsControl.ItemTemplate>
 
-        </ItemsControl>
+    </ItemsControl>
 
-    </UserControl>
+</UserControl>
 

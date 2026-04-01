@@ -1,22 +1,32 @@
 ﻿<UserControl x:Class="GazeStream.Controls.GazeCursor"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:settings="clr-namespace:GazeStream.AppData"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=settings:Settings}"
              x:Name="Root"
-             Width="{Binding Size}"
-             Height="{Binding Size}"
-             Opacity="{Binding Opacity}"
              IsHitTestVisible="False"
              >
 
     <Grid IsHitTestVisible="False">
 
         <!-- Bubble -->
-        <Ellipse IsHitTestVisible="False"
-            Fill="{Binding Color}"
-            Visibility="{Binding CursorType,
-                         Converter={StaticResource EnumToVisibility},
-                         ConverterParameter=Bubble}" />
-
+        <Ellipse Width="{Binding BubbleSize.Value}" Height="{Binding BubbleSize.Value}" IsHitTestVisible="False" Fill="{Binding Color, ElementName=Root}"
+                 Visibility="{Binding CursorStyle.Value,
+                 Converter={StaticResource EnumToVisibility},
+                 ConverterParameter=Bubble}"/>
+        
+        <Ellipse Width="{Binding BubbleSize.Value}" Height="{Binding BubbleSize.Value}" IsHitTestVisible="False" Fill="Transparent" StrokeThickness="3" Stroke="{Binding Color, ElementName=Root}"
+         Visibility="{Binding CursorStyle.Value,
+         Converter={StaticResource EnumToVisibility},
+         ConverterParameter=Outline}"/>
+        
+        <!--<Image Source="{Binding CustomCursorPath}" Width="{Binding BubbleSize.Value}" Height="{Binding BubbleSize.Value}" Stretch="Uniform" IsHitTestVisible="False"
+         Visibility="{Binding CursorStyle.Value,
+         Converter={StaticResource EnumToVisibility},
+         ConverterParameter=CustomImage}"/>-->
         <!-- Custom image -->
         <!--<Image
             IsHitTestVisible="False"

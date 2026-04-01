@@ -1,78 +1,51 @@
 ﻿<UserControl x:Class="GazeStream.Pages.CursorSettingsPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:GazeStream.Controls">
+             xmlns:controls="clr-namespace:GazeStream.Controls"
+  xmlns:settings="clr-namespace:GazeStream.AppData"
+ xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+ xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+ mc:Ignorable="d"
+ d:DataContext="{d:DesignInstance Type=settings:Settings}"
+ d:DesignHeight="1080" d:DesignWidth="1920">
 
-    <Grid Margin="24" Background="White">
+    <Grid Margin="24" Background="{StaticResource OptionsBackground}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="320"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
 
         <!-- LEFT PANEL: SETTINGS -->
-        <StackPanel Grid.Column="0" VerticalAlignment="Top">
-            <StackPanel.Resources>
-                <Style TargetType="{x:Type TextBlock}">
-                    <Setter Property="Margin" Value="0,10,0,0"/>
-                </Style>
-                <Style TargetType="{x:Type StackPanel}">
-                    <Setter Property="Margin" Value="10,10,0,0"/>
-                </Style>
-            </StackPanel.Resources>
-            <TextBlock Text="Opciones de Puntero"
-                       FontSize="20"
-                       FontWeight="SemiBold"/>
+        <ScrollViewer x:Name="Scroll">
+            <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                <StackPanel.Resources>
+                    <Style TargetType="{x:Type TextBlock}">
+                        <Setter Property="Margin" Value="0,10,0,0"/>
+                    </Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Margin" Value="10,10,0,0"/>
+                    </Style>
+                </StackPanel.Resources>
 
-            <!-- Color -->
-            <StackPanel>
-                <TextBlock Text="Color"/>
-                <ComboBox ItemsSource="{Binding AvailableColors}" SelectedIndex="{Binding SelectedColorIndex, Mode=TwoWay}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="4">
+                <TextBlock Text="Estilo de puntero" FontSize="25" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding CursorStyle.Value}" Height="200"/>
 
-                                <!-- Color preview -->
-                                <Border Width="18"
-                        Height="18"
-                        CornerRadius="3"
-                        Margin="0,0,8,0"
-                        Background="{Binding Color}" />
+                <TextBlock Text="Tamaño de burbuja" FontSize="25" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding BubbleSizeOption.Value}" Height="200"/>
 
-                                <!-- Name -->
-                                <TextBlock Text="{Binding Name}"
-                           VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                <TextBlock Text="Color de burbuja" FontSize="25" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding BubbleColor.Value}" Height="200"/>
+
+                <!--<Button Width="200" Height="200" Content="SetCursor" Click="OpenCursorDialog"/>-->
             </StackPanel>
+        </ScrollViewer>
 
-            <!-- Size -->
-            <controls:LabeledSlider
-    Label="Size"
-    Foreground="Black"
-    Minimum="8"
-    Maximum="64"
-    TickFrequency="1"
-    IsSnapToTickEnabled="True"
-    Value="{Binding Size}" />
-
-            <!-- Opacity -->
-            <controls:LabeledSlider
-    Label="Opacity"
-    Foreground="Black"
-    Minimum="0"
-    Maximum="1"
-    TickFrequency="0.05"
-    ValueFormat="P0"
-    Value="{Binding Opacity}" />
-
-        </StackPanel>
 
         <!-- RIGHT PANEL: PREVIEW -->
         <Border Grid.Column="1"
                 Margin="24,0,0,0"
-                Background="#1E1E1E"
+                Background="{StaticResource OptionsBackground}"
                 CornerRadius="12"
                 Padding="24">
 
@@ -91,6 +64,7 @@
             </Grid>
 
         </Border>
+        <controls:ScrollPageControl Grid.Column="2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" TargetScrollViewer="{Binding ElementName=Scroll}"/>
 
     </Grid>
 </UserControl>

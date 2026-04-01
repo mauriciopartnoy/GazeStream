@@ -1,0 +1,48 @@
+﻿<Window x:Class="GazeStream.Windows.OptionsMenuWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:GazeStream.Windows"
+        xmlns:eye="clr-namespace:GazeStream.Eyetracker"
+        xmlns:pages="clr-namespace:GazeStream.Pages"
+        xmlns:controls="clr-namespace:GazeStream.Controls"
+        xmlns:settings="clr-namespace:GazeStream.AppData"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=settings:Settings}"
+        Title="OptionsMenuWindow" Height="1080" Width="1920">
+    <Grid Background="{StaticResource OptionsBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="6*"/>
+        </Grid.RowDefinitions>
+        
+        <eye:GazeButton Grid.Row="0" Width="250" HorizontalAlignment="Left">
+            <eye:GazeButton.Content>
+                <Button x:Name="BackButton" Background="White" Click="Close_Click"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <Image Source="/Resources/Icons/back.png" Width="100"/>
+                </Button>
+            </eye:GazeButton.Content>
+        </eye:GazeButton>
+
+        <eye:GazeButton Grid.Row="0" Width="250" HorizontalAlignment="Center" IgnoreRestMode="True">
+            <eye:GazeButton.Content>
+                <controls:IconToggleButton Content="Descanso" IconSize="100" IconOn="/Resources/Icons/eyeOff.png" IconOff="/Resources/Icons/eyeOn.png" IsChecked="{Binding RestModeToggle.Value}"/>
+            </eye:GazeButton.Content>
+        </eye:GazeButton>
+
+        <eye:GazeButton Grid.Row="0" Width="150" HorizontalAlignment="Right">
+            <eye:GazeButton.Content>
+                <Button x:Name="CloseButton" Background="DarkRed" Click="Close_Click"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <TextBlock Text="X" Foreground="White" FontSize="50" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
+                </Button>
+            </eye:GazeButton.Content>
+        </eye:GazeButton>
+
+        <Frame Grid.Row="1" x:Name="MainFrame" NavigationUIVisibility="Hidden" Source="Pages/OptionsMainMenuPage.xaml">
+                        
+        </Frame>
+    </Grid>
+
+
+</Window>

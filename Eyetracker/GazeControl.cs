@@ -44,6 +44,19 @@ namespace GazeStream.Eyetracker
 
         }
 
+        public B.Brush AnimationColor
+        {
+            get => (B.Brush)GetValue(AnimationColorProperty);
+            set => SetValue(AnimationColorProperty, value);
+        }
+
+        public static readonly DependencyProperty AnimationColorProperty =
+            DependencyProperty.Register(
+                nameof(AnimationColor),
+                typeof(B.Brush),
+                typeof(GazeControl),
+                new PropertyMetadata(B.Brushes.DodgerBlue));
+
         public Button_Animation AnimationType
         {
             get => (Button_Animation)GetValue(AnimationTypeProperty);
@@ -82,6 +95,19 @@ namespace GazeStream.Eyetracker
                 typeof(GazeControl),
                 new PropertyMetadata(0d));
 
+        public bool IgnoreRestMode
+        {
+            get => (bool)GetValue(IgnoreRestModeProperty);
+            set => SetValue(IgnoreRestModeProperty, value);
+        }
+
+        public static readonly DependencyProperty IgnoreRestModeProperty =
+            DependencyProperty.Register(
+                nameof(IgnoreRestMode),
+                typeof(bool),
+                typeof(GazeControl),
+                new PropertyMetadata(false));
+
         public bool RepeatAction
         {
             get => (bool)GetValue(RepeatActionProperty);
@@ -107,18 +133,6 @@ namespace GazeStream.Eyetracker
                 typeof(double),
                 typeof(GazeControl),
                 new PropertyMetadata(0d));
-        public B.Brush AnimationColor
-        {
-            get => (B.Brush)GetValue(AnimationColorProperty);
-            set => SetValue(AnimationColorProperty, value);
-        }
-
-        public static readonly DependencyProperty AnimationColorProperty =
-            DependencyProperty.Register(
-                nameof(AnimationColor),
-                typeof(B.Brush),
-                typeof(GazeControl),
-                new PropertyMetadata(B.Brushes.DodgerBlue));
 
 
         private static readonly DependencyPropertyKey HasGazePropertyKey =
@@ -209,6 +223,11 @@ namespace GazeStream.Eyetracker
         public void SetHasGaze(bool hasGaze)
         {
             //if (!IsGazeEnabled) return;
+            if (IgnoreRestMode == false && Settings.I.RestModeToggle.Value == true)
+            {
+                HasGaze = false;
+                return;
+            }
             if (HasGaze == hasGaze) return;
             HasGaze = hasGaze;
         }
@@ -316,9 +335,10 @@ namespace GazeStream.Eyetracker
         private void UpdateDecay(double deltaTime)
         {
             if (!canStartDecay) return;
+            double decay = deltaTime * Settings.I.MultiplicadorDeVelocidadDeDesactivacion.Value;
             if (isRepeatingAction)
             {
-                repeatActionTimer -= deltaTime;
+                repeatActionTimer -= decay;
                 repeatActionTimer = Math.Clamp(repeatActionTimer, 0, RepeatActionInterval);
                 Progress01 = repeatActionTimer <= 0 ? 0 : Math.Clamp(repeatActionTimer / RepeatActionInterval, 0, 1);
                 if (repeatActionTimer <= 0)
@@ -328,7 +348,7 @@ namespace GazeStream.Eyetracker
             }
             else
             {
-                FocusProgress -= deltaTime;
+                FocusProgress -= decay;
                 FocusProgress = Math.Clamp(FocusProgress, 0, FocusTime);
                 Progress01 = FocusTime <= 0 ? 0 : Math.Clamp(FocusProgress / FocusTime, 0, 1);
             }

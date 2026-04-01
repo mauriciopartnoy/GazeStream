@@ -6,17 +6,36 @@
              xmlns:local="clr-namespace:GazeStream.Controls"
              xmlns:eye="clr-namespace:GazeStream.Eyetracker"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <StackPanel Orientation="Vertical">
-        <eye:GazeButton Width="200" Height="200" Margin="10,10,10,10" RepeatAction="True">
-            <Button FontSize="48" Content="▲" Click="ScrollUp">
-                
-            </Button>
+             d:DesignHeight="850" d:DesignWidth="240">
+
+    <UserControl.Resources>
+        <Style x:Key="ScrollButton" TargetType="Button">
+            <Setter Property="Background" Value="WhiteSmoke"/>
+            <Setter Property="FontSize" Value="60"/>
+        </Style>
+    </UserControl.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <eye:GazeButton 
+                        Grid.Row="0"
+                        Margin="10"
+                        RepeatAction="True"
+                        RepeatActionIntervalOverride=".3"
+                        IgnoreRestMode="True">
+            <Button Content="▲" Click="ScrollUp" Style="{StaticResource ScrollButton}" />
         </eye:GazeButton>
-        <eye:GazeButton Width="200" Height="200" Margin="10,10,10,10" RepeatAction="True">
-            <Button FontSize="48" Content="▼" Click="ScrollDown">
-                
-            </Button>
+
+        <eye:GazeButton Grid.Row="1"
+                        Margin="10"
+                        RepeatAction="True"
+                        RepeatActionIntervalOverride=".3"
+                        IgnoreRestMode="True">
+            <Button Content="▼" Click="ScrollDown" Style="{StaticResource ScrollButton}"/>
         </eye:GazeButton>
-    </StackPanel>
+    </Grid>
 </UserControl>

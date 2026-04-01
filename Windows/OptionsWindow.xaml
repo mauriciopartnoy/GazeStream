@@ -5,28 +5,89 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GazeStream.Windows"
         xmlns:pages="clr-namespace:GazeStream.Pages"
+        xmlns:control="clr-namespace:GazeStream.Controls"
+        xmlns:eye="clr-namespace:GazeStream.Eyetracker"
+        xmlns:controls="clr-namespace:GazeStream.Controls"
         mc:Ignorable="d"
         WindowState="Maximized"
         ShowInTaskbar="True"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen"
-        Title="Opciones" Height="1080" Width="1920" Background="Gray">
-    <Grid>
+        Title="Opciones" Height="1080" Width="1920" Background="{StaticResource OptionsBackground}">
 
-        <TabControl x:Name="tabControl" Style="{StaticResource SettingsTabControlStyle}" SelectionChanged="OnTabChanged">
+    <Window.Resources>
+        <Style x:Key="TabTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="30"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
 
-            <TabItem Header="Interacción">
-                <pages:InteractionSettingsPage/>
-            </TabItem>
+        <Style x:Key="GazeTab" TargetType="control:GazeTabItem">
+            <Setter Property="Width" Value="200"/>
+        </Style>
 
-            <TabItem Header="Cursor">
-                <pages:CursorSettingsPage/>
-            </TabItem>
+        <Style x:Key="IconStyle" TargetType="Image">
+            <Setter Property="Width" Value="50"/>
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    
+    <Grid Background="{StaticResource OptionsBackground}">
+        <TabControl SelectionChanged="OnTabChanged" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource OptionsBackground}">
+            <TabControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Rows="1"/>
+                </ItemsPanelTemplate>
+            </TabControl.ItemsPanel>
             
-            <TabItem Header="Placeholder">
-                <!--<local:ProfilesPage/>-->
-            </TabItem>
+            <control:GazeTabItem Style="{StaticResource GazeTab}">
+                <control:GazeTabItem.GazeContent>
+                    <Grid>
+                        <TextBlock Text="Interacción" Style="{StaticResource TabTitle}"/>
+                    </Grid>
+                </control:GazeTabItem.GazeContent>
+                <pages:InteractionSettingsPage/>
+            </control:GazeTabItem>
+
+            <control:GazeTabItem Style="{StaticResource GazeTab}">
+                <control:GazeTabItem.GazeContent>
+                    <TextBlock Text="Cursor" Style="{StaticResource TabTitle}"/>
+                </control:GazeTabItem.GazeContent>
+                <pages:CursorSettingsPage/>
+            </control:GazeTabItem>
+
+            <control:GazeTabItem Style="{StaticResource GazeTab}">
+                <control:GazeTabItem.GazeContent>
+                    <TextBlock Text="Teclado" Style="{StaticResource TabTitle}"/>
+                </control:GazeTabItem.GazeContent>
+                <pages:KeyboardSettingsPage/>
+            </control:GazeTabItem>
+
+            <control:GazeTabItem Style="{StaticResource GazeTab}">
+                <control:GazeTabItem.GazeContent>
+                    <TextBlock Text="Barrido" Style="{StaticResource TabTitle}"/>
+                </control:GazeTabItem.GazeContent>
+                <pages:BarridoSettingsPage/>
+            </control:GazeTabItem>
+
+            <control:GazeTabItem Style="{StaticResource GazeTab}">
+                <control:GazeTabItem.GazeContent>
+                    <TextBlock Text="Sonido" Style="{StaticResource TabTitle}"/>
+                </control:GazeTabItem.GazeContent>
+                <pages:SoundSettingsPage/>
+            </control:GazeTabItem>
+
+            <control:GazeTabItem Style="{StaticResource GazeTab}">
+                <control:GazeTabItem.GazeContent>
+                    <TextBlock Text="Ayuda" Style="{StaticResource TabTitle}"/>
+                </control:GazeTabItem.GazeContent>
+                <pages:AyudaSettingsPage/>
+            </control:GazeTabItem>
         </TabControl>
 
     </Grid>

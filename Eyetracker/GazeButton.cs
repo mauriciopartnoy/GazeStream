@@ -50,30 +50,38 @@ namespace GazeStream.Eyetracker
             base.OnApplyTemplate();
             _contentPresenter = GetTemplateChild("PART_Content") as ContentPresenter;
         }
+
         protected override void OnFocus()
         {
             Debug.WriteLine("OnFocus called!!!!!!!");
+
             System.Windows.Point center = new System.Windows.Point(ActualWidth / 2, ActualHeight / 2);
             var result = VisualTreeHelper.HitTest(_contentPresenter, center);
 
             if (result?.VisualHit is DependencyObject hit)
             {
+                // First try normal buttons
                 var button = FindButtonBaseUpwards(hit);
 
-                ActivateButtonBase(button);
-                //if (button is ToggleButton toggle)
-                //{
-                //    toggle.IsChecked = !toggle.IsChecked;
-                //}
-                //else
-                //{
-                //    button.RaiseEvent(new RoutedEventArgs(B.ButtonBase.ClickEvent, button));
-                //}
+                if (button != null)
+                {
+                    ActivateButtonBase(button);
+                    return;
+                }
+
+                // Then try TabItem
+                var tabItem = FindParent<TabItem>(hit);
+
+                if (tabItem != null)
+                {
+                    tabItem.IsSelected = true;
+                    return;
+                }
             }
 
             Debug.WriteLine(result?.VisualHit?.GetType().FullName);
         }
-
+       
         public static void ActivateButtonBase(B.ButtonBase button)
         {
             if (button == null) return;
@@ -116,6 +124,19 @@ namespace GazeStream.Eyetracker
             base.OnGazeExit();
             Debug.WriteLine("OnGazeExit!!!");
 
+        }
+
+        private T FindParent<T>(DependencyObject start) where T : DependencyObject
+        {
+            while (start != null)
+            {
+                if (start is T target)
+                    return target;
+
+                start = VisualTreeHelper.GetParent(start);
+            }
+
+            return null;
         }
     }
 }

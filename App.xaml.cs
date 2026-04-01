@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Threading;
 using System;
 using InputSimulatorEx;
+using System.Reflection;
 
 namespace GazeStream
 {
@@ -37,6 +38,11 @@ namespace GazeStream
 
         protected override void OnStartup(W.StartupEventArgs e)
         {
+            if (e.Args.Contains("--restart"))
+            {
+                Thread.Sleep(1000); // wait for previous instance to exit
+            }
+
             if (ForcedSingleInstance()) return;
 
             base.OnStartup(e);
@@ -56,6 +62,32 @@ namespace GazeStream
 
             HookHotkeys();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
+
+            try
+            {
+                Debug.WriteLine("About to load assembly");
+                Debug.WriteLine($"Is64BitProcess: {Environment.Is64BitProcess}");
+                Debug.WriteLine($"Is64BitOS: {Environment.Is64BitOperatingSystem}");
+                var asm = Assembly.LoadFrom("Tobii.EyeX.Client.dll");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Assembly load failed: " + ex.ToString());
+            }
+        }
+
+        public static void RestartApp()
+        {
+            var exePath = Process.GetCurrentProcess().MainModule.FileName;
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = "--restart",
+                UseShellExecute = true
+            });
+
+            Current.Shutdown();
         }
 
         protected override async void OnExit(ExitEventArgs e)

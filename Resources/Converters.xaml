@@ -6,6 +6,8 @@
     <converters:EnumToVisibilityConverter x:Key="EnumToVisibility" />
     <converters:EnumToVisibilityConverter x:Key="EnumToVisibility_Inverted" Invert="True" />
     <converters:EnumToBooleanConverter x:Key="EnumToBool"/>
-
+    <converters:EnumDescriptionConverter x:Key="EnumDescriptionConverter"/>
+    <converters:EnumToDisplayConverter x:Key="EnumToDisplay"/>
+    <converters:BasicColorToBrushConverter x:Key="BasicColorToBrush"/>
 
 </ResourceDictionary>

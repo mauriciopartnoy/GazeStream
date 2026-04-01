@@ -188,8 +188,8 @@ namespace GazeStream.Utilities
                 BasicColor.Cyan => "Cyan",
                 BasicColor.Magenta => "Magenta",
                 BasicColor.Violeta => "Violeta",
-                BasicColor.Blanco => "Blanco",
-                BasicColor.Negro => "Negro",
+                //BasicColor.Blanco => "Blanco",
+                //BasicColor.Negro => "Negro",
                 _ => "GazeBlueBrush"
             };
 
