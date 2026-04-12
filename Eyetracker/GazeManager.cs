@@ -44,7 +44,7 @@ namespace GazeStream.Eyetracker
 
 
         public GazeDeviceA11? joacoA11;
-
+        public GazeDeviceTobiiEyeX gazeDeviceTobii;
         public bool mouseControlEnabled => Settings.I.MouseToggle.Value;
         public bool IsCalibrating { get; private set; }
 
@@ -136,8 +136,17 @@ namespace GazeStream.Eyetracker
         private void AddSupportedDevices()
         {
             supportedDevices = new List<IGazeDevice>();
+
+            //X64
+
             joacoA11 = new GazeDeviceA11();
             supportedDevices.Add(joacoA11);
+
+
+            //X86
+            //gazeDeviceTobii = new GazeDeviceTobiiEyeX();
+            //supportedDevices.Add(gazeDeviceTobii);
+
         }
 
         void CancelLoop()

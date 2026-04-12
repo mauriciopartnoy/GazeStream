@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -117,6 +117,15 @@
 
   <ItemGroup>
     <Folder Include="Websocket\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="EyeXFramework">
+      <HintPath>..\..\NET_GazeStream\GazeStream\EyeXFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="Tobii.EyeX.Client.Net20">
+      <HintPath>..\..\NET_GazeStream\GazeStream\Tobii.EyeX.Client.Net20.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -441,6 +450,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Tobii.EyeX.Client.Net20.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TobiiGazeCore64.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="USERSDK.dll">

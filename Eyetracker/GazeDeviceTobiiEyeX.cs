@@ -1,138 +1,145 @@
-//using EyeXFramework;
-//using Tobii.EyeX.Framework;
-//using GazeStream.Eyetracker;
-//using GazeStream.Utilities.Events;
-//using System.Numerics;
-//using GazeStream.AppData;
-//using System.Diagnostics;
-
-//public class GazeDeviceTobiiEyeX : IGazeDevice
-//{
-//    public bool IsConnected { get; private set; }
-//    public bool GazePointIsValid => !float.IsNaN(gazePosCache.x) && !float.IsNaN(gazePosCache.y);
+using EyeXFramework;
+using Tobii.EyeX.Framework;
+using GazeStream.Eyetracker;
+using System.Numerics;
+using System.Diagnostics;
+using System.Windows;
+public class GazeDeviceTobiiEyeX : IGazeDevice
+{
+    public bool IsConnected { get; private set; }
+    public bool GazePointIsValid => !float.IsNaN(gazePosCache.viewportPoint.X) && !float.IsNaN(gazePosCache.viewportPoint.Y);
 
 
-//    public string DeviceName => "Tobii EyeX SDK";
-//    public EyesData Eyes => null;
-//    EyesData eyesCache;
+    public string DeviceName => "Tobii EyeX SDK";
+    public EyesData Eyes => null;
+    EyesData eyesCache;
 
-//    public bool UserIsPresent 
-//    {
-//        get 
-//        {
-//            if (eyeHost == null) return false;
-//            return eyeHost.UserPresence.IsValid;
-//        }    
-//    }
+    public bool UserIsPresent
+    {
+        get
+        {
+            if (eyeHost == null) return false;
+            return eyeHost.UserPresence.IsValid;
+        }
+    }
 
-//    Vector2 gazePosCache;
+    GazePoint gazePosCache = new();
 
-//    public EyeXHost eyeHost { get; private set; }
-//    public GazePointDataStream gazePointDataStream { get; private set; } = null;
-//    public EyePositionDataStream eyePositionStream { get; private set; } = null;
+    public EyeXHost eyeHost { get; private set; }
+    public GazePointDataStream gazePointDataStream { get; private set; } = null;
+    public EyePositionDataStream eyePositionStream { get; private set; } = null;
 
-//    GazePoint IGazeDevice.GazePoint => throw new NotImplementedException();
+    GazePoint IGazeDevice.GazePoint => gazePosCache;
 
-//    GazePoint IGazeDevice.RawGazePoint => throw new NotImplementedException();
+    GazePoint IGazeDevice.RawGazePoint => gazePosCache;
 
+    public bool Initialize()
+    {
+        //Initialize
+        Disconnect();
+        eyeHost = new EyeXHost();
+        eyeHost.Start();
 
-//    //AMBOS DATOS SON CRUDOS EN ESTE CASO
-//    public GazePoint RawGazePoint()
-//    {
-//        return GazePoint();
-//    }
-//    public GazePoint GazePoint()
-//    {
-//        GazePoint point = new GazePoint();
-//        point.Viewport = gazePosCache;
-//        return point;
-//    }
+        IsConnected = true;
+        gazePointDataStream = eyeHost.CreateGazePointDataStream(GazePointDataMode.Unfiltered);
+        eyePositionStream = eyeHost.CreateEyePositionDataStream();
+        gazePointDataStream.Next += OnTobiiUpdate;
+        eyePositionStream.Next += OnEyePositionUpdate;
 
-//    public bool Initialize()
-//    {
-//        //Initialize
-//        Disconnect();
-//        eyeHost = new EyeXHost();
-//        eyeHost.Start();
-//        if (eyeHost.EyeTrackingDeviceStatus.IsValid == false)
-//        {
-//            Debug.Log("EyeX Connection failed :(");
-//            Disconnect();
-//            return false;
-//        }
-//        else
-//        {
-//            Debug.Log("EyeX Connected");
-//            IsConnected = true;
-//            gazePointDataStream = eyeHost.CreateGazePointDataStream(GazePointDataMode.Unfiltered);
-//            eyePositionStream = eyeHost.CreateEyePositionDataStream();
-//            gazePointDataStream.Next += OnTobiiUpdate;
-//            eyePositionStream.Next += OnEyePositionUpdate;
-//            return true;
-//        }
-//    }
+        Thread.Sleep(100);
+
+        if (eyeHost.EyeTrackingDeviceStatus.IsValid == false)
+        {
+            Debug.WriteLine("EyeX Connection failed :(");
+            Disconnect();
+            return false;
+        }
+        else
+        {
+            Debug.WriteLine("EyeX Connected");
+            IsConnected = true;
+            gazePointDataStream = eyeHost.CreateGazePointDataStream(GazePointDataMode.Unfiltered);
+            eyePositionStream = eyeHost.CreateEyePositionDataStream();
+            gazePointDataStream.Next += OnTobiiUpdate;
+            eyePositionStream.Next += OnEyePositionUpdate;
+            return true;
+        }
+    }
 
 
-//    private void OnTobiiUpdate(object sender, GazePointEventArgs e)
-//    {
-//        float x = (float)e.X / (float)eyeHost.ScreenBounds.Value.Width;
-//        float y = (float)e.Y / (float)eyeHost.ScreenBounds.Value.Height;
-//        gazePosCache = new Vector2(x, 1f -y);
-//    }
+    private void OnTobiiUpdate(object sender, GazePointEventArgs e)
+    {
+        float x = (float)e.X / (float)eyeHost.ScreenBounds.Value.Width;
+        float y = (float)e.Y / (float)eyeHost.ScreenBounds.Value.Height;
+        Vector2 pos = new Vector2(x, y);
+        gazePosCache = new GazePoint(pos);
+       
+    }
 
-//    void OnEyePositionUpdate(object sender, EyePositionEventArgs e)
-//    {
-//        if (eyesCache == null)
-//        {
-//            eyesCache = new EyesData();
-//        }
-//        if (eyesCache.leftEye == null)
-//        {
-//            eyesCache.leftEye = new Eye();
-//        }
-//        if (eyesCache.rightEye == null)
-//        {
-//            eyesCache.rightEye = new Eye();
-//        }
-//        eyesCache.leftEye.isBlinking = e.LeftEye.IsValid ? false : true;
-//        eyesCache.leftEye.viewportX = (float)e.LeftEyeNormalized.X;
-//        eyesCache.leftEye.viewportY = 1f - (float)e.LeftEyeNormalized.Y;
-//        eyesCache.leftEye.pupilDistanceMm = (float)e.LeftEye.Z;
-//        eyesCache.leftEye.pupilDiameter = 0;
-//        eyesCache.leftEye.pupilDiameterMm = 0;
+    void OnEyePositionUpdate(object sender, EyePositionEventArgs e)
+    {
+        if (eyesCache == null)
+        {
+            eyesCache = new EyesData();
+        }
+        if (eyesCache.leftEye == null)
+        {
+            eyesCache.leftEye = new Eye();
+        }
+        if (eyesCache.rightEye == null)
+        {
+            eyesCache.rightEye = new Eye();
+        }
+        eyesCache.leftEye.isBlinking = e.LeftEye.IsValid ? false : true;
+        eyesCache.leftEye.viewportX = (float)e.LeftEyeNormalized.X;
+        eyesCache.leftEye.viewportY = (float)e.LeftEyeNormalized.Y;
+        eyesCache.leftEye.pupilDistanceMm = (float)e.LeftEye.Z;
+        eyesCache.leftEye.pupilDiameter = 0;
+        eyesCache.leftEye.pupilDiameterMm = 0;
 
-//        eyesCache.rightEye.isBlinking = e.RightEye.IsValid? false : true;
-//        eyesCache.rightEye.viewportX = (float)e.RightEyeNormalized.X;
-//        eyesCache.rightEye.viewportY = 1f - (float)e.RightEyeNormalized.X;
-//        eyesCache.rightEye.pupilDistanceMm = (float)e.LeftEye.Z;
-//        eyesCache.rightEye.pupilDiameter = 0;
-//        eyesCache.rightEye.pupilDiameterMm = 0;
-//    }
+        eyesCache.rightEye.isBlinking = e.RightEye.IsValid ? false : true;
+        eyesCache.rightEye.viewportX = (float)e.RightEyeNormalized.X;
+        eyesCache.rightEye.viewportY = (float)e.RightEyeNormalized.X;
+        eyesCache.rightEye.pupilDistanceMm = (float)e.LeftEye.Z;
+        eyesCache.rightEye.pupilDiameter = 0;
+        eyesCache.rightEye.pupilDiameterMm = 0;
+    }
 
 
-//    public void UpdateData()
-//    {
-        
-//    }
-//    private void OnDisable()
-//    {
-//        Disconnect();
-//    }
+    public void UpdateData()
+    {
 
-//    public void Disconnect()
-//    {
-//        IsConnected = false;
-//        if (gazePointDataStream != null)
-//        {
-//            gazePointDataStream.Next -= OnTobiiUpdate;
-//            gazePointDataStream.Dispose();
-//        }
-//        if (eyePositionStream != null)
-//        {
-//            eyePositionStream.Next -= OnEyePositionUpdate;
-//            eyePositionStream.Dispose();
-//        }
-//        if (eyeHost != null) eyeHost.Dispose();
-//    }
+    }
+    private void OnDisable()
+    {
+        Disconnect();
+    }
 
-//}
+    public void Disconnect()
+    {
+        IsConnected = false;
+        if (gazePointDataStream != null)
+        {
+            gazePointDataStream.Next -= OnTobiiUpdate;
+            gazePointDataStream.Dispose();
+        }
+        if (eyePositionStream != null)
+        {
+            eyePositionStream.Next -= OnEyePositionUpdate;
+            eyePositionStream.Dispose();
+        }
+        if (eyeHost != null) eyeHost.Dispose();
+    }
+
+    public void OpenCalibrationPage()
+    {
+        System.Windows.MessageBox.Show("Para calibrar un dispositivo Tobii utilice el software del propietario: Tobii Core o Tobii Experience.");
+        return;
+    }
+
+    public void RequestCalibration(int pointsArray, int eyes)
+    {
+        System.Windows.MessageBox.Show("Para calibrar un dispositivo Tobii utilice el software del propietario: Tobii Core o Tobii Experience.");
+        return;
+    }
+}

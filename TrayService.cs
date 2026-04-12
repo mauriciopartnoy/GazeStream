@@ -3,6 +3,7 @@ using System.Drawing;
 using W = System.Windows;
 using GazeStream.Utilities;
 using GazeStream.Windows;
+using GazeStream.Eyetracker;
 
 namespace GazeStream
 {
@@ -50,7 +51,14 @@ namespace GazeStream
 
         private void OnCalibration(object? sender, EventArgs e)
         {
-            WindowManager.OpenWindow<CalibrationWindow>();
+            //DEFAULT
+            if (GazeManager.I.GazeDevice == null)
+            {
+                GazeManager.I.joacoA11.OpenCalibrationPage();
+                return;
+            }
+
+            GazeManager.I.GazeDevice.OpenCalibrationPage();
         }
 
         private void OnCamera(object? sender, EventArgs e)

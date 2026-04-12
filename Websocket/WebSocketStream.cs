@@ -280,10 +280,16 @@ public class GazeService : WebSocketBehavior
                     Settings.I.FilterProfile.Value = FilterProfile.Alto;
                     break;
                 case "ShowEyeDisplay":
-                    WindowManager.OpenWindow<EyesWindow>();
+                    if (GazeManager.I.IsJoacoDevice)
+                    {
+                        WindowManager.OpenWindow<EyesWindow>();
+                    }
                     break;
                 case "HideEyeDisplay":
-                    WindowManager.CloseWindow<EyesWindow>();
+                    if (GazeManager.I.IsJoacoDevice)
+                    {
+                        WindowManager.CloseWindow<EyesWindow>();
+                    }
                     break;
                 case "SetSampleRate20":
                     Settings.I.SampleRateHZ.Value = 20;
@@ -317,10 +323,14 @@ public class GazeService : WebSocketBehavior
 
     public void RequestCalibration(int pointsArray, int eyes)
     {
-        Settings.I.LastPointsOption.Value = pointsArray;
-        Settings.I.LastEyesOption.Value = eyes;
-        WindowManager.OpenWindow<CalibrationWindow>();
-        GlobalEvents.OnStartCalibrationCommand.Invoke(pointsArray, eyes);
+        //DEFAULT
+        if (GazeManager.I.GazeDevice == null)
+        {
+            GazeManager.I.joacoA11.RequestCalibration(pointsArray, eyes);
+            return;
+        }
+
+        GazeManager.I.GazeDevice.RequestCalibration(pointsArray, eyes);
     }
 
     public void CancelCalibration()

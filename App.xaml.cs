@@ -3,7 +3,6 @@ using System.Data;
 using W = System.Windows;
 using GazeStream.AppData;
 using System.Windows.Threading;
-using GazeStream.Eyetracker;
 using GazeStream.Utilities;
 using GazeStream.Windows;
 using System.Windows;
@@ -11,6 +10,7 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System.Threading;
 using System;
+using GazeStream.Eyetracker;
 using InputSimulatorEx;
 using System.Reflection;
 
@@ -63,17 +63,17 @@ namespace GazeStream
             HookHotkeys();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
 
-            try
-            {
-                Debug.WriteLine("About to load assembly");
-                Debug.WriteLine($"Is64BitProcess: {Environment.Is64BitProcess}");
-                Debug.WriteLine($"Is64BitOS: {Environment.Is64BitOperatingSystem}");
-                var asm = Assembly.LoadFrom("Tobii.EyeX.Client.dll");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Assembly load failed: " + ex.ToString());
-            }
+            //try
+            //{
+            //    Debug.WriteLine("About to load assembly");
+            //    Debug.WriteLine($"Is64BitProcess: {Environment.Is64BitProcess}");
+            //    Debug.WriteLine($"Is64BitOS: {Environment.Is64BitOperatingSystem}");
+            //    var asm = Assembly.LoadFrom("Tobii.EyeX.Client.dll");
+            //}
+            //catch (Exception ex)
+            //{
+            //    Debug.WriteLine("Assembly load failed: " + ex.ToString());
+            //}
         }
 
         public static void RestartApp()
