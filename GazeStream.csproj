@@ -129,6 +129,12 @@
     <Reference Include="EtApi">
       <HintPath>..\..\NET_GazeStream\GazeStream\EtApi.dll</HintPath>
     </Reference>
+    <Reference Include="tobii_interaction_lib_cs">
+      <HintPath>tobii_interaction_lib_cs.dll</HintPath>
+    </Reference>
+    <Reference Include="tobii_interaction_lib_wpf">
+      <HintPath>tobii_interaction_lib_wpf.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -459,6 +465,18 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="TobiiGazeCore64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="tobii_interaction_lib.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="tobii_interaction_lib_cs.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="tobii_interaction_lib_wpf.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="tobii_stream_engine.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="USERSDK.dll">

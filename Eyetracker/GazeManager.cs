@@ -44,8 +44,9 @@ namespace GazeStream.Eyetracker
 
 
         public GazeDeviceA11? joacoA11;
-        public GazeDeviceTobiiEyeX gazeDeviceTobii;
         public GazeDeviceIntelligaze intelligaze;
+        public GazeDeviceTobiiEyeX tobiiEyeX;
+        public GazeDeviceTobiiInteraction tobiiInteraction;
 
         public bool mouseControlEnabled => Settings.I.MouseToggle.Value;
         public bool IsCalibrating { get; private set; }
@@ -144,8 +145,11 @@ namespace GazeStream.Eyetracker
             //joacoA11 = new GazeDeviceA11();
             //supportedDevices.Add(joacoA11);
 
-            intelligaze = new GazeDeviceIntelligaze();
-            supportedDevices.Add(intelligaze);
+            //intelligaze = new GazeDeviceIntelligaze();
+            //supportedDevices.Add(intelligaze);
+
+            tobiiInteraction = new GazeDeviceTobiiInteraction();
+            supportedDevices.Add(tobiiInteraction);
 
             //X86
             //gazeDeviceTobii = new GazeDeviceTobiiEyeX();
