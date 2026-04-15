@@ -49,7 +49,7 @@ namespace GazeStream
             Instance = this;
             SettingsManager = new Settings();
             SettingsManager.Initialize();
-
+            
             SettingsManager.SampleRateHZ.Value = 60;
 
             InputSim = new InputSimulator();
@@ -62,18 +62,6 @@ namespace GazeStream
 
             HookHotkeys();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
-
-            //try
-            //{
-            //    Debug.WriteLine("About to load assembly");
-            //    Debug.WriteLine($"Is64BitProcess: {Environment.Is64BitProcess}");
-            //    Debug.WriteLine($"Is64BitOS: {Environment.Is64BitOperatingSystem}");
-            //    var asm = Assembly.LoadFrom("Tobii.EyeX.Client.dll");
-            //}
-            //catch (Exception ex)
-            //{
-            //    Debug.WriteLine("Assembly load failed: " + ex.ToString());
-            //}
         }
 
         public static void RestartApp()

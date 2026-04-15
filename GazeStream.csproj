@@ -126,6 +126,9 @@
     <Reference Include="Tobii.EyeX.Client.Net20">
       <HintPath>..\..\NET_GazeStream\GazeStream\Tobii.EyeX.Client.Net20.dll</HintPath>
     </Reference>
+    <Reference Include="EtApi">
+      <HintPath>..\..\NET_GazeStream\GazeStream\EtApi.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -420,6 +423,9 @@
 
   <ItemGroup>
     <None Update="aSeeX.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="EtApi.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="EyeXFramework.dll">
