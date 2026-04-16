@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Tobii.InteractionLib;
 using GazeStream.Utilities;
 using System.Numerics;
+using System.Diagnostics;
 
 namespace GazeStream.Eyetracker
 {
@@ -18,18 +19,21 @@ namespace GazeStream.Eyetracker
         public bool IsConnected => HasStreamCapability();
 
         public bool UserIsPresent { get; private set; } = false;
-        public GazePoint GazePoint { get; private set; } = new GazePoint(Vector2.Zero);
+        public GazePoint GazePoint => gazePointCache;
+        GazePoint gazePointCache = new();
         public GazePoint RawGazePoint { get; private set; } = new GazePoint(Vector2.Zero);
 
         DateTime lastPointReceived;
-
+        Vector2 screenSize;
 
 
         public EyesData Eyes { get; private set; } = new EyesData();
         public bool Initialize()
         {
+            Debug.WriteLine("Initializing Tobii Interaction");
             intlib = InteractionLibFactory.CreateInteractionLib(FieldOfUse.Interactive);
-            Vector2 screenSize = Helper.GetPrimaryMonitorSize();
+            screenSize = Helper.GetPrimaryMonitorSize();
+            Debug.WriteLine($"Monitor size {screenSize.X}*{screenSize.Y}");
             intlib.CoordinateTransformAddOrUpdateDisplayArea(screenSize.X, screenSize.Y);
             intlib.CoordinateTransformSetOriginOffset(0, 0);
             SubscribeToEvents();
@@ -59,7 +63,6 @@ namespace GazeStream.Eyetracker
         void SubscribeToEvents()
         {
             if (intlib == null) return;
-
             UnsubscribeToEvents();
             intlib.GazePointDataEvent += UpdateGazePoint;
             intlib.PresenceDataEvent += Intlib_PresenceDataEvent;
@@ -102,6 +105,7 @@ namespace GazeStream.Eyetracker
         private void Intlib_PresenceDataEvent(PresenceData presenceData)
         {
             UserIsPresent = (presenceData.presence == Presence.Present);
+            Debug.WriteLine("Tobii user is present: " + UserIsPresent);
         }
 
         void UpdateGazePoint(GazePointData data)
@@ -109,9 +113,11 @@ namespace GazeStream.Eyetracker
             if (data.validity == Validity.Valid)
             {
                 //Esta librería no provee el dato crudo del eyetracker por lo cual se envía el punto con el filtro por default.
+                float x = data.x / screenSize.X;
+                float y = data.y / screenSize.Y;
                 lastPointReceived = DateTime.Now;
-                GazePoint = new GazePoint(new Vector2(data.x, data.y));
-                RawGazePoint = new GazePoint(new Vector2(data.x, data.y)); 
+                gazePointCache = new GazePoint(new Vector2(x, y));
+                RawGazePoint = new GazePoint(new Vector2(x, y)); 
             }
         }
 
