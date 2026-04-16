@@ -142,14 +142,15 @@ namespace GazeStream.Eyetracker
 
             //X64
 
-            //joacoA11 = new GazeDeviceA11();
-            //supportedDevices.Add(joacoA11);
 
             //intelligaze = new GazeDeviceIntelligaze();
             //supportedDevices.Add(intelligaze);
 
             tobiiInteraction = new GazeDeviceTobiiInteraction();
             supportedDevices.Add(tobiiInteraction);
+
+            joacoA11 = new GazeDeviceA11();
+            supportedDevices.Add(joacoA11);
 
             //X86
             //gazeDeviceTobii = new GazeDeviceTobiiEyeX();
