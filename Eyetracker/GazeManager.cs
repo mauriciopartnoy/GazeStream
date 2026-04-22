@@ -143,14 +143,14 @@ namespace GazeStream.Eyetracker
             //X64
 
 
-            //intelligaze = new GazeDeviceIntelligaze();
-            //supportedDevices.Add(intelligaze);
+            intelligaze = new GazeDeviceIntelligaze();
+            supportedDevices.Add(intelligaze);
 
             tobiiInteraction = new GazeDeviceTobiiInteraction();
             supportedDevices.Add(tobiiInteraction);
 
             joacoA11 = new GazeDeviceA11();
-            supportedDevices.Add(joacoA11);
+            supportedDevices.Add(joacoA11);//
 
             //X86
             //gazeDeviceTobii = new GazeDeviceTobiiEyeX();
@@ -193,7 +193,13 @@ namespace GazeStream.Eyetracker
                     Debug.WriteLine("IsCalibrating...");
                     continue;
                 }
-                if (GazeDevice == null || !GazeDevice.IsConnected)
+                if (GazeDevice != null && !GazeDevice.IsConnected)
+                {
+                    DisconnectDevice();
+                    continue;
+                }
+
+                if (GazeDevice == null)
                 {
                     TryInitializeGazeDevice();
                     await Task.Delay(500, token);
@@ -207,7 +213,6 @@ namespace GazeStream.Eyetracker
                 await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
             }
         }
-
 
         private void SendUpdateEvents()
         {
@@ -289,6 +294,7 @@ namespace GazeStream.Eyetracker
 
         public void TryInitializeGazeDevice()
         {
+            kalmanFilter.ResetStartingValues();
             DisconnectDevice();
             Debug.WriteLine("Trying to initialize device.");
 

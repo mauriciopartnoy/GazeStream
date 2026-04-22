@@ -28,7 +28,7 @@ namespace GazeStream.Eyetracker.Filters
             ResetStartingValues();
         }
 
-        private void ResetStartingValues()
+        public void ResetStartingValues()
         {
             estimatedPoint = Vector2.Zero;
             estimationNoise = 1f;

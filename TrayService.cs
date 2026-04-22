@@ -33,15 +33,19 @@ namespace GazeStream
         {
             var menu = new ContextMenuStrip();
 
+            menu.Items.Add("Reiniciar Eyetracker", null, OnRestartEyetracker);
             menu.Items.Add("Calibración", null, OnCalibration);
-            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Cámara", null, OnCamera);
-            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Opciones", null, OnOptions);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Salir", null, OnExit);
 
             return menu;
+        }
+
+        void OnRestartEyetracker(object? sender, EventArgs e)
+        {
+            GazeManager.I.DisconnectDevice();
         }
 
         private void OnOptions(object? sender, EventArgs e)

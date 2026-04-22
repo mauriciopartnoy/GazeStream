@@ -36,6 +36,7 @@ namespace GazeStream.Eyetracker
             Debug.WriteLine($"Monitor size {screenSize.X}*{screenSize.Y}");
             intlib.CoordinateTransformAddOrUpdateDisplayArea(screenSize.X, screenSize.Y);
             intlib.CoordinateTransformSetOriginOffset(0, 0);
+            UnsubscribeToEvents();
             SubscribeToEvents();
             Thread.Sleep(500);
             return HasStreamCapability();
@@ -44,7 +45,6 @@ namespace GazeStream.Eyetracker
         bool HasStreamCapability()
         {
             if (intlib == null) return false;
-
             Capability cap;
             intlib.GetDataStreamCapability(StreamType.GazePointData, out cap);
             return cap == Capability.Enabled || cap == Capability.Available;
@@ -126,6 +126,7 @@ namespace GazeStream.Eyetracker
             if (intlib == null) return;
             UnsubscribeToEvents();
             intlib.Dispose();
+            intlib = null;
         }
         public void UpdateData()
         {

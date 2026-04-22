@@ -6,6 +6,9 @@ using System.Text;
 using Alea.Api;
 using System.Diagnostics;
 using System.Windows.Threading;
+using System.Numerics;
+using GazeStream.Utilities;
+using GazeStream.Windows;
 
 namespace GazeStream.Eyetracker
 {
@@ -28,35 +31,77 @@ namespace GazeStream.Eyetracker
 
         public string DeviceName => "Intelligaze";
 
-        public bool IsConnected => true;
+        public bool IsConnected { get; private set; } = false;
 
         public bool UserIsPresent => true;
 
-        public GazePoint GazePoint => throw new NotImplementedException();
+        public GazePoint GazePoint => gazePointCache;
+        public GazePoint RawGazePoint => rawGazePointCache;
+        public EyesData Eyes { get; private set; } = new();
 
-        public GazePoint RawGazePoint => throw new NotImplementedException();
 
-        public EyesData Eyes => throw new NotImplementedException();
+        GazePoint gazePointCache = new();
+
+        GazePoint rawGazePointCache = new();
+        Vector2 screenSize;
 
         bool InvokeRequired => Dispatcher.FromThread(Thread.CurrentThread) == App.Current.Dispatcher;
+        bool isCalibrating;
+
 
         Dispatcher d => App.Instance.Dispatcher;
 
         public void Disconnect()
         {
+            UpdateDataStreaming(false, false);
+            UnsubscribeToEvents();
             _api.ExitServer();
             _api.Close();
         }
 
+      
+
         public bool Initialize()
         {
+            screenSize = Helper.GetPrimaryMonitorSize();
+
+            //Intelligaze Check
+            bool acquired = false;
+            bool canConnect = false;
+            Mutex m = new Mutex(false, "Local\\AleaIntelliGaze30");
+
+            try
+            {
+                acquired = m.WaitOne(0);
+            }
+            catch (AbandonedMutexException e)
+            {
+                m.ReleaseMutex();
+                IsConnected = false;
+                canConnect = false;
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    m.ReleaseMutex();
+                    IsConnected = false;
+                    canConnect = false;
+                }
+                else
+                {
+                    canConnect = true;
+                }
+            }
+            if (!canConnect) return false;
+
             ApiError error;
             do
             {
                 bool isOpen;
                 error = _api.IsOpen(out isOpen);
                 Debug.WriteLine($"Intelligaze server is open: {isOpen} Error: {error.ToString()}");
-                error = _api.Open("API-aw6oo-yrrhc","127.0.0.1", 27412, "127.0.0.1", 27413);
+                error = _api.Open("API-aw6oo-yrrhc", "127.0.0.1", 27412, "127.0.0.1", 27413);
                 Thread.Sleep(1000);
                 Debug.WriteLine($"Trying to open Intelligaze API + {error.ToString()}");
             }
@@ -65,23 +110,17 @@ namespace GazeStream.Eyetracker
             Debug.WriteLine("Intelligaze API is open. Setting callbacks!");
 
             // install data callbacks
-            RawDataReceived += new RawDataDelegate(SharpClient_RawDataReceived);
-            FixationReceived += new FixationDelegate(SharpClient_FixationReceived);
-            SaccadeReceived += new SaccadeDelegate(SharpClient_SaccadeReceived);
-            BlinkReceived += new BlinkDelegate(SharpClient_BlinkReceived);
-            NoEventReceived += new NoEventDelegate(SharpClient_NoEventReceived);
-            CaliDoneReceived += new CalibrationDoneDelegate(SharpClient_CaliDoneReceived);
-            ResultReceived += new ResultCalibrationDelegate(SharpClient_ResultReceived);
-            ResultExReceived += new ResultCalibrationExDelegate(SharpClient_ResultExReceived);
-            SystemMessageReceived += new SystemMessageDelegate(SharpClient_SystemMessageReceived);
-            EyeStatusReceived += new EyeStatusDelegate(SharpClient_EyeStatusReceived);
-            EyeVisibilityReceived += new EyeVisibilityDelegate(SharpClient_EyeVisibilityReceived);
+            UnsubscribeToEvents(); //Solo para asegurarnos
+            SubscribeToEvents();
 
             // connect passive callbacks to API
             IntPtr p;
 
             if (IntPtr.Size == 8) // x64
             {
+                p = Marshal.GetFunctionPointerForDelegate(RawDataReceived);
+                _api.SetRawDataCB64(p.ToInt64(), IntPtr.Zero);
+
                 p = Marshal.GetFunctionPointerForDelegate(CaliDoneReceived);
                 _api.SetCalibrationDoneCB64(p.ToInt64(), IntPtr.Zero);
 
@@ -102,6 +141,9 @@ namespace GazeStream.Eyetracker
             }
             else  // x86
             {
+                p = Marshal.GetFunctionPointerForDelegate(RawDataReceived);
+                _api.SetRawDataCB(p.ToInt32(), IntPtr.Zero);
+
                 p = Marshal.GetFunctionPointerForDelegate(CaliDoneReceived);
                 _api.SetCalibrationDoneCB(p.ToInt32(), IntPtr.Zero);
 
@@ -120,31 +162,48 @@ namespace GazeStream.Eyetracker
                 p = Marshal.GetFunctionPointerForDelegate(EyeVisibilityReceived);
                 _api.SetEyeVisibilityCB(p.ToInt32(), IntPtr.Zero);
             }
+
+            UpdateDataStreaming(true, true);
+            IsConnected = true;
             return true;
         }
 
-        public void OpenCalibrationPage()
+        private void UnsubscribeToEvents()
         {
-            throw new NotImplementedException();
+            RawDataReceived -= new RawDataDelegate(SharpClient_RawDataReceived);
+            FixationReceived -= new FixationDelegate(SharpClient_FixationReceived);
+            SaccadeReceived -= new SaccadeDelegate(SharpClient_SaccadeReceived);
+            BlinkReceived -= new BlinkDelegate(SharpClient_BlinkReceived);
+            NoEventReceived -= new NoEventDelegate(SharpClient_NoEventReceived);
+            CaliDoneReceived -= new CalibrationDoneDelegate(SharpClient_CaliDoneReceived);
+            ResultReceived -= new ResultCalibrationDelegate(SharpClient_ResultReceived);
+            ResultExReceived -= new ResultCalibrationExDelegate(SharpClient_ResultExReceived);
+            SystemMessageReceived -= new SystemMessageDelegate(SharpClient_SystemMessageReceived);
+            EyeStatusReceived -= new EyeStatusDelegate(SharpClient_EyeStatusReceived);
+            EyeVisibilityReceived -= new EyeVisibilityDelegate(SharpClient_EyeVisibilityReceived);
+        }
+        private void SubscribeToEvents()
+        {
+            RawDataReceived += new RawDataDelegate(SharpClient_RawDataReceived);
+            FixationReceived += new FixationDelegate(SharpClient_FixationReceived);
+            SaccadeReceived += new SaccadeDelegate(SharpClient_SaccadeReceived);
+            BlinkReceived += new BlinkDelegate(SharpClient_BlinkReceived);
+            NoEventReceived += new NoEventDelegate(SharpClient_NoEventReceived);
+            CaliDoneReceived += new CalibrationDoneDelegate(SharpClient_CaliDoneReceived);
+            ResultReceived += new ResultCalibrationDelegate(SharpClient_ResultReceived);
+            ResultExReceived += new ResultCalibrationExDelegate(SharpClient_ResultExReceived);
+            SystemMessageReceived += new SystemMessageDelegate(SharpClient_SystemMessageReceived);
+            EyeStatusReceived += new EyeStatusDelegate(SharpClient_EyeStatusReceived);
+            EyeVisibilityReceived += new EyeVisibilityDelegate(SharpClient_EyeVisibilityReceived);
         }
 
-        public void RequestCalibration(int pointsArray, int eyes)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UpdateData()
-        {
-            throw new NotImplementedException();
-        }
-
-        private void UpdateDataStreaming()
+        private void UpdateDataStreaming(bool streamEvents, bool streamRaw)
         {
             ApiError error = ApiError.NoError;
             int mode = 0;
 
             // stream eye events
-            if (true/*eventStreamBox.Checked == true*/)
+            if (streamEvents)
             {
                 mode |= 2;
 
@@ -197,43 +256,92 @@ namespace GazeStream.Eyetracker
                 }
             }
 
-            //SPECIAL LICENCE RAW DATA
-
-            //// stream raw events (special license required)
-            //if (streamChk.Checked == true)
-            //{
-            //    mode |= 1;
-            //    IntPtr p = Marshal.GetFunctionPointerForDelegate(RawDataReceived);
-            //    if (IntPtr.Size == 8) // x64
-            //    {
-            //        _api.SetRawDataCB64(p.ToInt64(), IntPtr.Zero);
-            //    }
-            //    else
-            //    {
-            //        _api.SetRawDataCB(p.ToInt32(), IntPtr.Zero);
-            //    }
-            //}
-            //else
-            //{
-            //    if (IntPtr.Size == 8) // x64
-            //    {
-            //        _api.SetRawDataCB64(0, IntPtr.Zero);
-            //    }
-            //    else
-            //    {
-            //        _api.SetRawDataCB(0, IntPtr.Zero);
-            //    }
-            //}
+            // stream raw events (special license required)
+            if (streamRaw)
+            {
+                mode |= 1;
+                IntPtr p = Marshal.GetFunctionPointerForDelegate(RawDataReceived);
+                if (IntPtr.Size == 8) // x64
+                {
+                    _api.SetRawDataCB64(p.ToInt64(), IntPtr.Zero);
+                }
+                else
+                {
+                    _api.SetRawDataCB(p.ToInt32(), IntPtr.Zero);
+                }
+            }
+            else
+            {
+                if (IntPtr.Size == 8) // x64
+                {
+                    _api.SetRawDataCB64(0, IntPtr.Zero);
+                }
+                else
+                {
+                    _api.SetRawDataCB(0, IntPtr.Zero);
+                }
+            }
 
             error = _api.DataStreaming(mode);
 
             if (error != ApiError.NoError)
-            {
-                Debug.WriteLine($"Intelligaze ERROR: {error.ToString()}");
-            }
+                Debug.WriteLine(error.ToString());
             else
+                AddReport("Data Streaming");
+        }
+
+        public void OpenCalibrationPage()
+        {
+            return;
+        }
+
+        public void RequestCalibration(int pointsArray, int eyes)
+        {
+            if (isCalibrating) return;
+
+            isCalibrating = true;
+            int points = 2;
+            EyeTypeEnum eyeType = EyeTypeEnum.Binocular;
+
+            switch (pointsArray)
             {
-                Debug.WriteLine("Intelligaze started streaming data.");
+                case 0: points = 1; break;
+                case 1: points = 5; break;
+                case 2: points = 9; break;
+            }
+
+            switch (eyes)
+            {
+                case 0: eyeType = EyeTypeEnum.Binocular; break;
+                case 1: eyeType = EyeTypeEnum.CalibrateLeft; break;
+                case 2: eyeType = EyeTypeEnum.CalibrateRight; break;
+            }
+
+            _api.PerformCalibration(points, PointLocationEnum.Full, false, false, true, eyeType, false, false, true, 0, 2, "ANIMATION:PARROT");
+
+        }
+
+        public void UpdateData()
+        {
+            bool acquired = false;
+            Mutex m = new Mutex(false, "Local\\AleaIntelliGaze30");
+
+            try
+            {
+                acquired = m.WaitOne(0);
+            }
+            catch(AbandonedMutexException e)
+            {
+                m.ReleaseMutex();
+                IsConnected = false;
+            }
+            finally
+            {
+                if (acquired)
+                {
+                    m.ReleaseMutex();
+                    IsConnected = false;
+                }
             }
         }
 
@@ -265,12 +373,15 @@ namespace GazeStream.Eyetracker
 
         void SharpClient_ResultReceived(ref ServerCalibrationResult result, IntPtr userData)
         {
+            isCalibrating = false;
+
             if (InvokeRequired)
             {
                 d.BeginInvoke(new ResultCalibrationDelegate(SharpClient_ResultReceived), new object[] { result, userData });
             }
             else
             {
+                isCalibrating = false;
                 AddReport("Calibration Result: " + result.P1 + " " + result.P2 + " " + result.P3 + " " + result.P4 + " " + result.P5 + " " + result.P6 + " " + result.P7 + " " + result.P8 + " " + result.P9);
             }
         }
@@ -334,6 +445,9 @@ namespace GazeStream.Eyetracker
 
         private void SharpClient_RawDataReceived(ref RawData data, IntPtr userData)
         {
+            Debug.WriteLine($"RAW DATA RECEIVED: {data.head.headPosX}X: {data.intelliGazeX} Y: {data.intelliGazeY} LX: {data.leftEye.gazePositionX}");
+            //gazePointCache = new GazePoint(new Vector2((float)data.intelliGazeX, (float)data.intelliGazeY));
+            //rawGazePointCache = new GazePoint(new Vector2((float)data.intelliGazeX, (float)data.intelliGazeY));
             if (InvokeRequired)
             {
                 d.BeginInvoke(new RawDataDelegate(SharpClient_RawDataReceived), new object[] { data, userData });
@@ -342,12 +456,17 @@ namespace GazeStream.Eyetracker
             {
                 // raw data only available with special license
                 //rawDataLbl.Text = String.Format("Head: pitch({0:0}) distance({1:0})", data.head.headPitch, data.head.headPosZ);
+                Debug.WriteLine($"RAW DATA RECEIVED no invoke: X: {data.intelliGazeX} Y: {data.intelliGazeY} LX: {data.leftEye.gazePositionX}");
                 Debug.WriteLine(String.Format("IntelliGaze ({0:0},{1:0})", data.intelliGazeX, data.intelliGazeY));
             }
         }
 
         private void SharpClient_FixationReceived(ref Fixation data, IntPtr userData)
         {
+            Debug.WriteLine($"FIXATION received:  {data.timeStamp.ToString()} Duration: {data.duration.ToString()}");
+            Debug.WriteLine($"FIXATION COORD: X: {data.positionX} Y: {data.positionY}");
+            UpdateGazePointFromScreen((float)data.positionX, (float)data.positionY);
+
             if (InvokeRequired)
             {
                 d.BeginInvoke(new FixationDelegate(SharpClient_FixationReceived), new object[] { data, userData });
@@ -356,6 +475,17 @@ namespace GazeStream.Eyetracker
             {
                 Debug.WriteLine("Fix Start: " + data.timeStamp.ToString() + " Duration: " + data.duration.ToString());
             }
+        }
+
+        void UpdateGazePointFromScreen(float screenX, float screenY)
+        {
+            if (screenSize.X == 0 || screenSize.Y == 0) return;
+            screenX = Math.Clamp(screenX, 0, screenSize.X);
+            screenY = Math.Clamp(screenY, 0, screenSize.Y);
+            float x = screenX / screenSize.X;
+            float y = screenY / screenSize.Y;
+            gazePointCache = new GazePoint(new Vector2(x, y));
+            rawGazePointCache = new GazePoint(new Vector2(x, y));
         }
 
         private void SharpClient_BlinkReceived(ref Blink data, IntPtr userData)
