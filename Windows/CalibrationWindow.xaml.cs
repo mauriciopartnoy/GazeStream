@@ -463,11 +463,21 @@ namespace GazeStream.Windows
 
         public void Disconnect()
         {
-            ASeeTracker._7i_cancel_calibration();
-            ASeeTracker._7i_stop_tracking();
-            ASeeTracker._7i_stop();
-            ASeeTracker._7i_device_disconnect();
-            GlobalEvents.OnEyetrackerDisconnected.Invoke();
+            try
+            {
+                ASeeTracker._7i_cancel_calibration();
+                ASeeTracker._7i_stop_tracking();
+                ASeeTracker._7i_stop();
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+                ASeeTracker._7i_device_disconnect();
+                GlobalEvents.OnEyetrackerDisconnected.Invoke();
+            }
         }
 
         void DisableButtons()

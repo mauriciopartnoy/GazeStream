@@ -142,7 +142,6 @@ namespace GazeStream.Eyetracker
 
             //X64
 
-
             intelligaze = new GazeDeviceIntelligaze();
             supportedDevices.Add(intelligaze);
 

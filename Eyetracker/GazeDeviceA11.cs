@@ -62,7 +62,7 @@ public class GazeDeviceA11 : IGazeDevice
 
     }
 
-     void SetCurrentUserCalibration()
+    void SetCurrentUserCalibration()
     {
         Debug.WriteLine("Setting current user calibration");
         if (!IsConnected) return;
@@ -201,14 +201,24 @@ public class GazeDeviceA11 : IGazeDevice
 
     public void Disconnect()
     {
-        IsConnected = false;
-        int stopTrackingResult = ASeeTracker._7i_stop_tracking();
-        Debug.WriteLine("StopTracking result: " + aSeeResults.StopTrackingResultToString(stopTrackingResult));
-        int stopResult = ASeeTracker._7i_stop();
-        Debug.WriteLine("Stop result: " + aSeeResults.StopResultToString(stopResult));
-        int disconnectResult = ASeeTracker._7i_device_disconnect();
-        Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
-        GlobalEvents.OnEyetrackerDisconnected.Invoke();
+        try
+        {
+            int stopTrackingResult = ASeeTracker._7i_stop_tracking();
+            Debug.WriteLine("StopTracking result: " + aSeeResults.StopTrackingResultToString(stopTrackingResult));
+            int stopResult = ASeeTracker._7i_stop();
+            Debug.WriteLine("Stop result: " + aSeeResults.StopResultToString(stopResult));
+        }
+        catch
+        {
+
+        }
+        finally
+        {
+            int disconnectResult = ASeeTracker._7i_device_disconnect();
+            Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
+            GlobalEvents.OnEyetrackerDisconnected.Invoke();
+            IsConnected = false;
+        }
     }
 
     public byte[] GetDefaultCalibration()
