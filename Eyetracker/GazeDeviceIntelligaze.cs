@@ -30,26 +30,22 @@ namespace GazeStream.Eyetracker
 
 
         public string DeviceName => "Intelligaze";
-
         public bool IsConnected { get; private set; } = false;
-
         public bool UserIsPresent => true;
-
         public GazePoint GazePoint => gazePointCache;
         public GazePoint RawGazePoint => rawGazePointCache;
         public EyesData Eyes { get; private set; } = new();
 
+        Dispatcher d => App.Instance.Dispatcher;
+        bool InvokeRequired => Dispatcher.FromThread(Thread.CurrentThread) == App.Current.Dispatcher;
 
         GazePoint gazePointCache = new();
-
         GazePoint rawGazePointCache = new();
         Vector2 screenSize;
-
-        bool InvokeRequired => Dispatcher.FromThread(Thread.CurrentThread) == App.Current.Dispatcher;
         bool isCalibrating;
 
 
-        Dispatcher d => App.Instance.Dispatcher;
+
 
         public void Disconnect()
         {
@@ -109,8 +105,8 @@ namespace GazeStream.Eyetracker
 
             Debug.WriteLine("Intelligaze API is open. Setting callbacks!");
 
-            // install data callbacks
-            UnsubscribeToEvents(); //Solo para asegurarnos
+            //Install data callbacks. Primero se desuscribe a eventos anteriores por si hubo una salida fallida del dispositivo.
+            UnsubscribeToEvents(); 
             SubscribeToEvents();
 
             // connect passive callbacks to API
@@ -445,9 +441,52 @@ namespace GazeStream.Eyetracker
 
         private void SharpClient_RawDataReceived(ref RawData data, IntPtr userData)
         {
-            Debug.WriteLine($"RAW DATA RECEIVED: {data.head.headPosX}X: {data.intelliGazeX} Y: {data.intelliGazeY} LX: {data.leftEye.gazePositionX}");
-            //gazePointCache = new GazePoint(new Vector2((float)data.intelliGazeX, (float)data.intelliGazeY));
-            //rawGazePointCache = new GazePoint(new Vector2((float)data.intelliGazeX, (float)data.intelliGazeY));
+            //Debug.WriteLine($"RAW DATA RECEIVED: Pupil Diameter: {data.leftEye.pupilDiameter} Distance {data.head.headPosZ}");
+            //Debug.WriteLine($"RAW DATA MICROLOSS: X: {data.intelliGazeX} Y: {data.intelliGazeY}");
+
+            //UpdateGazePointFromScreen((float)data.intelliGazeX, (float)data.intelliGazeY);
+
+            if (data.leftEye.pupilDiameter == 0 && data.rightEye.pupilDiameter == 0)
+            {
+                //Blinking. Ignore point.
+            }
+            else if (data.intelliGazeX == 0 || data.intelliGazeX == -1 || data.intelliGazeY == 0 || data.intelliGazeY == -1)
+            {
+                //Ignore points.
+            }
+            else if (data.leftEye.gazePositionY == 0)
+            {
+                UpdateGazePointFromScreen((float)data.rightEye.gazePositionX, (float)data.rightEye.gazePositionY);
+            }
+            else if (data.rightEye.gazePositionY == 0)
+            {
+                UpdateGazePointFromScreen((float)data.leftEye.gazePositionX, (float)data.leftEye.gazePositionY);
+            }
+            else
+            {
+                //Both eyes point.
+                UpdateGazePointFromScreen((float)data.intelliGazeX, (float)data.intelliGazeY);
+            }
+            //UPDATE EYE DATA (El IsBlinking se llena en el callback BlinkReceived. Alternativamente chequear pupil diameter.)
+
+            Vector2 lefteyePos = ScreenToViewport((float)data.leftEye.eyeballPosX, (float)data.leftEye.eyeballPosY);
+            Eyes.leftEye.viewportX = lefteyePos.X;                          //mm relativo a la camara
+            Eyes.leftEye.viewportY = lefteyePos.Y;                          //mm relativo a la camara
+            Eyes.leftEye.pupilDistanceMm = (float)data.leftEye.eyeballPosZ; //mm relativo a la camara
+            Eyes.leftEye.pupilDiameter = (float)data.leftEye.pupilDiameter; //En pixeles. Devuelve 0 cuando el ojo está cerrado. (Usar para el IsBlinking)
+            Eyes.leftEye.pupilDiameterMm = (float)data.leftEye.pupilDiameter;
+            Eyes.leftEye.isBlinking = data.leftEye.pupilDiameter == 0 ? true : false;
+
+            Vector2 righteyePos = ScreenToViewport((float)data.rightEye.eyeballPosX, (float)data.rightEye.eyeballPosY);
+            Eyes.rightEye.viewportX = righteyePos.X;                          //mm relativo a la camara
+            Eyes.rightEye.viewportY = righteyePos.Y;                          //mm relativo a la camara
+            Eyes.rightEye.pupilDistanceMm = (float)data.rightEye.eyeballPosZ; //mm relativo a la camara
+            Eyes.rightEye.pupilDiameter = (float)data.rightEye.pupilDiameter; //En pixeles.
+            Eyes.rightEye.pupilDiameterMm = (float)data.rightEye.pupilDiameter;
+            Eyes.rightEye.isBlinking = data.rightEye.pupilDiameter == 0 ? true : false;
+
+
+
             if (InvokeRequired)
             {
                 d.BeginInvoke(new RawDataDelegate(SharpClient_RawDataReceived), new object[] { data, userData });
@@ -463,9 +502,11 @@ namespace GazeStream.Eyetracker
 
         private void SharpClient_FixationReceived(ref Fixation data, IntPtr userData)
         {
-            Debug.WriteLine($"FIXATION received:  {data.timeStamp.ToString()} Duration: {data.duration.ToString()}");
-            Debug.WriteLine($"FIXATION COORD: X: {data.positionX} Y: {data.positionY}");
-            UpdateGazePointFromScreen((float)data.positionX, (float)data.positionY);
+            //USAR FIJACIONES COMO REEMPLAZO CUANDO LA LICENCIA SEA "DEMO"
+
+            //Debug.WriteLine($"FIXATION received:  {data.timeStamp.ToString()} Duration: {data.duration.ToString()}");
+            //Debug.WriteLine($"FIXATION COORD: X: {data.positionX} Y: {data.positionY}");
+            //UpdateGazePointFromScreen((float)data.positionX, (float)data.positionY);
 
             if (InvokeRequired)
             {
@@ -480,6 +521,9 @@ namespace GazeStream.Eyetracker
         void UpdateGazePointFromScreen(float screenX, float screenY)
         {
             if (screenSize.X == 0 || screenSize.Y == 0) return;
+            if (screenX == 0 || screenY == 0) return;
+            if (screenX == -1 || screenY == -1) return;
+
             screenX = Math.Clamp(screenX, 0, screenSize.X);
             screenY = Math.Clamp(screenY, 0, screenSize.Y);
             float x = screenX / screenSize.X;
@@ -488,8 +532,20 @@ namespace GazeStream.Eyetracker
             rawGazePointCache = new GazePoint(new Vector2(x, y));
         }
 
+        Vector2 ScreenToViewport(float screenX, float screenY)
+        {
+            if (screenSize.X == 0 || screenSize.Y == 0) return Vector2.Zero;
+
+            screenX = Math.Clamp(screenX, 0, screenSize.X);
+            screenY = Math.Clamp(screenY, 0, screenSize.Y);
+            float x = screenX / screenSize.X;
+            float y = screenY / screenSize.Y;
+            return new Vector2(x, y);
+        }
+
         private void SharpClient_BlinkReceived(ref Blink data, IntPtr userData)
         {
+
             if (InvokeRequired)
             {
                 d.BeginInvoke(new BlinkDelegate(SharpClient_BlinkReceived), new object[] { data, userData });

@@ -31,7 +31,13 @@
         </Setter>
     </Style>
 
-    <Style x:Key="Gaze" TargetType="Button">
+    <!--<Style x:Key="StandardGaze" TargetType="local:GazeButton">
+        <Setter Property="Width" Value="200"/>
+        <Setter Property="Height" Value="200"/>
+        <Setter Property="Margin" Value="0,0,10,0"/>
+    </Style>-->
+
+        <Style x:Key="Gaze" TargetType="Button">
         <Setter Property="Foreground" Value="{StaticResource ButtonForeground}"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="VerticalAlignment" Value="Stretch"/>
@@ -42,10 +48,9 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border Background="{StaticResource ButtonBackground}"
-                      BorderBrush="White"
-                      BorderThickness="1"
-                      CornerRadius="12"
-                      Padding="10"
+                      BorderBrush="Red"
+                      BorderThickness="4"
+                      CornerRadius="4"
                         >
                         <ContentPresenter
                       HorizontalAlignment="Stretch"
@@ -279,26 +284,22 @@
                             <!-- EXPAND -->
 
                             <control:ScaleFill Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                <Ellipse x:Name="ExpandFill"
+                                <Border x:Name="ExpandFill"
                                          Visibility="Collapsed"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center"
-                                         Width="500"
-                                         Height="500"
-                                         Fill="{TemplateBinding AnimationColor}"/>
+                                         HorizontalAlignment="Stretch"
+                                         VerticalAlignment="Stretch"
+                                         Background="{TemplateBinding AnimationColor}"/>
                             </control:ScaleFill>
 
 
                             <!-- SHRINK -->
 
                             <control:ScaleFill IsReversed="True" Progress01="{TemplateBinding Progress01}" IsHitTestVisible="False">
-                                <Ellipse x:Name="ShrinkFill"
+                                <Border x:Name="ShrinkFill"
                                          Visibility="Collapsed"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center"
-                                         Width="500"
-                                         Height="500"
-                                         Fill="{TemplateBinding AnimationColor}"/>
+                                         HorizontalAlignment="Stretch"
+                                         VerticalAlignment="Stretch"                                       
+                                         Background="{TemplateBinding AnimationColor}"/>
                             </control:ScaleFill>
 
 

@@ -841,13 +841,13 @@ namespace GazeStream.AppData
             switch (value)
             {
                 case FocusStartOption.Low:
-                    Settings.I.TiempoDeActivacion.Value = .01f;
+                    Settings.I.TiempoDeInicioDeActivacion.Value = .01f;
                     break;
                 case FocusStartOption.Medium:
-                    Settings.I.TiempoDeActivacion.Value = .2f;
+                    Settings.I.TiempoDeInicioDeActivacion.Value = .2f;
                     break;
                 case FocusStartOption.High:
-                    Settings.I.TiempoDeActivacion.Value = .5f;
+                    Settings.I.TiempoDeInicioDeActivacion.Value = .5f;
                     break;
             }
         }

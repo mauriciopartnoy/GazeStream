@@ -2,13 +2,13 @@ using System.Numerics;
 [Serializable]
 public class EyesData 
 {
-    public Eye leftEye = default;
-    public Eye rightEye = default;
+    public Eye leftEye = new();
+    public Eye rightEye = new();
 
     public EyesData()
     {
-        leftEye = default;
-        rightEye = default;
+        leftEye = new();
+        rightEye = new();
     }
     public EyesData(_7i_eye_data_ex_t eyesData)
     {

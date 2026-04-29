@@ -26,11 +26,11 @@
                         <Setter Property="Margin" Value="10,10,0,0"/>
                     </Style>
                 </StackPanel.Resources>
-                <TextBlock Text="Opciones de Puntero" Style="{StaticResource OptionTitle}"/>
+
+                <TextBlock Text="Opciones de App" Style="{StaticResource OptionTitle}"/>
                 <StackPanel Orientation="Horizontal">
-               
-                    
-                    <eye:GazeButton Width="200" Height="200">
+
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
                         <eye:GazeButton.Content>
                             <Button Style="{StaticResource Gaze}" Click="RestartApp_Click">
                                 <Button.Content>
@@ -42,8 +42,21 @@
                             </Button>
                         </eye:GazeButton.Content>
                     </eye:GazeButton>
-                    
-                    <eye:GazeButton Width="200" Height="200">
+
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
+                        <eye:GazeButton.Content>
+                            <Button Style="{StaticResource Gaze}" Click="RestartDevice_Click">
+                                <Button.Content>
+                                    <Grid>
+                                        <Image Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" Source="/Resources/Icons/view.png"/>
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="22" FontWeight="SemiBold" Text="Reiniciar SDK"/>
+                                    </Grid>
+                                </Button.Content>
+                            </Button>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
                         <eye:GazeButton.Content>
                             <Button Style="{StaticResource Gaze}" Click="Start_Click">
                                 <Button.Content>
@@ -56,7 +69,7 @@
                         </eye:GazeButton.Content>
                     </eye:GazeButton>
 
-                    <eye:GazeButton Width="200" Height="200">
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
                         <eye:GazeButton.Content>
                             <Button Style="{StaticResource Gaze}" Click="Stop_Click">
                                 <Button.Content>
@@ -68,15 +81,18 @@
                             </Button>
                         </eye:GazeButton.Content>
                     </eye:GazeButton>
+                </StackPanel>
 
-                 
+                <TextBlock Text="Opciones de Puntero" Style="{StaticResource OptionTitle}"/>
+                <StackPanel Orientation="Horizontal">
 
-                    <eye:GazeButton Width="200" Height="200" IgnoreRestMode="True">
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0" IgnoreRestMode="True">
                         <eye:GazeButton.Content>
                             <controls:IconToggleButton Content="Descanso" IconSize="100" IconOn="/Resources/Icons/eyeOff.png" IconOff="/Resources/Icons/eyeOn.png" IsChecked="{Binding RestModeToggle.Value}"/>
                         </eye:GazeButton.Content>
                     </eye:GazeButton>
-                    <eye:GazeButton Width="200" Height="200">
+
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
                         <eye:GazeButton.Content>
                             <ToggleButton Style="{StaticResource GazeStyle}" IsChecked="{Binding MouseToggle.Value}">
                                 <StackPanel>
@@ -86,7 +102,8 @@
                             </ToggleButton>
                         </eye:GazeButton.Content>
                     </eye:GazeButton>
-                    <eye:GazeButton Width="200" Height="200">
+
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
                         <eye:GazeButton.Content>
                             <ToggleButton Style="{StaticResource GazeStyle}" IsChecked="{Binding BubbleToggle.Value}">
                                 <StackPanel>

@@ -51,6 +51,14 @@ namespace GazeStream.Eyetracker
         public bool mouseControlEnabled => Settings.I.MouseToggle.Value;
         public bool IsCalibrating { get; private set; }
 
+        public GazeActivationDevice GazeActivationMode = GazeManager.GazeActivationDevice.Mouse;
+
+        public enum GazeActivationDevice
+        {
+            Eyetracker,
+            Mouse,
+            All
+        }
 
 
         public Dictionary<FrameworkElement, IGazeTarget> gazeTargets;
@@ -152,6 +160,7 @@ namespace GazeStream.Eyetracker
             supportedDevices.Add(joacoA11);//
 
             //X86
+
             //gazeDeviceTobii = new GazeDeviceTobiiEyeX();
             //supportedDevices.Add(gazeDeviceTobii);
 
@@ -177,10 +186,13 @@ namespace GazeStream.Eyetracker
         {
             loopCts.Cancel();
             loopTask = null;
-            if (GazeDevice != null)
-            {
-                GazeDevice.Disconnect();
-            }
+            DisconnectDevice();
+        }
+
+        public void RestartGazeDevice()
+        {
+            DisconnectDevice();
+            StartGazeDeviceUpdateLoop();
         }
 
         async Task UpdateLoop(CancellationToken token)
@@ -364,6 +376,26 @@ namespace GazeStream.Eyetracker
                 //Debug.WriteLine($"Updating window: {w.Name} Delta time: {UIdeltaTime.TotalSeconds}");
                 if (w == null) continue;
                 UpdateGazeTargetsForWindow(SmoothScreenP, w);
+
+                //MODOS DE ACTIVACION (WIP)
+
+                //switch (GazeActivationMode)
+                //{
+                //    case GazeActivationDevice.Mouse:
+                //        System.Drawing.Point screenPos = System.Windows.Forms.Control.MousePosition;
+                //        Debug.WriteLine($"Mouse pos X: {screenPos.X} Y: {screenPos.Y}");
+                //        UpdateGazeTargetsForWindow(new System.Windows.Point(screenPos.X, screenPos.Y), w);
+                //        break;
+                //    case GazeActivationDevice.Eyetracker:
+                //        UpdateGazeTargetsForWindow(SmoothScreenP, w);
+                //        break;
+                //    case GazeActivationDevice.All:
+                //        System.Drawing.Point screenPos2 = System.Windows.Forms.Control.MousePosition;
+                //        UpdateGazeTargetsForWindow(new System.Windows.Point(screenPos2.X, screenPos2.Y), w);
+                //        UpdateGazeTargetsForWindow(SmoothScreenP, w);
+
+                //        break;
+                //}
             }
         }
 
@@ -384,7 +416,7 @@ namespace GazeStream.Eyetracker
         public void UpdateGazeTargetsForWindow(System.Windows.Point screen, Window window)
         {
             target = GetTarget(screen);
-          
+
             foreach (var t in activeGazeObjects)
             {
                 if (t == target)
@@ -407,8 +439,8 @@ namespace GazeStream.Eyetracker
                     activeGazeObjects.Add(target);
                 }
             }
-          
-          
+
+
             //CLEANUP
             foreach (var t in activeGazeObjects)
             {

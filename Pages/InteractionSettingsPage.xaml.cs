@@ -37,6 +37,11 @@ namespace GazeStream.Pages
             App.RestartApp();
         }
 
+        private void RestartDevice_Click(object sender, RoutedEventArgs e)
+        {
+            GazeManager.I.RestartGazeDevice();
+        }
+
         private void Stop_Click(object sender, RoutedEventArgs e)
         {
             GazeManager.I.StopGazeDeviceUpdateLoop();

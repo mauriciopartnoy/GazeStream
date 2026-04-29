@@ -81,6 +81,7 @@ public class WebSocketStream : IDisposable
         ws = new WebSocketServer(3000);
         ws.AddWebSocketService<GazeService>("/gaze");
         service = ws.WebSocketServices["/gaze"];
+        ws.WebSocketServices.KeepClean = true;
         ws.Start();
     }
 
@@ -218,6 +219,9 @@ public class GazeService : WebSocketBehavior
                     break;
                 case "CancelCalibration":
                     CancelCalibration();
+                    break;
+                case "RestartGazeDevice":
+                    GazeManager.I.RestartGazeDevice();
                     break;
                 case "StopGazeDevice":
                     GazeManager.I.StopGazeDeviceUpdateLoop();
