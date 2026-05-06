@@ -202,6 +202,14 @@ namespace GazeStream.Windows
             pointComplete = true;
         }
 
+
+        public void DefaultCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            if (GazeManager.I.IsJoacoDevice)
+            {
+                GazeManager.I.joacoA11.SetDefaultCalibration();
+            }
+        }
         public void Back_Click(object sender, RoutedEventArgs e)
         {
             this.Close();

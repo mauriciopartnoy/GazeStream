@@ -29,7 +29,7 @@
         <!-- Rounded button style (WPF-compatible) -->
         <Style x:Key="CalibrationButton" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="Height" Value="50"/>
+            <Setter Property="Height" Value="55"/>
             <Setter Property="Width" Value="140"/>
             <Setter Property="Margin" Value="10"/>
             <Setter Property="Template">
@@ -197,6 +197,14 @@
                         <TextBlock Text="Iniciar Calibración"
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"/>
+                    </Button>
+
+                    <Button x:Name="DefaultCalibration"
+                            Style="{StaticResource CalibrationButton}"
+                            Click="DefaultCalibration_Click">
+                    <TextBlock Text="Calibración Automática"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"/>
                     </Button>
 
                     <Button x:Name="BackButton"

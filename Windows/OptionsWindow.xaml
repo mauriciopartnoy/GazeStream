@@ -8,7 +8,9 @@
         xmlns:control="clr-namespace:GazeStream.Controls"
         xmlns:eye="clr-namespace:GazeStream.Eyetracker"
         xmlns:controls="clr-namespace:GazeStream.Controls"
+        xmlns:settings="clr-namespace:GazeStream.AppData"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=settings:Settings}"
         WindowState="Maximized"
         ShowInTaskbar="True"
         WindowStyle="SingleBorderWindow"
@@ -27,6 +29,7 @@
 
         <Style x:Key="GazeTab" TargetType="control:GazeTabItem">
             <Setter Property="Width" Value="200"/>
+            <!--<Setter Property="HorizontalAlignment" Value="Stretch"/>-->
         </Style>
 
         <Style x:Key="IconStyle" TargetType="Image">
@@ -36,15 +39,36 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
-    
+
     <Grid Background="{StaticResource OptionsBackground}">
-        <TabControl SelectionChanged="OnTabChanged" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource OptionsBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="8*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Background="DimGray">
+                <eye:GazeButton Width="500" HorizontalAlignment="Left" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch" IgnoreRestMode="True">
+                    <eye:GazeButton.Content>
+                        <controls:IconToggleButton Content="Descanso" IconSize="35" IconOn="/Resources/Icons/eyeOff.png" IconOff="/Resources/Icons/eyeOn.png" IsChecked="{Binding RestModeToggle.Value}"/>
+                    </eye:GazeButton.Content>
+                </eye:GazeButton>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock x:Name="GazeDevice" Text="Dispositivo: Joaco" FontWeight="SemiBold" Foreground="White" FontSize="24" Margin="10,10,50,20"/>
+                <eye:GazeButton Width="200" VerticalAlignment="Stretch" HorizontalAlignment="Right">
+                <eye:GazeButton.Content>
+                    <Button x:Name="CloseButton" Background="Red" Click="Close_Click">
+                        <TextBlock Text="X" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
+                    </Button>
+                </eye:GazeButton.Content>
+            </eye:GazeButton>
+            </StackPanel>
+        </Grid>
+        <TabControl Grid.Row="1" SelectionChanged="OnTabChanged" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource OptionsBackground}">
             <TabControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <UniformGrid Rows="1"/>
+                    <UniformGrid Rows="1" IsItemsHost="True"/>
                 </ItemsPanelTemplate>
             </TabControl.ItemsPanel>
-            
+
             <control:GazeTabItem Style="{StaticResource GazeTab}">
                 <control:GazeTabItem.GazeContent>
                     <Grid>

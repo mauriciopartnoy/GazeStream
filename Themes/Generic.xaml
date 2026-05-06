@@ -176,6 +176,8 @@
 
     <Style TargetType="{x:Type control:GazeTabItem}">
 
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
         <Setter Property="Template">
@@ -183,16 +185,21 @@
 
                 <ControlTemplate TargetType="{x:Type control:GazeTabItem}">
 
-                    <Grid>
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
                         <!-- TAB HEADER -->
-                        <Border x:Name="Border"
+                        <Border
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            x:Name="Border"
                             CornerRadius="8"
                             Margin="4"
                             Background="{TemplateBinding Background}">
 
                             <eye:GazeButton
                             Content="{TemplateBinding GazeContent}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
                             VerticalContentAlignment="Center"/>
 

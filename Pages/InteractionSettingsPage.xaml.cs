@@ -27,11 +27,6 @@ namespace GazeStream.Pages
             DataContext = Settings.I;
         }
 
-        private void GazeButton_Click(object sender, RoutedEventArgs e)
-        {
-            System.Windows.MessageBox.Show("Activated by gaze!");
-        }
-
         private void RestartApp_Click(object sender, RoutedEventArgs e)
         {
             App.RestartApp();

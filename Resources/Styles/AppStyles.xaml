@@ -204,8 +204,8 @@
         <Setter Property="Background" Value="{StaticResource ButtonBackground}"/>
         <Setter Property="BorderBrush" Value="{StaticResource ButtonBorderIdle}"/>
         
-        <Setter Property="MinWidth" Value="120"/>
-        <Setter Property="MinHeight" Value="120"/>
+        <Setter Property="MinWidth" Value="60"/>
+        <Setter Property="MinHeight" Value="60"/>
         <Setter Property="CornerRadius" Value="7"/>
         <Setter Property="BorderThickness" Value="2"/>
         <Setter Property="FontSize" Value="28"/>

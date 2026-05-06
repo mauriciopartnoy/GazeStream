@@ -70,7 +70,9 @@ namespace GazeStream.Eyetracker
         const float TIMEOUT_TRESHOLD = 1f;
         InputSimulator input;
         Task loopTask;
+        Task getDeviceTask;
         CancellationTokenSource loopCts;
+        CancellationTokenSource getDeviceCts;
 
         Stopwatch UIdeltaTimeWatch;
         Stopwatch timeOutTimer;
@@ -98,6 +100,8 @@ namespace GazeStream.Eyetracker
 
             AddSupportedDevices();
             StartGazeDeviceUpdateLoop();
+            //getDeviceCts = new CancellationTokenSource();
+            //getDeviceTask = Task.Run(() => FindGazeDeviceLoop(getDeviceCts.Token));
         }
 
         public void LoadSettings()
@@ -157,7 +161,7 @@ namespace GazeStream.Eyetracker
             supportedDevices.Add(tobiiInteraction);
 
             joacoA11 = new GazeDeviceA11();
-            supportedDevices.Add(joacoA11);//
+            supportedDevices.Add(joacoA11);
 
             //X86
 
@@ -168,6 +172,7 @@ namespace GazeStream.Eyetracker
 
         void CancelLoop()
         {
+            getDeviceCts.Cancel();
             loopCts.Cancel();
         }
 
@@ -178,12 +183,16 @@ namespace GazeStream.Eyetracker
             UIdeltaTimeWatch.Restart();
             UIdeltaTimeLastSample = new TimeSpan(0);
             UIdeltaTime = new TimeSpan(0);
+            getDeviceCts = new CancellationTokenSource();
+            getDeviceTask = Task.Run(() => FindGazeDeviceLoop(getDeviceCts.Token));
             loopCts = new CancellationTokenSource();
             loopTask = Task.Run(() => UpdateLoop(loopCts.Token));
         }
 
         public void StopGazeDeviceUpdateLoop()
         {
+            getDeviceCts.Cancel();
+            getDeviceTask = null;
             loopCts.Cancel();
             loopTask = null;
             DisconnectDevice();
@@ -210,22 +219,33 @@ namespace GazeStream.Eyetracker
                     continue;
                 }
 
-                if (GazeDevice == null)
+                if (GazeDevice != null)
                 {
-                    TryInitializeGazeDevice();
-                    await Task.Delay(500, token);
-                    if (GazeDevice == null) continue;
+                    GazeDevice.UpdateData();
+                    GetNewGazePointIfValid();
+                    UpdateTimeoutTimer();
+                    UpdateMousePosition();
                 }
-                GazeDevice.UpdateData();
-                GetNewGazePointIfValid();
-                UpdateTimeoutTimer();
-                UpdateMousePosition();
-                SendUpdateEvents();
+
+                UpdateGazeTargetsAndUI();
+
                 await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
             }
         }
 
-        private void SendUpdateEvents()
+        async Task FindGazeDeviceLoop(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (GazeDevice == null)
+                {
+                    TryInitializeGazeDevice();
+                }
+                await Task.Delay(500, token);
+            }
+        }
+
+        private void UpdateGazeTargetsAndUI()
         {
             if (App.Instance == null) return;
             OnGazeUpdate?.Invoke();
@@ -314,6 +334,7 @@ namespace GazeStream.Eyetracker
             //El primer dispositivo que sea capaz de inicializar va ser asignado como GazeDevice.
             foreach (IGazeDevice device in supportedDevices)
             {
+                Debug.WriteLine("Trying to initialize: " + device.DeviceName);
                 if (device.Initialize())
                 {
                     GazeDevice = device;
@@ -375,7 +396,11 @@ namespace GazeStream.Eyetracker
             {
                 //Debug.WriteLine($"Updating window: {w.Name} Delta time: {UIdeltaTime.TotalSeconds}");
                 if (w == null) continue;
-                UpdateGazeTargetsForWindow(SmoothScreenP, w);
+
+                //Activación solo por mouse.
+                System.Drawing.Point screenPos = System.Windows.Forms.Control.MousePosition;
+                UpdateGazeTargetsForWindow(new System.Windows.Point(screenPos.X, screenPos.Y), w);
+                //UpdateGazeTargetsForWindow(SmoothScreenP, w);
 
                 //MODOS DE ACTIVACION (WIP)
 
@@ -383,7 +408,6 @@ namespace GazeStream.Eyetracker
                 //{
                 //    case GazeActivationDevice.Mouse:
                 //        System.Drawing.Point screenPos = System.Windows.Forms.Control.MousePosition;
-                //        Debug.WriteLine($"Mouse pos X: {screenPos.X} Y: {screenPos.Y}");
                 //        UpdateGazeTargetsForWindow(new System.Windows.Point(screenPos.X, screenPos.Y), w);
                 //        break;
                 //    case GazeActivationDevice.Eyetracker:

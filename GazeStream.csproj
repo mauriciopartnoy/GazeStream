@@ -111,6 +111,7 @@
   <ItemGroup>
     <PackageReference Include="InputSimulatorEx" Version="2.1.1" />
     <PackageReference Include="MessagePack" Version="3.1.4" />
+    <PackageReference Include="NAudio" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
   </ItemGroup>

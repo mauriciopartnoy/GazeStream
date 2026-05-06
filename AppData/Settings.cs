@@ -10,6 +10,7 @@ using GazeStream.AppData;
 using System.ComponentModel;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using GazeStream.Utilities;
 
 namespace GazeStream.AppData
 {
@@ -338,7 +339,7 @@ namespace GazeStream.AppData
         public EnumSetting<AccessibilityMethod> AccessibilityMethod { get; } = new EnumSetting<AccessibilityMethod>(SettingKeys.ACCESSIBILY_METHOD, AppData.AccessibilityMethod.Mouse);
         public EnumSetting<Language> Language { get; } = new EnumSetting<Language>(SettingKeys.LANGUAGE, AppData.Language.ESP);
         public IntSetting Volume { get; } = new IntSetting(SettingKeys.VOLUME, 100, new Int2(0, 100));
-        public EnumSetting<Volume> VolumeOption { get; } = new EnumSetting<Volume>(SettingKeys.VOLUME_OPTION, AppData.Volume.x100);
+        public VolumeOptionSetting VolumeOption { get; } = new VolumeOptionSetting(SettingKeys.VOLUME_OPTION, AppData.Volume.x100);
 
         //VOICE
         public EnumSetting<Voices> Voice { get; } = new EnumSetting<Voices>(SettingKeys.VOICE, Voices.Hombre);
@@ -653,6 +654,41 @@ namespace GazeStream.AppData
                 builder.Append(option + ", ");
             }
             return builder.ToString();
+        }
+    }
+
+    public class VolumeOptionSetting : EnumSetting<Volume>
+    {
+        public VolumeOptionSetting(string saveKey, Volume defaultValue) : base(saveKey, defaultValue)
+        {
+        }
+
+        public override void OnValueChangedAction(Volume value)
+        {
+            switch (value)
+            {
+                case Volume.Mute:
+                    SoundManager.SetSystemVolume(0);
+                    Settings.I.Volume.Value = 0;
+                    break;
+                case Volume.x25:
+                    SoundManager.SetSystemVolume(.25f);
+                    Settings.I.Volume.Value = 25;
+
+                    break;
+                case Volume.x50:
+                    SoundManager.SetSystemVolume(.50f);
+                    Settings.I.Volume.Value = 50;
+                    break;
+                case Volume.x75:
+                    SoundManager.SetSystemVolume(.75f);
+                    Settings.I.Volume.Value = 75;
+                    break;
+                case Volume.x100:
+                    SoundManager.SetSystemVolume(1);
+                    Settings.I.Volume.Value = 100;
+                    break;
+            }
         }
     }
 

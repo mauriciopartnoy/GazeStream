@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using GazeStream.Eyetracker;
-
+using GazeStream.AppData;
 namespace GazeStream.Windows
 {
     /// <summary>
@@ -23,6 +23,21 @@ namespace GazeStream.Windows
         public OptionsWindow()
         {
             InitializeComponent();
+            DataContext = Settings.I;
+            Loaded += OnLoaded;
+            Closed += OnClosed;
+        }
+
+        void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            GazeManager.OnGazeDeviceChanged -= UpdateDeviceInfo;
+            GazeManager.OnGazeDeviceChanged += UpdateDeviceInfo;
+            UpdateDeviceInfo(GazeManager.I.GazeDevice);
+        }
+
+        void OnClosed(object sender, EventArgs e)
+        {
+            GazeManager.OnGazeDeviceChanged -= UpdateDeviceInfo;
         }
 
         private void OnTabChanged(object sender, SelectionChangedEventArgs e)
@@ -30,6 +45,24 @@ namespace GazeStream.Windows
             //GazeManager.I.Clear();
             //if (tabControl.SelectedContent is FrameworkElement fe)
             //    GazeRegistration.RegisterAllInteractables(fe, GazeManager.I);
+        }
+
+        void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        void UpdateDeviceInfo(IGazeDevice device)
+        {
+            App.Current.Dispatcher.BeginInvoke(new Action(()=>
+            {
+                if (device == null)
+                {
+                    GazeDevice.Text = "Dispositivo: Sin Conexión";
+                    return;
+                }
+                GazeDevice.Text = device.DeviceName;
+            }));
         }
     }
 }

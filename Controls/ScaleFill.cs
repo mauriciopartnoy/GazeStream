@@ -71,6 +71,12 @@ namespace GazeStream.Controls
             double p = Math.Max(0, Math.Min(1, Progress01));
             double value = IsReversed ? 1.0 - p : p;
 
+            //AL estar invertido el overlay solo va a ser visible si hubo un mínimo de activación.
+            if (IsReversed && p == 0)
+            {
+                value = 0;
+            }
+
             _scaleTransform.ScaleX = value;
             _scaleTransform.ScaleY = value;
         }
