@@ -4,6 +4,7 @@ using W = System.Windows;
 using GazeStream.Utilities;
 using GazeStream.Windows;
 using GazeStream.Eyetracker;
+using GazeStream.AppData;
 
 namespace GazeStream
 {
@@ -35,6 +36,7 @@ namespace GazeStream
 
             menu.Items.Add("Reiniciar Eyetracker", null, OnRestartEyetracker);
             menu.Items.Add("Calibración", null, OnCalibration);
+            menu.Items.Add("Resultados de Calibración", null, OnCalibrationResults);
             menu.Items.Add("Cámara", null, OnCamera);
             menu.Items.Add("Opciones", null, OnOptions);
             menu.Items.Add(new ToolStripSeparator());
@@ -63,6 +65,11 @@ namespace GazeStream
             }
 
             GazeManager.I.GazeDevice.OpenCalibrationPage();
+        }
+
+        private void OnCalibrationResults(object? sender, EventArgs e)
+        {
+            FileOps.OpenDirectory(AppPaths.CalibrationPresetsPath);
         }
 
         private void OnCamera(object? sender, EventArgs e)

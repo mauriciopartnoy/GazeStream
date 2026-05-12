@@ -62,14 +62,14 @@
             </eye:GazeButton>
             </StackPanel>
         </Grid>
-        <TabControl Grid.Row="1" SelectionChanged="OnTabChanged" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource OptionsBackground}">
+        <TabControl x:Name="MainTabControl" Grid.Row="1" SelectionChanged="OnTabChanged" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Background="{StaticResource OptionsBackground}">
             <TabControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid Rows="1" IsItemsHost="True"/>
                 </ItemsPanelTemplate>
             </TabControl.ItemsPanel>
 
-            <control:GazeTabItem Style="{StaticResource GazeTab}">
+            <control:GazeTabItem x:Name="Interaction" Style="{StaticResource GazeTab}">
                 <control:GazeTabItem.GazeContent>
                     <Grid>
                         <TextBlock Text="Interacción" Style="{StaticResource TabTitle}"/>
@@ -78,35 +78,35 @@
                 <pages:InteractionSettingsPage/>
             </control:GazeTabItem>
 
-            <control:GazeTabItem Style="{StaticResource GazeTab}">
+            <control:GazeTabItem x:Name="Cursor" Style="{StaticResource GazeTab}">
                 <control:GazeTabItem.GazeContent>
                     <TextBlock Text="Cursor" Style="{StaticResource TabTitle}"/>
                 </control:GazeTabItem.GazeContent>
                 <pages:CursorSettingsPage/>
             </control:GazeTabItem>
 
-            <control:GazeTabItem Style="{StaticResource GazeTab}">
+            <control:GazeTabItem x:Name="Keyboard" Style="{StaticResource GazeTab}">
                 <control:GazeTabItem.GazeContent>
                     <TextBlock Text="Teclado" Style="{StaticResource TabTitle}"/>
                 </control:GazeTabItem.GazeContent>
                 <pages:KeyboardSettingsPage/>
             </control:GazeTabItem>
 
-            <control:GazeTabItem Style="{StaticResource GazeTab}">
+            <control:GazeTabItem x:Name="Barrido" Style="{StaticResource GazeTab}">
                 <control:GazeTabItem.GazeContent>
                     <TextBlock Text="Barrido" Style="{StaticResource TabTitle}"/>
                 </control:GazeTabItem.GazeContent>
                 <pages:BarridoSettingsPage/>
             </control:GazeTabItem>
 
-            <control:GazeTabItem Style="{StaticResource GazeTab}">
+            <control:GazeTabItem x:Name="Sound" Style="{StaticResource GazeTab}">
                 <control:GazeTabItem.GazeContent>
                     <TextBlock Text="Sonido" Style="{StaticResource TabTitle}"/>
                 </control:GazeTabItem.GazeContent>
                 <pages:SoundSettingsPage/>
             </control:GazeTabItem>
 
-            <control:GazeTabItem Style="{StaticResource GazeTab}">
+            <control:GazeTabItem x:Name="Help" Style="{StaticResource GazeTab}">
                 <control:GazeTabItem.GazeContent>
                     <TextBlock Text="Ayuda" Style="{StaticResource TabTitle}"/>
                 </control:GazeTabItem.GazeContent>

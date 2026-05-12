@@ -178,6 +178,7 @@ public class GazeService : WebSocketBehavior
         commandRouter.RegisterCommand(new GetValueCommand());
         commandRouter.RegisterCommand(new SetValueCommand());
         commandRouter.RegisterCommand(new StartCalibrationCommand());
+        commandRouter.RegisterCommand(new OpenPageCommand());
         Debug.WriteLine("Client connected");
         SendSettingsSnapshot();
 
@@ -429,6 +430,67 @@ public class GetValueCommand : BaseWebsocketCommand
         JObject obj = (JObject)parameters;
         string key = obj[PARAM_KEY].ToObject<string>();
         GlobalEvents.OnSettingChanged.Invoke(key);
+    }
+}
+
+public class OpenPageCommand : BaseWebsocketCommand
+{
+    public override string Name => "OpenPage";
+    const string PARAM_PAGE_NAME = "pageName";
+
+    public override Dictionary<string, ParamSchema> Schema { get; } = new()
+        {
+            {PARAM_PAGE_NAME, new ParamSchema(typeof(string), true, string.Empty)}
+        };
+    public override void Execute(JToken parameters)
+    {
+        Debug.WriteLine("Executing SetValue command");
+        JObject obj = (JObject)parameters;
+        string key = obj[PARAM_PAGE_NAME].ToObject<string>();
+        if (string.IsNullOrEmpty(key))
+        {
+            Debug.WriteLine("The requested page string is empty.");
+            return;
+        }
+
+        switch (key)
+        {
+            case "CalibrationPage":
+                WindowManager.OpenWindow<CalibrationWindow>();
+                break;
+            case "EyesPage":
+                WindowManager.OpenWindow<EyesWindow>();
+                break;
+            case "OptionsPage":
+                WindowManager.OpenWindow<OptionsWindow>();
+                break;
+            case "Interaction":
+                //PARA ABRIR LAS TABS UTILIZO LA MISMA KEY PORQUE LES PUSE EL MISMO NOMBRE EN SU VENTANA CORRESPONDIENTE. PERO ESTAR ATENTO POR SI HAY ERROR HUMANO.
+                OpenOptionsTab(key);
+                break;
+            case "Cursor":
+                OpenOptionsTab(key);
+                break;
+            case "Keyboard":
+                OpenOptionsTab(key);
+                break;
+            case "Barrido":
+                OpenOptionsTab(key);
+                break;
+            case "Sound":
+                OpenOptionsTab(key);
+                break;
+            case "Help":
+                OpenOptionsTab(key);
+                break;
+        }
+
+        void OpenOptionsTab(string tabName)
+        {
+           var window = WindowManager.OpenWindow<OptionsWindow>();
+            window.SelectTab(tabName);
+        }
+
     }
 }
 

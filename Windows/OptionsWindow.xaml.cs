@@ -64,5 +64,30 @@ namespace GazeStream.Windows
                 GazeDevice.Text = device.DeviceName;
             }));
         }
+
+        public void SelectTab(string tabName)
+        {
+            switch (tabName)
+            {
+                case "Interaction":
+                    MainTabControl.SelectedItem = Interaction;
+                    break;
+                case "Cursor":
+                    MainTabControl.SelectedItem = Cursor;
+                    break;
+                case "Keyboard":
+                    MainTabControl.SelectedItem = Keyboard;
+                    break;
+                case "Barrido":
+                    MainTabControl.SelectedItem = Barrido;
+                    break;
+                case "Sound":
+                    MainTabControl.SelectedItem = Sound;
+                    break;
+                case "Help":
+                    MainTabControl.SelectedItem = Help;
+                    break;
+            }
+        }
     }
 }
