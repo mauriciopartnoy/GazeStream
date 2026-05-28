@@ -39,9 +39,16 @@ public class GazeDeviceA11 : IGazeDevice
     public bool Initialize()
     {
         Debug.WriteLine("About to initialize Joaco.");
-
-        int startResult = ASeeTracker._7i_start(AppPaths.EyetrackerConfigPath);
-        ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+        int startResult = 1;
+        try
+        {
+            startResult = ASeeTracker._7i_start(AppPaths.EyetrackerConfigPath);
+            ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+        }
+        catch
+        {
+            return false;
+        }
 
         Debug.WriteLine("Initializing Joaco. Start result: " + startResult);
         if (startResult == 0)
@@ -49,6 +56,8 @@ public class GazeDeviceA11 : IGazeDevice
             IsConnected = true;
             GlobalEvents.OnEyetrackerConnected.Invoke();
             SetCurrentUserCalibration();
+            Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
+            Settings.I.SmoothFilter.OnChanged += LoadSmooth;
             return true;
         }
         else
@@ -60,6 +69,8 @@ public class GazeDeviceA11 : IGazeDevice
         }
 
     }
+
+    
 
     void SetCurrentUserCalibration()
     {
@@ -135,20 +146,7 @@ public class GazeDeviceA11 : IGazeDevice
 
     public static void OnGazeCallback(ref _7i_eye_data_ex_t eyes, IntPtr context)
     {
-        Debug.WriteLine($"Gaze Origin: X {eyes.recom_gaze.gaze_origin.x} Z {eyes.recom_gaze.gaze_origin.z} " +
-              $"GazeOriginLeft: X {eyes.left_gaze.gaze_origin.x} Z {eyes.left_gaze.gaze_origin.z} " +
-              $"PupilDistLeft: {eyes.left_pupil.pupil_distance} " +
-              $"LeftDiameter: {eyes.left_pupil.pupil_diameter} " +
-              $"LeftDmm: {eyes.left_pupil.pupil_diameter_mm}");
-        Debug.WriteLine("Right pupil diameter: " + eyes.right_pupil.pupil_diameter);
-        Debug.WriteLine("Right pupil distance: " + eyes.right_pupil.pupil_distance);
-        Debug.WriteLine("Right pupil center X: " + eyes.right_pupil.pupil_center.x);
-        Vector3 direction = new Vector3(eyes.right_gaze.gaze_direction.x, eyes.right_gaze.gaze_direction.y, eyes.right_gaze.gaze_direction.z);
-        Debug.WriteLine("Right gaze vector length: " + direction.Length());
-        Debug.WriteLine("Right pupil center XYZ: " + eyes.right_gaze.gaze_origin.x);
-
-
-
+        //ShowDebugData(eyes);
 
         if (!HasValidCalibration) return;
         eyesData = eyes;
@@ -167,6 +165,21 @@ public class GazeDeviceA11 : IGazeDevice
             UserIsPresentStatic = false;
             gazePointChanged = false;
         }
+    }
+
+    private static void ShowDebugData(_7i_eye_data_ex_t eyes)
+    {
+        Debug.WriteLine($"Gaze Origin: X {eyes.recom_gaze.gaze_origin.x} Z {eyes.recom_gaze.gaze_origin.z} " +
+              $"GazeOriginLeft: X {eyes.left_gaze.gaze_origin.x} Z {eyes.left_gaze.gaze_origin.z} " +
+              $"PupilDistLeft: {eyes.left_pupil.pupil_distance} " +
+              $"LeftDiameter: {eyes.left_pupil.pupil_diameter} " +
+              $"LeftDmm: {eyes.left_pupil.pupil_diameter_mm}");
+        Debug.WriteLine("Right pupil diameter: " + eyes.right_pupil.pupil_diameter);
+        Debug.WriteLine("Right pupil distance: " + eyes.right_pupil.pupil_distance);
+        Debug.WriteLine("Right pupil center X: " + eyes.right_pupil.pupil_center.x);
+        Vector3 direction = new Vector3(eyes.right_gaze.gaze_direction.x, eyes.right_gaze.gaze_direction.y, eyes.right_gaze.gaze_direction.z);
+        Debug.WriteLine("Right gaze vector length: " + direction.Length());
+        Debug.WriteLine("Right pupil center XYZ: " + eyes.right_gaze.gaze_origin.x);
     }
 
     public static int _is_valid_recom_eye_gaze_point(ref _7i_eye_data_ex_t eyes)
@@ -238,7 +251,7 @@ public class GazeDeviceA11 : IGazeDevice
     public static void LoadSmooth()
     {
         int smooth = Settings.I.SmoothFilter.Value;
-        int smoothValue = Math.Clamp(smooth, 0, 10);
+        int smoothValue = Math.Clamp(smooth, 1, 10);
         int setSmoothResult = ASeeTracker._7i_set_smooth(smoothValue);
         Debug.WriteLine($"Setting Smooth to: {smoothValue} SetSmooth result: " + aSeeResults.SetSmoothResultToString(setSmoothResult));
     }
@@ -270,6 +283,8 @@ public class GazeDeviceA11 : IGazeDevice
             int disconnectResult = ASeeTracker._7i_device_disconnect();
             Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
             GlobalEvents.OnEyetrackerDisconnected.Invoke();
+            Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
+
             IsConnected = false;
         }
     }

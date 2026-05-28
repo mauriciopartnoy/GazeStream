@@ -7,6 +7,8 @@ namespace GazeStream.AppData
     {
         public const string COMPANY_NAME = "Neufitech";
         public const string APP_NAME = "GazeStream";
+        public const string GIT_REPOSITORY_URL = "https://github.com/mauriciopartnoy/GazeStream.git";
+        public const string GIT_USERNAME = "mauriciopartnoy@gmail.com";
         public static string BasePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), COMPANY_NAME, APP_NAME);
         public static string EyetrackerPath => Path.Combine(BasePath, "Eyetracker");
 

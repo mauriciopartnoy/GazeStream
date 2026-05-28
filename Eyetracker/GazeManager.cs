@@ -42,10 +42,11 @@ namespace GazeStream.Eyetracker
         public System.Windows.Point SmoothScreenP { get; private set; }
         public System.Windows.Point SmoothWindowP { get; private set; }
 
+        public bool ReceivedNewData { get; private set; }
+
 
         public GazeDeviceA11? joacoA11;
         public GazeDeviceIntelligaze intelligaze;
-        public GazeDeviceTobiiEyeX tobiiEyeX;
         public GazeDeviceTobiiInteraction tobiiInteraction;
 
         public bool mouseControlEnabled => Settings.I.MouseToggle.Value;
@@ -67,7 +68,7 @@ namespace GazeStream.Eyetracker
         KalmanFilter kalmanFilter;
         InterpolationFilter interpolationFilter;
         float sampleRateSeconds;
-        const float TIMEOUT_TRESHOLD = 1f;
+        const float TIMEOUT_TRESHOLD = .5f;
         InputSimulator input;
         Task loopTask;
         Task getDeviceTask;
@@ -293,8 +294,18 @@ namespace GazeStream.Eyetracker
                 GazePoint = newPoint;
             }
 
-            //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
-            SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
+            if (newPoint.viewportPoint.X == 0 && newPoint.viewportPoint.Y == 0)
+            {
+                ReceivedNewData = false;
+                return;
+            }
+            else
+            {
+                ReceivedNewData = true;
+            }
+
+                //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
+                SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
             SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
             SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
             SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
@@ -371,7 +382,7 @@ namespace GazeStream.Eyetracker
         {
             if (!mouseControlEnabled) return;
             if (input == null) return;
-            if (!IsUserPresent) return;
+            if (UserNotPresentTimeOut) return;
 
             (double x, double y) pos = Helper.ViewportToMousePosition(GazeManager.I.SmoothViewportPoint);
             input.Mouse.MoveMouseToPositionOnVirtualDesktop(pos.x, pos.y);

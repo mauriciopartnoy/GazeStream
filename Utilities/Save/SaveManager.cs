@@ -16,7 +16,8 @@ namespace GazeStream.Utilities.Save
         public static bool IsProcessing { get; private set; }
 
         static SaveData activeSlot = new SaveData();
-        static Dictionary<string, object> systemSettings = new Dictionary<string, object>();
+        static SaveData systemSettingsData = new SaveData();
+        static Dictionary<string, object> systemSettings => systemSettingsData.data;
 
         //PATHS
         public static string SaveDirectory => AppPaths.UsersPath;
@@ -74,12 +75,34 @@ namespace GazeStream.Utilities.Save
         public static void SaveSystemSettings()
         {
             Debug.WriteLine("Saving system settings.");
-            FileSaver.SaveToBinary(SystemSettingsFilePath, systemSettings);
+            FileSaver.SaveToBinary(SystemSettingsFilePath, systemSettingsData);
         }
 
         public static void LoadSystemSettings()
         {
-            systemSettings = FileSaver.LoadFromBinary(SystemSettingsFilePath, new Dictionary<string, object>());
+            SaveData newSave = new SaveData();
+
+            //GET FILE
+            try
+            {
+                newSave = FileSaver.LoadFromBinary(SystemSettingsFilePath, new SaveData());
+            }
+            catch
+            {
+                newSave = new SaveData();
+            }
+
+            //CHECK VERSION
+            if (newSave.version < SaveData.CURRENT_VERSION)
+            {
+                //Save old backup...?
+                Debug.WriteLine("Save Version is older: Updating save.");
+                newSave = new SaveData();
+            }
+
+            newSave.version = SaveData.CURRENT_VERSION;
+            systemSettingsData = newSave;
+            
             Debug.WriteLine("System Settings Loaded.");
         }
 
@@ -116,75 +139,87 @@ namespace GazeStream.Utilities.Save
 
         public static void SetValue<T>(string key, T value)
         {
-            if (activeSlot == null)
+            if (activeSlot == null || activeSlot.data == null)
             {
                 activeSlot = new SaveData();
             }
-            ActiveSlot.GameData[key] = value;
+            ActiveSlot.data[key] = value;
         }
 
         public static T GetValue<T>(string key)
         {
-            T val = default(T);
-            if (activeSlot != null && ActiveSlot.GameData.ContainsKey(key))
+            T defaultValue = default(T);
+            if (activeSlot != null && activeSlot.data != null && activeSlot.data.TryGetValue(key, out object value))
             {
-                val = (T)ActiveSlot.GameData[key];
+                if (value is T typedValue)
+                {
+                    return typedValue;
+                }
+
             }
-            return val;
+            return defaultValue;
         }
 
         public static T GetValue<T>(string key, T defaultValue)
         {
-            T val = defaultValue;
-            if (activeSlot != null && ActiveSlot.GameData.ContainsKey(key))
+            if (activeSlot != null && activeSlot.data != null && activeSlot.data.TryGetValue(key, out object value))
             {
-                val = (T)ActiveSlot.GameData[key];
+                if (value is T typedValue)
+                {
+                    return typedValue;
+                }
+
             }
-            else
-            {
-                //Debug.WriteLine(key + " not found. Returning default value.");
-            }
-            return val;
+            return defaultValue;
         }
 
         //System Settings son settings generales independientes del slot.
         public static void SetSystemSetting<T>(string key, T value)
         {
-            if (systemSettings == null)
+            if (systemSettingsData == null || systemSettingsData.data == null)
             {
-                systemSettings = new Dictionary<string, object>();
+                systemSettingsData.data = new Dictionary<string, object>();
             }
-            systemSettings[key] = value;
+            systemSettingsData.data[key] = value;
         }
 
         public static T GetSystemSetting<T>(string key)
         {
-            T val = default(T);
-            if (systemSettings != null && systemSettings.ContainsKey(key))
+            T defaultValue = default(T);
+            if (systemSettings != null && systemSettings.TryGetValue(key, out object value))
             {
-                val = (T)systemSettings[key];
+                if (value is T typedValue)
+                {
+                    return typedValue;
+                }
+
             }
-            return val;
+            return defaultValue;
         }
 
         public static T GetSystemSetting<T>(string key, T defaultValue)
         {
-            T val = defaultValue;
-            if (systemSettings != null && systemSettings.ContainsKey(key))
+            if (systemSettings != null && systemSettings.TryGetValue(key, out object value))
             {
-                val = (T)systemSettings[key];
+                if (value is T typedValue)
+                {
+                    return typedValue;
+                }
+                
             }
-            return val;
+            return defaultValue;
         }
 
         #endregion
     }
 
 
-[System.Serializable]
+    [System.Serializable]
     public class SaveData
     {
-        public Dictionary<string, object> GameData = new Dictionary<string, object>();
+        public const int CURRENT_VERSION = 1;
+        public int version; //Version updated when saving.
+        public Dictionary<string, object> data = new Dictionary<string, object>();
     }
 
 }

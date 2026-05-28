@@ -11,7 +11,8 @@
         ResizeMode="NoResize"
         WindowStyle="None"
         ShowInTaskbar="True"
-        Topmost="False">
+        Topmost="False"
+        d:Height="1080" d:Width="1920">
 
     <!--WindowStyle="None"
         ResizeMode="NoResize"-->
@@ -220,6 +221,24 @@
             </Grid>
         </Border>
 
+        <Border x:Name="RestartPanel" Width="350" Height="150" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="20" CornerRadius="12" Background="{StaticResource SeriousPanel}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="2*" />
+                </Grid.RowDefinitions>
+                <TextBlock Style="{StaticResource OptionTitle}" Text="Este punto está tardando demasiado. Te recomendamos empezar de nuevo" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Top" TextWrapping="Wrap"/>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Button Style="{StaticResource CalibrationButton}" Click="CancelCalibration_Click">
+                    <TextBlock Text="Empezar de nuevo" TextWrapping="Wrap" TextAlignment="Center"/>
+                </Button>
+                <Button Style="{StaticResource CalibrationButton}" Click="CloseRestartCalibrationWindow">
+                    <TextBlock Text="Reintentar punto" TextWrapping="Wrap" TextAlignment="Center"/>
+                </Button>
+            </StackPanel>
+            </Grid>
+        </Border>
+        
         <!-- Error text -->
         <TextBlock x:Name="ErrorText"
                    Foreground="White"

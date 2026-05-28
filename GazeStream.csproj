@@ -113,6 +113,7 @@
     <PackageReference Include="MessagePack" Version="3.1.4" />
     <PackageReference Include="NAudio" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Velopack" Version="1.0.1" />
     <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
   </ItemGroup>
 
@@ -121,12 +122,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="EyeXFramework">
-      <HintPath>..\..\NET_GazeStream\GazeStream\EyeXFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="Tobii.EyeX.Client.Net20">
-      <HintPath>..\..\NET_GazeStream\GazeStream\Tobii.EyeX.Client.Net20.dll</HintPath>
-    </Reference>
     <Reference Include="EtApi">
       <HintPath>..\..\NET_GazeStream\GazeStream\EtApi.dll</HintPath>
     </Reference>
@@ -435,9 +430,6 @@
     <None Update="EtApi.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="EyeXFramework.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="FdDetect.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -454,18 +446,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="opencv_world320.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Tobii.EyeX.Client.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Tobii.EyeX.Client.lib">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Tobii.EyeX.Client.Net20.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Tobii.EyeX.Client.Net20.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="TobiiGazeCore64.dll">

@@ -8,17 +8,16 @@ using GazeStream.Windows;
 using System.Windows;
 using System.Windows.Input;
 using System.Diagnostics;
-using System.Threading;
+using System.Threading.Tasks;
 using System;
 using GazeStream.Eyetracker;
 using InputSimulatorEx;
 using System.Reflection;
+using Velopack;
+using Velopack.Sources;
 
 namespace GazeStream
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : W.Application
     {
         public static App Instance { get; private set; }
@@ -36,6 +35,9 @@ namespace GazeStream
         Hotkeys hotkeys;
         static Mutex? singleInstanceMutex;
 
+        public static string CurrentVersion { get; private set; }
+        public static string NewestVersion { get; private set; }
+
         protected override void OnStartup(W.StartupEventArgs e)
         {
             if (e.Args.Contains("--restart"))
@@ -46,6 +48,11 @@ namespace GazeStream
             if (ForcedSingleInstance()) return;
 
             base.OnStartup(e);
+
+            //CHECK FOR UPDATES
+            VelopackApp.Build().Run();
+            _= CheckNewestUpdate();
+
             Instance = this;
             SettingsManager = new Settings();
             SettingsManager.Initialize();
@@ -77,6 +84,36 @@ namespace GazeStream
 
             Current.Shutdown();
         }
+
+        public static async Task CheckNewestUpdate()
+        {
+            Debug.WriteLine("Checking Updates");
+            var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_USERNAME, AppPaths.GIT_REPOSITORY_URL, prerelease: false));
+            var newVersion = await mgr.CheckForUpdatesAsync();
+            if (newVersion == null)
+            {
+                Debug.WriteLine("There is no new version online.");
+                return;
+            }
+            CurrentVersion = mgr.CurrentVersion == null? "" : mgr.CurrentVersion.ToNormalizedString();
+            NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
+        }
+
+        public static async Task UpdateApp()
+        {
+            //COMANDOS PARA GENERAR EL UPDATE DESCARGABLE, PRIMERO TENER VPK: dotnet tool install -g vpk 
+
+            //dotnet publish --self-contained -r win-x64 -o .\publish
+            //vpk pack --packId GazeStream --packVersion 1.0.0 --packDir ./publish
+
+            var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_USERNAME, AppPaths.GIT_REPOSITORY_URL, prerelease: false));
+            var newVersion = await mgr.CheckForUpdatesAsync();
+            if (newVersion == null) return; 
+            NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
+
+            await mgr.DownloadUpdatesAsync(newVersion);
+            mgr.ApplyUpdatesAndRestart(newVersion);
+        }     
 
         protected override async void OnExit(ExitEventArgs e)
         {

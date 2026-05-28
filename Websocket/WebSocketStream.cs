@@ -197,6 +197,7 @@ public class GazeService : WebSocketBehavior
     protected override void OnMessage(MessageEventArgs message)
     {
         //Debug.Log("Message received: " + message.Data);
+        WriteLine("Message received on server: " + message.Data);
         App.Instance.Dispatcher.BeginInvoke(() =>
         {
             //Check Single Line Commands

@@ -92,14 +92,29 @@ namespace GazeStream.Windows
         {
             GazeManager.OnGazeUpdateUI -= UpdateGazeDisplay;
             ASeeTracker._7i_set_image_callback(IntPtr.Zero, IntPtr.Zero);
-            handle.Free();
-            //TODO: Cleanup
+            Thread.Sleep(250);
+            if (handle.IsAllocated)
+            {
+                handle.Free();
+            }
         }
 
         public static void image_callback(int eye, IntPtr image, int size, int width, int height, Int64 timestamp, IntPtr context)
         {
             if (context == IntPtr.Zero) return;
-            var window = (EyesWindow)GCHandle.FromIntPtr(context).Target;
+
+            EyesWindow window = null;
+
+            try
+            {
+                var handle = GCHandle.FromIntPtr(context);
+                window = handle.Target as EyesWindow;
+            }
+            catch
+            {
+                return;
+            }
+            if (window == null) return;
             if (!window.isShowingCamera) return;
 
             int w = (width / 4) * 4;
@@ -152,6 +167,7 @@ namespace GazeStream.Windows
 
         void UpdateGazeDisplay()
         {
+            EyeSignal.Fill = GazeManager.I.IsUserPresent ? System.Windows.Media.Brushes.Green : System.Windows.Media.Brushes.Red;
             if (GazeManager.I.GazeDevice == null) return;
             if (GazeManager.I.GazeDevice.Eyes == null) return;
             if (EyeDisplay.Visibility == Visibility.Collapsed) return;

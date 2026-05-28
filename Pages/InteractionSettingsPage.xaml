@@ -119,6 +119,12 @@
                 <TextBlock Text="Método de accesibilidad" Style="{StaticResource OptionTitle}"/>
                 <controls:EnumSelectorUniform SelectedValue="{Binding AccessibilityMethod.Value}" Height="200"/>
 
+                <!--<TextBlock Text="Filtro de Eyetracker" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding FilterProfile.Value}" Height="200"/>-->
+
+                <TextBlock Text="Filtro de Kalman" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding KalmanFilterOption.Value}" Height="200"/>
+                
                 <TextBlock Text="Tiempo de activación" Style="{StaticResource OptionTitle}"/>
                 <controls:EnumSelectorUniform SelectedValue="{Binding OpcionTiempoDeActivacion.Value}" Height="200"/>
 

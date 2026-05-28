@@ -53,6 +53,9 @@ namespace GazeStream.AppData
         public const string JOACO_SMOOTH_FILTER = "InvensunSmoothValue";
         public const string KALMAN_FILTER = "KalmanFilter";
         public const string INTERPOLATION_FILTER = "InterpolationFilter";
+        public const string KALMAN_FILTER_OPTION = "KalmanFilterOption";
+        public const string JOACO_SMOOTH_FILTER_OPTION = "InvensunSmoothValueOption";
+
 
         public const string LAST_CALIBRATION = "LastCalibration";
         public const string LAST_CALIBRATION_EYES_OPTION = "LastCalibrationEyesOption";
@@ -247,6 +250,32 @@ namespace GazeStream.AppData
         x100
     }
 
+    public enum Percent
+    {
+        [Description("0%")]
+        Zero,
+        [Description("10%")]
+        Ten,
+        [Description("20%")]
+        Twenty,
+        [Description("30%")]
+        Thirty,
+        [Description("40%")]
+        Forty,
+        [Description("50%")]
+        Fifty,
+        [Description("60%")]
+        Sixty,
+        [Description("70%")]
+        Seventy,
+        [Description("80%")]
+        Eighty,
+        [Description("90%")]
+        Ninety,
+        [Description("100%")]
+        Hundred
+    }
+
     public enum FocusTimeOption
     {
         [Description("0.5 s")]
@@ -377,6 +406,8 @@ namespace GazeStream.AppData
         public IntSetting SmoothFilter { get; } = new IntSetting(SettingKeys.JOACO_SMOOTH_FILTER, 10, new Int2(1, 10));
         public IntSetting KalmanFilter { get; } = new IntSetting(SettingKeys.KALMAN_FILTER, 20, new Int2(0, 100));
         public FloatSetting InterpolationFilter { get; } = new FloatSetting(SettingKeys.INTERPOLATION_FILTER, 0.05f, new Float2(0, 100));
+
+        public KalmanFilterOptionSetting KalmanFilterOption { get; } = new KalmanFilterOptionSetting(SettingKeys.KALMAN_FILTER_OPTION, Percent.Twenty);
 
         //CALIBRATION 
         public LastCalibration LastCalibrationBuff { get; } = new LastCalibration(SettingKeys.LAST_CALIBRATION, new byte[0]);                                 //byte[] Calibration.buff
@@ -521,6 +552,7 @@ namespace GazeStream.AppData
             RegisterSetting(SmoothFilter);
             RegisterSetting(KalmanFilter);
             RegisterSetting(InterpolationFilter);
+            RegisterSetting(KalmanFilterOption);
 
             RegisterSetting(LastCalibrationBuff);
             RegisterSetting(LastEyesOption);
@@ -612,19 +644,20 @@ namespace GazeStream.AppData
         void OnFilterChanged(FilterProfile profile)
         {
             //TODO: Agregar Interpolation/Smooth Damp
+            //TODO: Repensar perfiles como settings guardables. 
             aplyingProfile = true;
             switch (profile)
             {
                 case FilterProfile.Bajo:
-                    Settings.I.KalmanFilter.Value = 0;
+                    //Settings.I.KalmanFilter.Value = 0;
                     Settings.I.SmoothFilter.Value = 1;
                     break;
                 case FilterProfile.Medio:
-                    Settings.I.KalmanFilter.Value = 20;
+                    //Settings.I.KalmanFilter.Value = 5;
                     Settings.I.SmoothFilter.Value = 10;
                     break;
                 case FilterProfile.Alto:
-                    Settings.I.KalmanFilter.Value = 30;
+                    //Settings.I.KalmanFilter.Value = 10;
                     Settings.I.SmoothFilter.Value = 10;
                     break;
                 case FilterProfile.Custom:
@@ -907,6 +940,63 @@ namespace GazeStream.AppData
                     break;
                 case DecayMultiplier.x3:
                     Settings.I.MultiplicadorDeVelocidadDeDesactivacion.Value = 3f;
+                    break;
+            }
+        }
+    }
+
+    public class KalmanFilterOptionSetting : EnumSetting<Percent>
+    {
+        public KalmanFilterOptionSetting(string saveKey, Percent defaultValue) : base(saveKey, defaultValue)
+        {
+        }
+
+        public override void OnValueChangedAction(Percent value)
+        {
+            switch (value)
+            {
+                case Percent.Zero:
+                    Settings.I.KalmanFilter.Value = 0;
+                    break;
+                case Percent.Ten:
+                    Settings.I.KalmanFilter.Value = 3;
+
+                    break;
+                case Percent.Twenty:
+                    Settings.I.KalmanFilter.Value = 6;
+
+                    break;
+                case Percent.Thirty:
+                    Settings.I.KalmanFilter.Value = 9;
+
+                    break;
+                case Percent.Forty:
+                    Settings.I.KalmanFilter.Value = 12;
+
+                    break;
+                case Percent.Fifty:
+                    Settings.I.KalmanFilter.Value = 15;
+
+                    break;
+                case Percent.Sixty:
+                    Settings.I.KalmanFilter.Value = 18;
+
+                    break;
+                case Percent.Seventy:
+                    Settings.I.KalmanFilter.Value = 21;
+
+                    break;
+                case Percent.Eighty:
+                    Settings.I.KalmanFilter.Value = 24;
+
+                    break;
+                case Percent.Ninety:
+                    Settings.I.KalmanFilter.Value = 27;
+
+                    break;
+                case Percent.Hundred:
+                    Settings.I.KalmanFilter.Value = 30;
+
                     break;
             }
         }

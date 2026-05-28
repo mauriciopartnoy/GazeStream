@@ -52,7 +52,17 @@
                     </eye:GazeButton.Content>
                 </eye:GazeButton>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <TextBlock x:Name="GazeDevice" Text="Dispositivo: Joaco" FontWeight="SemiBold" Foreground="White" FontSize="24" Margin="10,10,50,20"/>
+                <Grid Width="400">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1*" />
+                        <RowDefinition Height="1*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="GazeDevice" Grid.Row="0" HorizontalAlignment="Right" Text="Dispositivo: Joaco" FontWeight="SemiBold" Foreground="White" FontSize="24" Margin="10,10,50,20"/>
+                    <Button x:Name="UpdateButton" Grid.Row="1" Click="Update_App_Click" Width="300" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="White" Margin="2">
+                        <TextBlock x:Name="UpdateText" Text="Actualizar a versión: 1.0.0.beta" Foreground="Black" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
+                    </Button>
+                </Grid>
+                
                 <eye:GazeButton Width="200" VerticalAlignment="Stretch" HorizontalAlignment="Right">
                 <eye:GazeButton.Content>
                     <Button x:Name="CloseButton" Background="Red" Click="Close_Click">

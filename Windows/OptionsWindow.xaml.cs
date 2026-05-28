@@ -20,6 +20,8 @@ namespace GazeStream.Windows
     /// </summary>
     public partial class OptionsWindow : Window
     {
+        Task updateTask;
+
         public OptionsWindow()
         {
             InitializeComponent();
@@ -28,11 +30,27 @@ namespace GazeStream.Windows
             Closed += OnClosed;
         }
 
+
         void OnLoaded(object sender, RoutedEventArgs e)
         {
             GazeManager.OnGazeDeviceChanged -= UpdateDeviceInfo;
             GazeManager.OnGazeDeviceChanged += UpdateDeviceInfo;
             UpdateDeviceInfo(GazeManager.I.GazeDevice);
+            UpdateVersionText();
+        }
+
+        void UpdateVersionText()
+        {
+            string message;
+            if (string.IsNullOrEmpty(App.NewestVersion))
+            {
+                message = "GazeStream ya está actualizado.";
+            }
+            else
+            {
+                //Check diff...?
+                message = "Instalar versión: " + App.NewestVersion;
+            }
         }
 
         void OnClosed(object sender, EventArgs e)
@@ -50,6 +68,12 @@ namespace GazeStream.Windows
         void Close_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        void Update_App_Click(object sender, RoutedEventArgs e)
+        {
+            if (!updateTask.IsCompleted) return;
+            updateTask = Task.Run(App.UpdateApp);
         }
 
         void UpdateDeviceInfo(IGazeDevice device)

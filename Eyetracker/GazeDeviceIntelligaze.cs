@@ -44,19 +44,6 @@ namespace GazeStream.Eyetracker
         Vector2 screenSize;
         bool isCalibrating;
 
-
-
-
-        public void Disconnect()
-        {
-            UpdateDataStreaming(false, false);
-            UnsubscribeToEvents();
-            _api.ExitServer();
-            _api.Close();
-        }
-
-      
-
         public bool Initialize()
         {
             screenSize = Helper.GetPrimaryMonitorSize();
@@ -162,6 +149,14 @@ namespace GazeStream.Eyetracker
             UpdateDataStreaming(true, true);
             IsConnected = true;
             return true;
+        }
+
+        public void Disconnect()
+        {
+            UpdateDataStreaming(false, false);
+            UnsubscribeToEvents();
+            _api.ExitServer();
+            _api.Close();
         }
 
         private void UnsubscribeToEvents()
@@ -319,6 +314,11 @@ namespace GazeStream.Eyetracker
 
         public void UpdateData()
         {
+            UpdateIsConnected();
+        }
+
+        private void UpdateIsConnected()
+        {
             bool acquired = false;
             Mutex m = new Mutex(false, "Local\\AleaIntelliGaze30");
 
@@ -326,7 +326,7 @@ namespace GazeStream.Eyetracker
             {
                 acquired = m.WaitOne(0);
             }
-            catch(AbandonedMutexException e)
+            catch (AbandonedMutexException e)
             {
                 m.ReleaseMutex();
                 IsConnected = false;

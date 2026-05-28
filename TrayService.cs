@@ -34,6 +34,8 @@ namespace GazeStream
         {
             var menu = new ContextMenuStrip();
 
+            menu.Items.Add("Versión Prueba SDK 2.1", null, Empty);
+            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Reiniciar Eyetracker", null, OnRestartEyetracker);
             menu.Items.Add("Calibración", null, OnCalibration);
             menu.Items.Add("Resultados de Calibración", null, OnCalibrationResults);
@@ -43,6 +45,11 @@ namespace GazeStream
             menu.Items.Add("Salir", null, OnExit);
 
             return menu;
+        }
+
+        void Empty(object? sender, EventArgs e)
+        { 
+        
         }
 
         void OnRestartEyetracker(object? sender, EventArgs e)

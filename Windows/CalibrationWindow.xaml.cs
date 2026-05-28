@@ -40,6 +40,9 @@ namespace GazeStream.Windows
         _7i_coefficient_t coefficient;
         static _7i_eye_data_ex_t eyesData;
         static Vector3 gazeOrigin;
+        static bool calibrationPointChanged;
+        static DateTime lastCalibrationPointChangeTime;
+        static TimeSpan calibrationPointUnchangedTime;
         public static int CalibrationPointProgress { get; private set; }
         public static float CalibrationPointProgress01 { get; private set; }
 
@@ -184,6 +187,7 @@ namespace GazeStream.Windows
 
         public static void process_callback(int index, int percent, IntPtr context)
         {
+            calibrationPointChanged = percent != CalibrationPointProgress;
             CalibrationPointProgress = percent;
             CalibrationPointProgress01 = (float)percent / 100f;
             currentPoint?.UpdateCalibrationPoint(CalibrationPointProgress01);
@@ -394,6 +398,7 @@ namespace GazeStream.Windows
                 SpawnCalibrationPoint(new Vector2(points[i].X, points[i].Y));
                 await Task.Delay(TimeSpan.FromSeconds(2), token);
 
+                lastCalibrationPointChangeTime = DateTime.Now;
                 _7i_point2d_t point = new _7i_point2d_t();
                 point.x = points[i].X;
                 point.y = points[i].Y;
@@ -405,6 +410,13 @@ namespace GazeStream.Windows
 
                 while (!pointComplete)
                 {
+                    //Open Restart Dialog if a point is not calibrated after a period
+                    if (calibrationPointChanged)
+                    {
+                        lastCalibrationPointChangeTime = DateTime.Now;
+                    }
+                    calibrationPointUnchangedTime = DateTime.Now - lastCalibrationPointChangeTime;
+                    App.Instance.Dispatcher.BeginInvoke(() => ShowRestartCalibrationWindow(calibrationPointUnchangedTime.Seconds > 5));
                     await Task.Delay(16, token);
                 }
 
@@ -449,6 +461,27 @@ namespace GazeStream.Windows
             }
         }
 
+        void ShowRestartCalibrationWindow(bool show)
+        {
+            if (show)
+            {
+                RestartPanel.Visibility = Visibility.Visible;
+                RestartPanel.IsHitTestVisible = true;
+            }
+            else
+            {
+                RestartPanel.Visibility = Visibility.Collapsed;
+                RestartPanel.IsHitTestVisible = false;
+            }
+        }
+
+        void CloseRestartCalibrationWindow(object sender, RoutedEventArgs args)
+        {
+            lastCalibrationPointChangeTime = DateTime.Now;  //Resets timer.
+            RestartPanel.Visibility = Visibility.Collapsed;
+            RestartPanel.IsHitTestVisible = false;
+        }
+
         void SaveCalibrationAsPreset(int points, int eyesOption, float scoreLeft, float scoreRight, byte[] buff)
         {
             Vector2 screenSize = Helper.GetScreenSize(this);
@@ -458,23 +491,33 @@ namespace GazeStream.Windows
             CalibrationPresets.I.AddPreset(preset);            
         }
 
-     
 
+        bool startedCancelProcess;
         public void CancelCalibration()
         {
             if (!isCalibrating) return;
+            if (startedCancelProcess) return;
+            startedCancelProcess = true;
             cts.Cancel();
             ResetPage();
             Disconnect();
             GlobalEvents.OnCalibrationCancel.Invoke();
             GlobalEvents.OnCalibrationFinished.Invoke();
+            isCalibrating = false;
+            startedCancelProcess = false;
+        }
+
+        void CancelCalibration_Click(object e, RoutedEventArgs args)
+        {
+            CancelCalibration();
         }
 
         private void ResetPage()
         {
             Debug.WriteLine("Resetting Page");
-            isCalibrating = false;
+            //isCalibrating = false;
             pointComplete = false;
+            CloseRestartCalibrationWindow(null, null);
             DestroyCurrentCalibrationPoint();
             EyeDisplay.Visibility = Visibility.Collapsed;
             EnableButtons();
@@ -510,8 +553,11 @@ namespace GazeStream.Windows
         {
             try
             {
+                Debug.WriteLine("Cancel calibration 1");
                 ASeeTracker._7i_cancel_calibration();
+                Debug.WriteLine("Cancel calibration 2");
                 ASeeTracker._7i_stop_tracking();
+                Debug.WriteLine("Cancel calibration 3");
                 ASeeTracker._7i_stop();
             }
             catch
@@ -520,7 +566,9 @@ namespace GazeStream.Windows
             }
             finally
             {
+                Debug.WriteLine("Cancel calibration 4");
                 ASeeTracker._7i_device_disconnect();
+                Debug.WriteLine("Cancel calibration 5");
                 GlobalEvents.OnEyetrackerDisconnected.Invoke();
             }
         }
