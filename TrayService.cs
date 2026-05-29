@@ -34,7 +34,7 @@ namespace GazeStream
         private ContextMenuStrip BuildMenu()
         {
             var menu = new ContextMenuStrip();
-            string version = $"Versión {App.CurrentVersion}" + "PRUEBA UPDATES";
+            string version = $"Versión {App.CurrentVersion}" + " =)";
             menu.Items.Add(version, null, Empty);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Reiniciar Eyetracker", null, OnRestartEyetracker);
