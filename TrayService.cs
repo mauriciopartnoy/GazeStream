@@ -6,6 +6,7 @@ using GazeStream.Windows;
 using GazeStream.Eyetracker;
 using GazeStream.AppData;
 
+
 namespace GazeStream
 {
     public class TrayService : IDisposable
@@ -33,8 +34,8 @@ namespace GazeStream
         private ContextMenuStrip BuildMenu()
         {
             var menu = new ContextMenuStrip();
-
-            menu.Items.Add("Versión Prueba SDK 2.1", null, Empty);
+            string version = $"Versión {App.CurrentVersion}" + "PRUEBA UPDATES";
+            menu.Items.Add(version, null, Empty);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Reiniciar Eyetracker", null, OnRestartEyetracker);
             menu.Items.Add("Calibración", null, OnCalibration);
@@ -46,6 +47,8 @@ namespace GazeStream
 
             return menu;
         }
+
+       
 
         void Empty(object? sender, EventArgs e)
         { 

@@ -15,6 +15,8 @@ using InputSimulatorEx;
 using System.Reflection;
 using Velopack;
 using Velopack.Sources;
+using Velopack.Locators;
+using System.IO;
 
 namespace GazeStream
 {
@@ -35,6 +37,7 @@ namespace GazeStream
         Hotkeys hotkeys;
         static Mutex? singleInstanceMutex;
 
+        static IVelopackLocator locator;
         public static string CurrentVersion { get; private set; }
         public static string NewestVersion { get; private set; }
 
@@ -50,8 +53,15 @@ namespace GazeStream
             base.OnStartup(e);
 
             //CHECK FOR UPDATES
+
+            //LOCAL UPDATE TEST
+
+            //locator = new TestVelopackLocator(appId: "GazeStream", version: "0.0.0", packagesDir: Path.Combine(Environment.CurrentDirectory, "VelopackTestPackages"));
+            //VelopackApp.Build().SetLocator(locator).Run();
+
             VelopackApp.Build().Run();
-            _= CheckNewestUpdate();
+            CurrentVersion = VelopackRuntimeInfo.VelopackDisplayVersion;
+            _ = CheckNewestUpdate();
 
             Instance = this;
             SettingsManager = new Settings();
@@ -88,15 +98,29 @@ namespace GazeStream
         public static async Task CheckNewestUpdate()
         {
             Debug.WriteLine("Checking Updates");
-            var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_USERNAME, AppPaths.GIT_REPOSITORY_URL, prerelease: false));
-            var newVersion = await mgr.CheckForUpdatesAsync();
-            if (newVersion == null)
+
+            //LOCAL UPDATE TEST
+            //var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false), null, locator);
+
+            try
             {
-                Debug.WriteLine("There is no new version online.");
-                return;
+                var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
+                var newVersion = await mgr.CheckForUpdatesAsync();
+                if (newVersion == null)
+                {
+                    Debug.WriteLine("There is no new version online.");
+                    return;
+                }
+                if (newVersion != null)
+                {
+                    System.Windows.MessageBox.Show("Update detectado!");
+                    NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
+                }
             }
-            CurrentVersion = mgr.CurrentVersion == null? "" : mgr.CurrentVersion.ToNormalizedString();
-            NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
+            catch
+            {
+                Debug.WriteLine("There was an exception. Velopack could not check for updates.");
+            }
         }
 
         public static async Task UpdateApp()
@@ -106,11 +130,9 @@ namespace GazeStream
             //dotnet publish --self-contained -r win-x64 -o .\publish
             //vpk pack --packId GazeStream --packVersion 1.0.0 --packDir ./publish
 
-            var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_USERNAME, AppPaths.GIT_REPOSITORY_URL, prerelease: false));
+            var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
             var newVersion = await mgr.CheckForUpdatesAsync();
             if (newVersion == null) return; 
-            NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
-
             await mgr.DownloadUpdatesAsync(newVersion);
             mgr.ApplyUpdatesAndRestart(newVersion);
         }     

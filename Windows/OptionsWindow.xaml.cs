@@ -41,16 +41,17 @@ namespace GazeStream.Windows
 
         void UpdateVersionText()
         {
-            string message;
+            string updateMessage;
             if (string.IsNullOrEmpty(App.NewestVersion))
             {
-                message = "GazeStream ya está actualizado.";
+                updateMessage = "GazeStream ya está actualizado.";
             }
             else
             {
                 //Check diff...?
-                message = "Instalar versión: " + App.NewestVersion;
+                updateMessage = "Instalar versión: " + App.NewestVersion;
             }
+            UpdateText.Text = updateMessage;
         }
 
         void OnClosed(object sender, EventArgs e)

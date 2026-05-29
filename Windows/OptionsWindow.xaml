@@ -59,7 +59,7 @@
                     </Grid.RowDefinitions>
                     <TextBlock x:Name="GazeDevice" Grid.Row="0" HorizontalAlignment="Right" Text="Dispositivo: Joaco" FontWeight="SemiBold" Foreground="White" FontSize="24" Margin="10,10,50,20"/>
                     <Button x:Name="UpdateButton" Grid.Row="1" Click="Update_App_Click" Width="300" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="White" Margin="2">
-                        <TextBlock x:Name="UpdateText" Text="Actualizar a versión: 1.0.0.beta" Foreground="Black" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
+                        <TextBlock x:Name="UpdateText" Text="Update" Foreground="Black" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
                     </Button>
                 </Grid>
                 
