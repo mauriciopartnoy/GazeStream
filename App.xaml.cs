@@ -43,25 +43,26 @@ namespace GazeStream
 
         protected override void OnStartup(W.StartupEventArgs e)
         {
-            if (e.Args.Contains("--restart"))
-            {
-                Thread.Sleep(1000); // wait for previous instance to exit
-            }
-
-            if (ForcedSingleInstance()) return;
-
-            base.OnStartup(e);
-
             //CHECK FOR UPDATES
-
             //LOCAL UPDATE TEST
-
             //locator = new TestVelopackLocator(appId: "GazeStream", version: "0.0.0", packagesDir: Path.Combine(Environment.CurrentDirectory, "VelopackTestPackages"));
             //VelopackApp.Build().SetLocator(locator).Run();
 
             VelopackApp.Build().Run();
             CurrentVersion = VelopackRuntimeInfo.VelopackDisplayVersion;
             _ = CheckNewestUpdate();
+
+            //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.
+            
+            //if (e.Args.Contains("--restart"))
+            //{
+            //    Thread.Sleep(1000); // wait for previous instance to exit
+            //}
+
+            //if (ForcedSingleInstance()) return;
+
+            base.OnStartup(e);
+
 
             Instance = this;
             SettingsManager = new Settings();
@@ -113,12 +114,13 @@ namespace GazeStream
                 }
                 if (newVersion != null)
                 {
-                    System.Windows.MessageBox.Show("Update detectado!");
                     NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
+                    System.Windows.MessageBox.Show("Update detectado!" + NewestVersion);
                 }
             }
             catch
             {
+                System.Windows.MessageBox.Show("There was an exception. Velopack could not check for updates.");
                 Debug.WriteLine("There was an exception. Velopack could not check for updates.");
             }
         }
@@ -129,12 +131,18 @@ namespace GazeStream
 
             //dotnet publish --self-contained -r win-x64 -o .\publish
             //vpk pack --packId GazeStream --packVersion 1.0.0 --packDir ./publish
-
-            var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
-            var newVersion = await mgr.CheckForUpdatesAsync();
-            if (newVersion == null) return; 
-            await mgr.DownloadUpdatesAsync(newVersion);
-            mgr.ApplyUpdatesAndRestart(newVersion);
+            try
+            {
+                var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
+                var newVersion = await mgr.CheckForUpdatesAsync();
+                if (newVersion == null) return;
+                await mgr.DownloadUpdatesAsync(newVersion);
+                mgr.ApplyUpdatesAndRestart(newVersion);
+            }
+            catch(Exception e)
+            {
+                System.Windows.MessageBox.Show("Error al ejecutar el update: " + e.Message);
+            }
         }     
 
         protected override async void OnExit(ExitEventArgs e)

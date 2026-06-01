@@ -20,7 +20,6 @@ namespace GazeStream.Windows
     /// </summary>
     public partial class OptionsWindow : Window
     {
-        Task updateTask;
 
         public OptionsWindow()
         {
@@ -71,10 +70,9 @@ namespace GazeStream.Windows
             this.Close();
         }
 
-        void Update_App_Click(object sender, RoutedEventArgs e)
+        async void Update_App_Click(object sender, RoutedEventArgs e)
         {
-            if (!updateTask.IsCompleted) return;
-            updateTask = Task.Run(App.UpdateApp);
+            await App.UpdateApp();
         }
 
         void UpdateDeviceInfo(IGazeDevice device)
