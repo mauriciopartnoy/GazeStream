@@ -56,12 +56,12 @@ namespace GazeStream
             VelopackApp.Build().Run();
 
             //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.            
-            //if (e.Args.Contains("--restart"))
-            //{
-            //    Thread.Sleep(1000); // wait for previous instance to exit
-            //}
+            if (e.Args.Contains("--restart"))
+            {
+                Thread.Sleep(1000); // wait for previous instance to exit
+            }
 
-            //if (ForcedSingleInstance()) return;
+            if (ForcedSingleInstance()) return;
 
             base.OnStartup(e);
 
