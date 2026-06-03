@@ -209,9 +209,8 @@ namespace GazeStream.Eyetracker
         {
             while (!token.IsCancellationRequested)
             {
-                if (IsCalibrating)
+                if (IsCalibrating || App.IsUpdating)
                 {
-                    Debug.WriteLine("IsCalibrating...");
                     continue;
                 }
                 if (GazeDevice != null && !GazeDevice.IsConnected)

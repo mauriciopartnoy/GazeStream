@@ -41,6 +41,11 @@ namespace GazeStream
         public static string CurrentVersion { get; private set; }
         public static string NewestVersion { get; private set; }
 
+        public static bool IsUpdating { get; private set; }
+
+        static CancellationTokenSource updateCts;
+        static UpdateWindow updateWindow;
+
         protected override void OnStartup(W.StartupEventArgs e)
         {
             //CHECK FOR UPDATES
@@ -49,11 +54,8 @@ namespace GazeStream
             //VelopackApp.Build().SetLocator(locator).Run();
 
             VelopackApp.Build().Run();
-            CurrentVersion = VelopackRuntimeInfo.VelopackDisplayVersion;
-            _ = CheckNewestUpdate();
 
-            //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.
-            
+            //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.            
             //if (e.Args.Contains("--restart"))
             //{
             //    Thread.Sleep(1000); // wait for previous instance to exit
@@ -80,6 +82,9 @@ namespace GazeStream
 
             HookHotkeys();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
+
+            //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
+            _ = UpdateApp(5000);
         }
 
         public static void RestartApp()
@@ -106,6 +111,10 @@ namespace GazeStream
             try
             {
                 var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
+                if (mgr.IsInstalled && mgr.CurrentVersion != null)
+                {
+                    CurrentVersion = mgr.CurrentVersion.Version.ToString();
+                }
                 var newVersion = await mgr.CheckForUpdatesAsync();
                 if (newVersion == null)
                 {
@@ -125,25 +134,75 @@ namespace GazeStream
             }
         }
 
-        public static async Task UpdateApp()
+        public static void CancelUpdate()
         {
+            if (updateCts.IsCancellationRequested) return;
+            updateCts.Cancel();
+        }
+
             //COMANDOS PARA GENERAR EL UPDATE DESCARGABLE, PRIMERO TENER VPK: dotnet tool install -g vpk 
 
             //dotnet publish --self-contained -r win-x64 -o .\publish
             //vpk pack --packId GazeStream --packVersion 1.0.0 --packDir ./publish
+        public static async Task UpdateApp(int delay = 0)
+        {
+            updateCts = new();
+            await Task.Delay(delay, updateCts.Token);
             try
             {
+                IsUpdating = true;
                 var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
+                if (mgr.IsInstalled && mgr.CurrentVersion != null)
+                {
+                    CurrentVersion = mgr.CurrentVersion.Version.ToString();
+                }
                 var newVersion = await mgr.CheckForUpdatesAsync();
+
                 if (newVersion == null) return;
-                await mgr.DownloadUpdatesAsync(newVersion);
+                NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
+
+                //TODO: OPEN UPDATE WINDOW
+                updateWindow = new UpdateWindow();
+                updateWindow.ViewModel.CurrentVersion = CurrentVersion;
+                updateWindow.ViewModel.NewVersion = NewestVersion;
+                updateWindow.Show();
+
+                await mgr.DownloadUpdatesAsync(newVersion, UpdateProgressValue, updateCts.Token);
                 mgr.ApplyUpdatesAndRestart(newVersion);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                System.Windows.MessageBox.Show("Error al ejecutar el update: " + e.Message);
+                System.Windows.MessageBox.Show("No pudo hacerse la actualización: " + e.Message);
             }
-        }     
+            finally
+            {
+                //TODO: CLOSE UPDATE WINDOW
+                updateWindow?.Close();
+                updateWindow = null;
+                IsUpdating = false;
+            }
+        }
+
+        static void UpdateProgressValue(int progress)
+        {
+            App.Current.Dispatcher.Invoke(() =>
+            {
+            if (updateWindow == null) return;
+
+            updateWindow.ViewModel.Progress = progress;
+          
+            if (progress < 100)
+                {
+                    updateWindow.ViewModel.Status =
+                        "Descargando actualización...";
+                }
+                else
+                {
+                    updateWindow.ViewModel.Status =
+                        "Instalando Actualización...";
+                }
+            });
+        }
 
         protected override async void OnExit(ExitEventArgs e)
         {
