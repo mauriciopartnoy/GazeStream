@@ -302,4 +302,23 @@ public class GazeDeviceA11 : IGazeDevice
         OpenCalibrationPage();
         GlobalEvents.OnStartCalibrationCommand.Invoke(pointsArray, eyes);
     }
+
+    public void ShowCameraPreview(bool open)
+    {
+        if (open)
+        {
+            ShowCamera();
+        }
+        else HideCamera();
+    }
+
+    void ShowCamera()
+    {    
+            WindowManager.OpenWindow<EyesWindow>();
+    }
+
+    void HideCamera()
+    {      
+            WindowManager.CloseWindow<EyesWindow>();
+    }
 }

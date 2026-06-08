@@ -377,6 +377,47 @@ namespace GazeStream.Eyetracker
             Settings.I.MouseToggle.Value = !Settings.I.MouseToggle.Value;
         }
 
+        public void RequestCalibration(int pointsArray, int eyes)
+        {
+            //DEFAULT
+            if (GazeDevice == null && joacoA11 != null)
+            {
+                joacoA11.RequestCalibration(pointsArray, eyes);
+                return;
+            }
+
+            if (GazeDevice != null)
+            {
+                GazeDevice.RequestCalibration(pointsArray, eyes);
+            }
+        }
+
+        public void ShowCameraPreview(bool show)
+        {
+            if (GazeDevice == null) return;
+            GazeDevice.ShowCameraPreview(show);
+        }
+
+        public void EnableIntelligazeGUI(bool enable)
+        {
+            if (GazeDevice == null) return;
+            if (GazeDevice.DeviceName != intelligaze.DeviceName) return;
+            if (enable)
+            {
+                intelligaze.DisableDataStreaming();
+            }
+            else intelligaze.EnableDataStreaming();
+        }
+
+        public void SwitchIntelligazeGUI()
+        {
+            if (GazeDevice == null) return;
+            if (GazeDevice.DeviceName != intelligaze.DeviceName) return;
+            intelligaze.SwitchDataStreaming();
+        }
+
+     
+
         void UpdateMousePosition()
         {
             if (!mouseControlEnabled) return;

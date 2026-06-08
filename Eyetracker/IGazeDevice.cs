@@ -10,6 +10,7 @@ namespace GazeStream.Eyetracker
         void UpdateData();
         void OpenCalibrationPage();
         void RequestCalibration(int pointsArray, int eyes);
+        void ShowCameraPreview(bool show);
         bool UserIsPresent { get; }
         GazePoint GazePoint { get; }
         GazePoint RawGazePoint { get; }

@@ -39,6 +39,8 @@ namespace GazeStream.Windows
             OnBubbleToggled(Settings.I.BubbleToggle.Value);
             GlobalEvents.OnCalibrationStart.Add(OnCalibrationStart);
             GlobalEvents.OnCalibrationFinished.Add(OnCalibrationFinished);
+            OnGazeDeviceChanged(GazeManager.I.GazeDevice);
+            GazeManager.OnGazeDeviceChanged += OnGazeDeviceChanged;
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -71,6 +73,11 @@ namespace GazeStream.Windows
             Canvas.SetTop(Cursor, point.Y - Cursor.ActualHeight / 2);
         }
 
+        private void Intelligaze_Click(object sender, RoutedEventArgs e)
+        {
+            GazeManager.I.SwitchIntelligazeGUI();
+        }
+
         void OnBubbleToggled(bool enabled)
         {
             if (enabled)
@@ -81,6 +88,13 @@ namespace GazeStream.Windows
             {
                 HideBubble();
             }
+        }
+
+        void OnGazeDeviceChanged(IGazeDevice gazeDevice)
+        {
+            bool isIntelligaze = gazeDevice is GazeDeviceIntelligaze;
+            Intelligaze_Button.Visibility = isIntelligaze ? Visibility.Visible : Visibility.Collapsed;
+            Intelligaze_Button.IsHitTestVisible = isIntelligaze ? true : false;
         }
 
         void ShowBubble()

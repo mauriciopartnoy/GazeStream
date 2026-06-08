@@ -14,7 +14,7 @@ namespace GazeStream.Eyetracker
 {
     public class GazeDeviceIntelligaze : IGazeDevice
     {
-        EtApi _api = new EtApi();
+        EtApi api = new EtApi();
 
         private event RawDataDelegate RawDataReceived;
         private event FixationDelegate FixationReceived;
@@ -43,7 +43,7 @@ namespace GazeStream.Eyetracker
         GazePoint rawGazePointCache = new();
         Vector2 screenSize;
         bool isCalibrating;
-
+        bool isStreaming;
         public bool Initialize()
         {
             screenSize = Helper.GetPrimaryMonitorSize();
@@ -82,9 +82,9 @@ namespace GazeStream.Eyetracker
             do
             {
                 bool isOpen;
-                error = _api.IsOpen(out isOpen);
+                error = api.IsOpen(out isOpen);
                 Debug.WriteLine($"Intelligaze server is open: {isOpen} Error: {error.ToString()}");
-                error = _api.Open("API-aw6oo-yrrhc", "127.0.0.1", 27412, "127.0.0.1", 27413);
+                error = api.Open("API-aw6oo-yrrhc", "127.0.0.1", 27412, "127.0.0.1", 27413);
                 Thread.Sleep(1000);
                 Debug.WriteLine($"Trying to open Intelligaze API + {error.ToString()}");
             }
@@ -102,61 +102,61 @@ namespace GazeStream.Eyetracker
             if (IntPtr.Size == 8) // x64
             {
                 p = Marshal.GetFunctionPointerForDelegate(RawDataReceived);
-                _api.SetRawDataCB64(p.ToInt64(), IntPtr.Zero);
+                api.SetRawDataCB64(p.ToInt64(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(CaliDoneReceived);
-                _api.SetCalibrationDoneCB64(p.ToInt64(), IntPtr.Zero);
+                api.SetCalibrationDoneCB64(p.ToInt64(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(ResultReceived);
-                _api.SetCalibrationResultCB64(p.ToInt64(), IntPtr.Zero);
+                api.SetCalibrationResultCB64(p.ToInt64(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(ResultExReceived);
-                _api.SetCalibrationResultExCB64(p.ToInt64(), IntPtr.Zero);
+                api.SetCalibrationResultExCB64(p.ToInt64(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(SystemMessageReceived);
-                _api.SetSystemMessageCB64(p.ToInt64(), IntPtr.Zero);
+                api.SetSystemMessageCB64(p.ToInt64(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(EyeStatusReceived);
-                _api.SetEyeStatusCB64(p.ToInt64(), IntPtr.Zero);
+                api.SetEyeStatusCB64(p.ToInt64(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(EyeVisibilityReceived);
-                _api.SetEyeVisibilityCB64(p.ToInt64(), IntPtr.Zero);
+                api.SetEyeVisibilityCB64(p.ToInt64(), IntPtr.Zero);
             }
             else  // x86
             {
                 p = Marshal.GetFunctionPointerForDelegate(RawDataReceived);
-                _api.SetRawDataCB(p.ToInt32(), IntPtr.Zero);
+                api.SetRawDataCB(p.ToInt32(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(CaliDoneReceived);
-                _api.SetCalibrationDoneCB(p.ToInt32(), IntPtr.Zero);
+                api.SetCalibrationDoneCB(p.ToInt32(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(ResultReceived);
-                _api.SetCalibrationResultCB(p.ToInt32(), IntPtr.Zero);
+                api.SetCalibrationResultCB(p.ToInt32(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(ResultExReceived);
-                _api.SetCalibrationResultExCB(p.ToInt32(), IntPtr.Zero);
+                api.SetCalibrationResultExCB(p.ToInt32(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(SystemMessageReceived);
-                _api.SetSystemMessageCB(p.ToInt32(), IntPtr.Zero);
+                api.SetSystemMessageCB(p.ToInt32(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(EyeStatusReceived);
-                _api.SetEyeStatusCB(p.ToInt32(), IntPtr.Zero);
+                api.SetEyeStatusCB(p.ToInt32(), IntPtr.Zero);
 
                 p = Marshal.GetFunctionPointerForDelegate(EyeVisibilityReceived);
-                _api.SetEyeVisibilityCB(p.ToInt32(), IntPtr.Zero);
+                api.SetEyeVisibilityCB(p.ToInt32(), IntPtr.Zero);
             }
 
-            UpdateDataStreaming(true, true);
+            SetDataStreaming(true, true);
             IsConnected = true;
             return true;
         }
 
         public void Disconnect()
         {
-            UpdateDataStreaming(false, false);
+            SetDataStreaming(false, false);
             UnsubscribeToEvents();
-            _api.ExitServer();
-            _api.Close();
+            api.ExitServer();
+            api.Close();
         }
 
         private void UnsubscribeToEvents()
@@ -188,7 +188,7 @@ namespace GazeStream.Eyetracker
             EyeVisibilityReceived += new EyeVisibilityDelegate(SharpClient_EyeVisibilityReceived);
         }
 
-        private void UpdateDataStreaming(bool streamEvents, bool streamRaw)
+        private void SetDataStreaming(bool streamEvents, bool streamRaw)
         {
             ApiError error = ApiError.NoError;
             int mode = 0;
@@ -203,47 +203,47 @@ namespace GazeStream.Eyetracker
                 if (IntPtr.Size == 8) // x64
                 {
                     p = Marshal.GetFunctionPointerForDelegate(BlinkReceived);
-                    _api.SetBlinkCB64(p.ToInt64(), IntPtr.Zero);
+                    api.SetBlinkCB64(p.ToInt64(), IntPtr.Zero);
 
                     p = Marshal.GetFunctionPointerForDelegate(FixationReceived);
-                    _api.SetFixationCB64(p.ToInt64(), IntPtr.Zero);
+                    api.SetFixationCB64(p.ToInt64(), IntPtr.Zero);
 
                     p = Marshal.GetFunctionPointerForDelegate(SaccadeReceived);
-                    _api.SetSaccadeCB64(p.ToInt64(), IntPtr.Zero);
+                    api.SetSaccadeCB64(p.ToInt64(), IntPtr.Zero);
 
                     p = Marshal.GetFunctionPointerForDelegate(NoEventReceived);
-                    _api.SetNoEventCB64(p.ToInt64(), IntPtr.Zero);
+                    api.SetNoEventCB64(p.ToInt64(), IntPtr.Zero);
                 }
                 else
                 {
                     p = Marshal.GetFunctionPointerForDelegate(BlinkReceived);
-                    _api.SetBlinkCB(p.ToInt32(), IntPtr.Zero);
+                    api.SetBlinkCB(p.ToInt32(), IntPtr.Zero);
 
                     p = Marshal.GetFunctionPointerForDelegate(FixationReceived);
-                    _api.SetFixationCB(p.ToInt32(), IntPtr.Zero);
+                    api.SetFixationCB(p.ToInt32(), IntPtr.Zero);
 
                     p = Marshal.GetFunctionPointerForDelegate(SaccadeReceived);
-                    _api.SetSaccadeCB(p.ToInt32(), IntPtr.Zero);
+                    api.SetSaccadeCB(p.ToInt32(), IntPtr.Zero);
 
                     p = Marshal.GetFunctionPointerForDelegate(NoEventReceived);
-                    _api.SetNoEventCB(p.ToInt32(), IntPtr.Zero);
+                    api.SetNoEventCB(p.ToInt32(), IntPtr.Zero);
                 }
             }
             else
             {
                 if (IntPtr.Size == 8) // x64
                 {
-                    _api.SetBlinkCB64(0, IntPtr.Zero);
-                    _api.SetFixationCB64(0, IntPtr.Zero);
-                    _api.SetSaccadeCB64(0, IntPtr.Zero);
-                    _api.SetNoEventCB64(0, IntPtr.Zero);
+                    api.SetBlinkCB64(0, IntPtr.Zero);
+                    api.SetFixationCB64(0, IntPtr.Zero);
+                    api.SetSaccadeCB64(0, IntPtr.Zero);
+                    api.SetNoEventCB64(0, IntPtr.Zero);
                 }
                 else
                 {
-                    _api.SetBlinkCB(0, IntPtr.Zero);
-                    _api.SetFixationCB(0, IntPtr.Zero);
-                    _api.SetSaccadeCB(0, IntPtr.Zero);
-                    _api.SetNoEventCB(0, IntPtr.Zero);
+                    api.SetBlinkCB(0, IntPtr.Zero);
+                    api.SetFixationCB(0, IntPtr.Zero);
+                    api.SetSaccadeCB(0, IntPtr.Zero);
+                    api.SetNoEventCB(0, IntPtr.Zero);
                 }
             }
 
@@ -254,31 +254,55 @@ namespace GazeStream.Eyetracker
                 IntPtr p = Marshal.GetFunctionPointerForDelegate(RawDataReceived);
                 if (IntPtr.Size == 8) // x64
                 {
-                    _api.SetRawDataCB64(p.ToInt64(), IntPtr.Zero);
+                    api.SetRawDataCB64(p.ToInt64(), IntPtr.Zero);
                 }
                 else
                 {
-                    _api.SetRawDataCB(p.ToInt32(), IntPtr.Zero);
+                    api.SetRawDataCB(p.ToInt32(), IntPtr.Zero);
                 }
             }
             else
             {
                 if (IntPtr.Size == 8) // x64
                 {
-                    _api.SetRawDataCB64(0, IntPtr.Zero);
+                    api.SetRawDataCB64(0, IntPtr.Zero);
                 }
                 else
                 {
-                    _api.SetRawDataCB(0, IntPtr.Zero);
+                    api.SetRawDataCB(0, IntPtr.Zero);
                 }
             }
 
-            error = _api.DataStreaming(mode);
+            error = api.DataStreaming(mode);
 
             if (error != ApiError.NoError)
+            {
                 Debug.WriteLine(error.ToString());
+            }
             else
+            {
                 AddReport("Data Streaming");
+            }
+            isStreaming = streamEvents;
+        }
+
+        public void SwitchDataStreaming()
+        {
+            if (isStreaming)
+            {
+                DisableDataStreaming();
+            }
+            else EnableDataStreaming();
+        }
+
+        public void EnableDataStreaming()
+        {
+            SetDataStreaming(true, true);
+        }
+
+        public void DisableDataStreaming()
+        {
+            SetDataStreaming(false, false);
         }
 
         public void OpenCalibrationPage()
@@ -308,7 +332,7 @@ namespace GazeStream.Eyetracker
                 case 2: eyeType = EyeTypeEnum.CalibrateRight; break;
             }
 
-            _api.PerformCalibration(points, PointLocationEnum.Full, false, false, true, eyeType, false, false, true, 0, 2, "ANIMATION:PARROT");
+            api.PerformCalibration(points, PointLocationEnum.Full, false, false, true, eyeType, false, false, true, 0, 2, "ANIMATION:PARROT");
 
         }
 
@@ -348,7 +372,7 @@ namespace GazeStream.Eyetracker
 
         private void LoadCalibration(string calibName)
         {
-            ApiError error = _api.LoadCalibration(calibName);
+            ApiError error = api.LoadCalibration(calibName);
 
             if (error != ApiError.NoError)
                 Debug.WriteLine(error.ToString());
@@ -358,7 +382,7 @@ namespace GazeStream.Eyetracker
 
         private void SaveCalibration(string calibName)
         {
-            ApiError error = _api.SaveCalibration(calibName);
+            ApiError error = api.SaveCalibration(calibName);
 
             if (error != ApiError.NoError)
                 Debug.WriteLine(error.ToString());
@@ -618,5 +642,26 @@ namespace GazeStream.Eyetracker
             }
         }
 
+        public void ShowCameraPreview(bool open)
+        {
+            if (open)
+            {
+                ShowCamera();
+            }
+            else HideCamera();
+        }
+
+        void ShowCamera()
+        {
+            int posX = (int)(screenSize.X / 2f);
+            int posY = (int)(screenSize.Y / 2f);
+            int size = (int)(screenSize.Y / 2f);
+            api.ShowStatusWindow(posX, posY, size, 1);
+        }
+
+        void HideCamera()
+        {
+            api.HideStatusWindow();
+        }
     }
 }

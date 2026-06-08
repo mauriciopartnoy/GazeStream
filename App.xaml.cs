@@ -54,7 +54,7 @@ namespace GazeStream
             //VelopackApp.Build().SetLocator(locator).Run();
 
             VelopackApp.Build().Run();
-
+        
             //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.            
             if (e.Args.Contains("--restart"))
             {
@@ -161,7 +161,7 @@ namespace GazeStream
                 if (newVersion == null) return;
                 NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
 
-                //TODO: OPEN UPDATE WINDOW
+                //OPEN UPDATE WINDOW
                 updateWindow = new UpdateWindow();
                 updateWindow.ViewModel.CurrentVersion = CurrentVersion;
                 updateWindow.ViewModel.NewVersion = NewestVersion;
@@ -176,7 +176,7 @@ namespace GazeStream
             }
             finally
             {
-                //TODO: CLOSE UPDATE WINDOW
+                //CLOSE UPDATE WINDOW
                 updateWindow?.Close();
                 updateWindow = null;
                 IsUpdating = false;
@@ -199,7 +199,7 @@ namespace GazeStream
                 else
                 {
                     updateWindow.ViewModel.Status =
-                        "Instalando Actualización...";
+                        "Preparando instalación. Por favor, espere...";
                 }
             });
         }

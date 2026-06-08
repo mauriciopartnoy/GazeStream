@@ -145,5 +145,9 @@ namespace GazeStream.Eyetracker
             return;
         }
 
+        public void ShowCameraPreview(bool show)
+        {
+            return;
+        }
     }
 }

@@ -222,6 +222,12 @@ public class GazeService : WebSocketBehavior
                 case "CancelCalibration":
                     CancelCalibration();
                     break;
+                case "EnableIntelligazeGUI":
+                    GazeManager.I.EnableIntelligazeGUI(true);
+                    break;
+                case "DisableIntelligazeGUI":
+                    GazeManager.I.EnableIntelligazeGUI(false);
+                    break;
                 case "RestartGazeDevice":
                     GazeManager.I.RestartGazeDevice();
                     break;
@@ -286,16 +292,10 @@ public class GazeService : WebSocketBehavior
                     Settings.I.FilterProfile.Value = FilterProfile.Alto;
                     break;
                 case "ShowEyeDisplay":
-                    if (GazeManager.I.IsJoacoDevice)
-                    {
-                        WindowManager.OpenWindow<EyesWindow>();
-                    }
+                    ShowCameraPreview(true);
                     break;
                 case "HideEyeDisplay":
-                    if (GazeManager.I.IsJoacoDevice)
-                    {
-                        WindowManager.CloseWindow<EyesWindow>();
-                    }
+                    ShowCameraPreview(false);
                     break;
                 case "SetSampleRate20":
                     Settings.I.SampleRateHZ.Value = 20;
@@ -329,14 +329,12 @@ public class GazeService : WebSocketBehavior
 
     public void RequestCalibration(int pointsArray, int eyes)
     {
-        //DEFAULT
-        if (GazeManager.I.GazeDevice == null)
-        {
-            GazeManager.I.joacoA11.RequestCalibration(pointsArray, eyes);
-            return;
-        }
+        GazeManager.I.RequestCalibration(pointsArray, eyes);
+    }
 
-        GazeManager.I.GazeDevice.RequestCalibration(pointsArray, eyes);
+    public void ShowCameraPreview(bool show)
+    {
+        GazeManager.I.ShowCameraPreview(show);
     }
 
     public void CancelCalibration()
