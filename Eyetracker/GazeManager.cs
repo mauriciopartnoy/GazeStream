@@ -61,6 +61,8 @@ namespace GazeStream.Eyetracker
             All
         }
 
+        bool previousMouseControlToggle;
+        bool previousGazeBubbleState;
 
         public Dictionary<FrameworkElement, IGazeTarget> gazeTargets;
         public IGazeTarget CurrentGazeTarget { get; private set; }
@@ -404,16 +406,30 @@ namespace GazeStream.Eyetracker
             if (GazeDevice.DeviceName != intelligaze.DeviceName) return;
             if (enable)
             {
+                intelligaze.EnableDataStreaming();
+                Settings.I.BubbleToggle.Value = previousGazeBubbleState;
+                Settings.I.MouseToggle.Value = previousMouseControlToggle;
+            }
+            else
+            {
+                previousGazeBubbleState = Settings.I.BubbleToggle.Value;
+                previousMouseControlToggle = Settings.I.MouseToggle.Value;
+                Settings.I.BubbleToggle.Value = false;
+                Settings.I.MouseToggle.Value = false;
                 intelligaze.DisableDataStreaming();
             }
-            else intelligaze.EnableDataStreaming();
         }
 
         public void SwitchIntelligazeGUI()
         {
             if (GazeDevice == null) return;
             if (GazeDevice.DeviceName != intelligaze.DeviceName) return;
-            intelligaze.SwitchDataStreaming();
+            //intelligaze.SwitchDataStreaming();
+             if (intelligaze.IsStreaming)
+            {
+                EnableIntelligazeGUI(false);
+            }
+            else EnableIntelligazeGUI(true);
         }
 
      
@@ -606,21 +622,4 @@ public static class GazeHitTest
 
         return found;
     }
-
-    //public static IGazeTarget FindGazeTarget(Window window, System.Windows.Point windowPoint)
-    //{
-    //    IInputElement hit = window.InputHitTest(windowPoint);
-    //    DependencyObject current = hit as DependencyObject;
-
-    //    while (current != null)
-    //    {
-    //        if (current is IGazeTarget gaze /*&& gaze.IsGazeEnabled*/)
-    //        {
-    //            return gaze;
-    //        }
-    //        current = VisualTreeHelper.GetParent(current);
-    //    }
-
-    //    return null;
-    //}
 }

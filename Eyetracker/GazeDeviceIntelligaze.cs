@@ -43,7 +43,7 @@ namespace GazeStream.Eyetracker
         GazePoint rawGazePointCache = new();
         Vector2 screenSize;
         bool isCalibrating;
-        bool isStreaming;
+        public bool IsStreaming { get; private set; }
         public bool Initialize()
         {
             screenSize = Helper.GetPrimaryMonitorSize();
@@ -155,8 +155,8 @@ namespace GazeStream.Eyetracker
         {
             SetDataStreaming(false, false);
             UnsubscribeToEvents();
-            api.ExitServer();
-            api.Close();
+            //api.ExitServer();
+            api.Close(); //Cierra el programa de Intelligaze directamente desactivando el stream además del eyetracker.
         }
 
         private void UnsubscribeToEvents()
@@ -283,12 +283,12 @@ namespace GazeStream.Eyetracker
             {
                 AddReport("Data Streaming");
             }
-            isStreaming = streamEvents;
+            IsStreaming = streamEvents;
         }
 
         public void SwitchDataStreaming()
         {
-            if (isStreaming)
+            if (IsStreaming)
             {
                 DisableDataStreaming();
             }

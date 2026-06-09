@@ -47,9 +47,12 @@ namespace GazeStream.Windows
         {
             base.OnSourceInitialized(e);
 
-            var hwnd = new WindowInteropHelper(this).Handle;
-            int exStyle = WindowsHelper.GetWindowStyle(hwnd);
-            WindowsHelper.EnableClickThrough(hwnd, exStyle);
+
+            //Vieja forma de hacer un overlay con clickthrough. No creo que lo necesite, pero queda aca por si los cambios mas recientes generan algun bug.
+
+            //var hwnd = new WindowInteropHelper(this).Handle;
+            //int exStyle = WindowsHelper.GetWindowStyle(hwnd);
+            //WindowsHelper.EnableClickThrough(hwnd, exStyle);
             //SetWindowLong(hwnd, GWL_EXSTYLE,
             //    exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
         }
@@ -92,9 +95,23 @@ namespace GazeStream.Windows
 
         void OnGazeDeviceChanged(IGazeDevice gazeDevice)
         {
-            bool isIntelligaze = gazeDevice is GazeDeviceIntelligaze;
-            Intelligaze_Button.Visibility = isIntelligaze ? Visibility.Visible : Visibility.Collapsed;
-            Intelligaze_Button.IsHitTestVisible = isIntelligaze ? true : false;
+            Debug.WriteLine("Gaze device changed.");
+            bool isIntelligaze;
+            if (gazeDevice == null)
+            {
+                isIntelligaze = false;
+            }
+            else
+            {           
+                isIntelligaze = gazeDevice.DeviceName == GazeManager.I.intelligaze.DeviceName;
+                Debug.WriteLine("Gaze device changed." + gazeDevice.DeviceName + isIntelligaze);
+
+            }
+            Dispatcher.Invoke(()=>
+            {
+                Intelligaze_Button.Visibility = isIntelligaze ? Visibility.Visible : Visibility.Collapsed;
+                Intelligaze_Button.IsHitTestVisible = isIntelligaze ? true : false;
+            });
         }
 
         void ShowBubble()
