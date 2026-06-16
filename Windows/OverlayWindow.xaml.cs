@@ -31,10 +31,10 @@ namespace GazeStream.Windows
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             // Fullscreen overlay
-            Left = 0;
-            Top = 0;
-            Width = SystemParameters.PrimaryScreenWidth;
-            Height = SystemParameters.PrimaryScreenHeight;
+            //Left = 0;
+            //Top = 0;
+            //Width = SystemParameters.PrimaryScreenWidth;
+            //Height = SystemParameters.PrimaryScreenHeight;
             Settings.I.BubbleToggle.OnValueChanged += OnBubbleToggled;
             OnBubbleToggled(Settings.I.BubbleToggle.Value);
             GlobalEvents.OnCalibrationStart.Add(OnCalibrationStart);

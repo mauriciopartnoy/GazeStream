@@ -17,6 +17,7 @@ using Velopack;
 using Velopack.Sources;
 using Velopack.Locators;
 using System.IO;
+using GazeStream.Utilities.Events;
 
 namespace GazeStream
 {
@@ -54,7 +55,8 @@ namespace GazeStream
             //VelopackApp.Build().SetLocator(locator).Run();
 
             VelopackApp.Build().Run();
-        
+            NewMethod();
+
             //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.            
             if (e.Args.Contains("--restart"))
             {
@@ -69,7 +71,7 @@ namespace GazeStream
             Instance = this;
             SettingsManager = new Settings();
             SettingsManager.Initialize();
-            
+
             SettingsManager.SampleRateHZ.Value = 60;
 
             InputSim = new InputSimulator();
@@ -85,6 +87,15 @@ namespace GazeStream
 
             //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
             _ = UpdateApp(5000);
+        }
+
+        private static void NewMethod()
+        {
+            var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
+            if (mgr.CurrentVersion != null)
+            {
+                CurrentVersion = mgr.CurrentVersion.Version.ToString();
+            }
         }
 
         public static void RestartApp()
@@ -111,9 +122,11 @@ namespace GazeStream
             try
             {
                 var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
-                if (mgr.IsInstalled && mgr.CurrentVersion != null)
+                Debug.WriteLine("Version is null: " + (mgr.CurrentVersion == null));
+                if (/*mgr.IsInstalled && */mgr.CurrentVersion != null)
                 {
                     CurrentVersion = mgr.CurrentVersion.Version.ToString();
+                    GlobalEvents.OnVersionChecked?.Invoke();
                 }
                 var newVersion = await mgr.CheckForUpdatesAsync();
                 if (newVersion == null)
@@ -123,7 +136,7 @@ namespace GazeStream
                 }
                 if (newVersion != null)
                 {
-                    NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
+                    NewestVersion = newVersion.TargetFullRelease.Version.ToString();
                     System.Windows.MessageBox.Show("Update detectado!" + NewestVersion);
                 }
             }

@@ -307,7 +307,7 @@ namespace GazeStream.Eyetracker
 
         public void OpenCalibrationPage()
         {
-            return;
+            RequestCalibration(2, 0);
         }
 
         public void RequestCalibration(int pointsArray, int eyes)

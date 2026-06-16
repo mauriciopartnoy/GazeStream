@@ -5,7 +5,8 @@ using GazeStream.Utilities;
 using GazeStream.Windows;
 using GazeStream.Eyetracker;
 using GazeStream.AppData;
-
+using GazeStream.Utilities.Events;
+using System.Diagnostics;
 
 namespace GazeStream
 {
@@ -22,6 +23,7 @@ namespace GazeStream
                 Visible = true,
                 ContextMenuStrip = BuildMenu()
             };
+            GlobalEvents.OnVersionChecked.Add(UpdateVersion);
         }
 
         private static Icon LoadTrayIcon()
@@ -29,6 +31,12 @@ namespace GazeStream
             var uri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/tray.ico",UriKind.Absolute);
             using var stream = System.Windows.Application.GetResourceStream(uri)!.Stream;
             return new Icon(stream);
+        }
+
+        void UpdateVersion()
+        {
+            Debug.WriteLine("Version update called");
+            trayIcon.ContextMenuStrip = BuildMenu();
         }
 
         private ContextMenuStrip BuildMenu()

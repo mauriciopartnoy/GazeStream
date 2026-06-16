@@ -28,6 +28,7 @@ namespace GazeStream.Utilities.Events
         //SETTING CHANGED MESSAGE
         public static readonly GlobalEvent<string> OnSettingChanged = new();
         public static readonly GlobalEvent<string, object> OnSettingChangeCommand = new();
+        public static readonly GlobalEvent OnVersionChecked = new();
 
     }
 }
