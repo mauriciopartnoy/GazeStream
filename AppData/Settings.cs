@@ -16,6 +16,10 @@ namespace GazeStream.AppData
 {
     public class SettingKeys
     {
+        public const string STARTUP_BOOT = "StartupBoot";
+        public const string EYETRACKER_DEVICE = "EyetrackerDevice";
+        
+
         public const string FONT_SIZE_TITLES = "FontSizeTitles";
         public const string FONT_SIZE_TITLES_OPTION = "FontSizeTitlesOption";
 
@@ -353,11 +357,29 @@ namespace GazeStream.AppData
         [Description("60 FPS")]
         x60
     }
+
+    public enum Eyetracker_Device
+    {
+        [Description("Sin Eyetracker")]
+        Ninguno,
+        [Description("Joaco A11")]
+        Joaco,
+        [Description("Intelligaze")]
+        Intelligaze,
+        [Description("Otro")]
+        Otro,
+    }
+
     public class Settings
     {
         public static Settings I { get; private set; }
         public static Dictionary<string, BaseSetting> BaseSettings { get; private set; } = new Dictionary<string, BaseSetting>();
         public static Dictionary<string, SettingDescriptor> Descriptors { get; private set; } = new Dictionary<string, SettingDescriptor>();
+
+
+        //SYSTEM SETTINGS
+        public BoolSetting IsStartupApp { get; } = new BoolSetting(SettingKeys.STARTUP_BOOT, true);
+        public EnumSetting<Eyetracker_Device> EyetrackerDevice { get; } = new EnumSetting<Eyetracker_Device>(SettingKeys.EYETRACKER_DEVICE, Eyetracker_Device.Joaco);
 
         //STYLE PREFERENCES
 
@@ -514,6 +536,9 @@ namespace GazeStream.AppData
 
         private void RegisterSettings()
         {
+            RegisterSetting(IsStartupApp);
+            RegisterSetting(EyetrackerDevice);
+
             RegisterSetting(FontSizeTitles);
             RegisterSetting(FontSizeTitlesOption);
 

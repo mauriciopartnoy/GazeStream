@@ -1,0 +1,42 @@
+﻿<Window x:Class="GazeStream.Windows.SystemSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GazeStream.Windows"
+        xmlns:settings="clr-namespace:GazeStream.AppData"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=settings:Settings}"
+        Title="Opciones de Sistema" Height="450" Width="800">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Iniciar con Windows -->
+        <CheckBox x:Name="StartupCheckbox"
+                  Grid.Row="0"
+                  Content="Iniciar con Windows"
+                  VerticalAlignment="Center"
+                  Checked="OnStartupChecked"
+                  Unchecked="OnStartupUnchecked"
+                  IsChecked="{Binding IsStartupApp.Value}"
+                  />
+
+        <!-- Dispositivo -->
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Dispositivo"
+                       Margin="0,0,0,4"/>
+
+            <ComboBox x:Name="EyetrackerDeviceComboBox"
+                      MinWidth="250"
+                      SelectedIndex="0"                     
+                      ItemsSource="{Binding EyetrackerDevice.EnumValues}"
+                      SelectedItem="{Binding EyetrackerDevice.Value}">
+            </ComboBox>
+        </StackPanel>
+    </Grid>
+</Window>

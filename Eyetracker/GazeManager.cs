@@ -101,10 +101,7 @@ namespace GazeStream.Eyetracker
             SubscribeToSettings();
             SubscribeToCalibrationEvents();
 
-            AddSupportedDevices();
-            StartGazeDeviceUpdateLoop();
-            //getDeviceCts = new CancellationTokenSource();
-            //getDeviceTask = Task.Run(() => FindGazeDeviceLoop(getDeviceCts.Token));
+            StartLoopWithSelectedDevice();
         }
 
         public void LoadSettings()
@@ -119,6 +116,7 @@ namespace GazeStream.Eyetracker
             Settings.I.InterpolationFilter.OnValueChanged += UpdateInterpolationFilter;
             Settings.I.KalmanFilter.OnValueChanged += UpdateKalmanFilter;
             Settings.I.SampleRateHZ.OnValueChanged += UpdateSampleRateHZ;
+            Settings.I.EyetrackerDevice.OnChanged += StartLoopWithSelectedDevice;
         }
 
         public void UpdateKalmanFilter(int value)
@@ -151,20 +149,36 @@ namespace GazeStream.Eyetracker
             CancelLoop();
         }
 
+        void StartLoopWithSelectedDevice()
+        {
+            StopGazeDeviceUpdateLoop();
+            AddSupportedDevices();
+            StartGazeDeviceUpdateLoop();
+        }
+
         private void AddSupportedDevices()
         {
             supportedDevices = new List<IGazeDevice>();
 
             //X64
 
-            intelligaze = new GazeDeviceIntelligaze();
-            supportedDevices.Add(intelligaze);
-
-            tobiiInteraction = new GazeDeviceTobiiInteraction();
-            supportedDevices.Add(tobiiInteraction);
-
-            joacoA11 = new GazeDeviceA11();
-            supportedDevices.Add(joacoA11);
+            switch (Settings.I.EyetrackerDevice.Value)
+            {
+                case Eyetracker_Device.Ninguno:
+                    break;
+                case Eyetracker_Device.Joaco:
+                    joacoA11 = new GazeDeviceA11();
+                    supportedDevices.Add(joacoA11);
+                    break;
+                case Eyetracker_Device.Intelligaze:
+                    intelligaze = new GazeDeviceIntelligaze();
+                    supportedDevices.Add(intelligaze);
+                    break;
+                case Eyetracker_Device.Otro:
+                    tobiiInteraction = new GazeDeviceTobiiInteraction();
+                    supportedDevices.Add(tobiiInteraction);
+                    break;
+            }
 
             //X86
 
@@ -194,9 +208,9 @@ namespace GazeStream.Eyetracker
 
         public void StopGazeDeviceUpdateLoop()
         {
-            getDeviceCts.Cancel();
+            if (getDeviceCts != null) { getDeviceCts.Cancel(); }
+            if (loopCts != null) { loopCts.Cancel(); }
             getDeviceTask = null;
-            loopCts.Cancel();
             loopTask = null;
             DisconnectDevice();
         }
@@ -305,8 +319,8 @@ namespace GazeStream.Eyetracker
                 ReceivedNewData = true;
             }
 
-                //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
-                SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
+            //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
+            SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
             SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
             SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
             SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
@@ -425,14 +439,14 @@ namespace GazeStream.Eyetracker
             if (GazeDevice == null) return;
             if (GazeDevice.DeviceName != intelligaze.DeviceName) return;
             //intelligaze.SwitchDataStreaming();
-             if (intelligaze.IsStreaming)
+            if (intelligaze.IsStreaming)
             {
                 EnableIntelligazeGUI(false);
             }
             else EnableIntelligazeGUI(true);
         }
 
-     
+
 
         void UpdateMousePosition()
         {

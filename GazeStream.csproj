@@ -100,6 +100,11 @@
     <None Remove="Resources\Icons\squares.png" />
     <None Remove="Resources\Icons\stop.png" />
     <None Remove="Resources\Icons\sun.png" />
+    <None Remove="Resources\Icons\tray1.ico" />
+    <None Remove="Resources\Icons\tray2.ico" />
+    <None Remove="Resources\Icons\tray3.ico" />
+    <None Remove="Resources\Icons\tray4.ico" />
+    <None Remove="Resources\Icons\tray5.ico" />
     <None Remove="Resources\Icons\up.png" />
     <None Remove="Resources\Icons\userfile.png" />
     <None Remove="Resources\Icons\view.png" />
@@ -402,6 +407,11 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\Icons\tray.ico" />
+    <Resource Include="Resources\Icons\tray1.ico" />
+    <Resource Include="Resources\Icons\tray2.ico" />
+    <Resource Include="Resources\Icons\tray3.ico" />
+    <Resource Include="Resources\Icons\tray4.ico" />
+    <Resource Include="Resources\Icons\tray5.ico" />
     <Resource Include="Resources\Icons\up.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

@@ -28,7 +28,7 @@ namespace GazeStream
 
         private static Icon LoadTrayIcon()
         {
-            var uri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/tray.ico",UriKind.Absolute);
+            var uri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/tray5.ico",UriKind.Absolute);
             using var stream = System.Windows.Application.GetResourceStream(uri)!.Stream;
             return new Icon(stream);
         }
@@ -50,6 +50,7 @@ namespace GazeStream
             menu.Items.Add("Resultados de Calibración", null, OnCalibrationResults);
             menu.Items.Add("Cámara", null, OnCamera);
             menu.Items.Add("Opciones", null, OnOptions);
+            menu.Items.Add("Sistema", null, OnSystemSettings);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Salir", null, OnExit);
 
@@ -71,6 +72,11 @@ namespace GazeStream
         private void OnOptions(object? sender, EventArgs e)
         {
             WindowManager.OpenWindow<OptionsWindow>();
+        }
+
+        private void OnSystemSettings(object? sender, EventArgs e)
+        {
+            WindowManager.OpenWindow<SystemSettingsWindow>();
         }
 
         private void OnCalibration(object? sender, EventArgs e)

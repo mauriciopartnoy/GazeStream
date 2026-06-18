@@ -16,6 +16,7 @@ using System.Reflection;
 using Velopack;
 using Velopack.Sources;
 using Velopack.Locators;
+using Velopack.Windows;
 using System.IO;
 using GazeStream.Utilities.Events;
 
@@ -55,7 +56,7 @@ namespace GazeStream
             //VelopackApp.Build().SetLocator(locator).Run();
 
             VelopackApp.Build().Run();
-            NewMethod();
+            UpdateCurrentVersionName();
 
             //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.            
             if (e.Args.Contains("--restart"))
@@ -73,6 +74,7 @@ namespace GazeStream
             SettingsManager.Initialize();
 
             SettingsManager.SampleRateHZ.Value = 60;
+            LoadStartupState();
 
             InputSim = new InputSimulator();
             Tray = new TrayService();
@@ -89,7 +91,33 @@ namespace GazeStream
             _ = UpdateApp(5000);
         }
 
-        private static void NewMethod()
+        void LoadStartupState()
+        {
+            try
+            {
+                if (Settings.I.IsStartupApp.Value)
+                {
+                    AddAppToStartup();
+                }
+                else RemoveAppFromStartup();
+            }
+            catch
+            { 
+            
+            }
+        }
+
+        public static void AddAppToStartup()
+        {
+            new Shortcuts().CreateShortcutForThisExe(ShortcutLocation.Startup);
+        }
+
+        public static void RemoveAppFromStartup()
+        {
+            new Shortcuts().RemoveShortcutForThisExe(ShortcutLocation.Startup);
+        }
+
+        private static void UpdateCurrentVersionName()
         {
             var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
             if (mgr.CurrentVersion != null)
