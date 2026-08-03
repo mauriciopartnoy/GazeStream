@@ -222,6 +222,21 @@ namespace GazeStream.Windows
                 GazeManager.I.joacoA11.SetDefaultCalibration();
             }
         }
+        public void DefaultCalibrationRight_Click(object sender, RoutedEventArgs e)
+        {
+            if (GazeManager.I.IsJoacoDevice)
+            {
+                GazeManager.I.joacoA11.SetDefaultCalibrationRight();
+            }
+        }
+        public void DefaultCalibrationLeft_Click(object sender, RoutedEventArgs e)
+        {
+            if (GazeManager.I.IsJoacoDevice)
+            {
+                GazeManager.I.joacoA11.SetDefaultCalibrationLeft();
+            }
+        }
+
         public void Back_Click(object sender, RoutedEventArgs e)
         {
             this.Close();

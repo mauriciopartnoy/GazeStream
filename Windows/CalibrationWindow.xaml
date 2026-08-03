@@ -79,6 +79,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Title -->
@@ -190,7 +191,7 @@
                 <StackPanel Grid.Row="2"
                             Orientation="Horizontal"
                             HorizontalAlignment="Center"
-                            Margin="0,20,0,0">
+                            Margin="0,10,0,10">
 
                     <Button x:Name="StartCalibrationButton"
                             Style="{StaticResource CalibrationButton}"
@@ -200,21 +201,53 @@
                                    TextAlignment="Center"/>
                     </Button>
 
-                    <Button x:Name="DefaultCalibration"
-                            Style="{StaticResource CalibrationButton}"
-                            Click="DefaultCalibration_Click">
-                    <TextBlock Text="Calibración Automática"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"/>
+                    <Button x:Name="BackButton"
+   Style="{StaticResource CalibrationButton}"
+   Click="Back_Click">
+                        <TextBlock Text="Volver"
+          TextWrapping="Wrap"
+          TextAlignment="Center"/>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock Grid.Row="3" Text="Calibración Automática"  FontWeight="Bold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center" Margin="0,5,0,0"/>
+                <StackPanel Grid.Row="3"
+             Orientation="Horizontal"
+             HorizontalAlignment="Center"
+             Margin="0,20,0,0">
+
+                    <Button x:Name="FastCalibLeft"
+             Style="{StaticResource CalibrationButton}"
+             Click="DefaultCalibrationLeft_Click">
+                        <TextBlock Text="Calibración Rápida Ojo Izquierdo"
+                    TextWrapping="Wrap"
+                    TextAlignment="Center"/>
                     </Button>
 
-                    <Button x:Name="BackButton"
-                            Style="{StaticResource CalibrationButton}"
-                            Click="Back_Click">
-                        <TextBlock Text="Volver"
-                                   TextWrapping="Wrap"
-                                   TextAlignment="Center"/>
+                    <Button x:Name="FastCalibRight"
+             Style="{StaticResource CalibrationButton}"
+             Click="DefaultCalibrationRight_Click">
+                        <TextBlock Text="Calibración Rápida Ojo Derecho"
+                TextWrapping="Wrap"
+                TextAlignment="Center"/>
                     </Button>
+
+                    <Button x:Name="FastCalibBoth"
+             Style="{StaticResource CalibrationButton}"
+             Click="DefaultCalibration_Click">
+                        <TextBlock Text="Calibración Rápida Ambos Ojos"
+                    TextWrapping="Wrap"
+                    TextAlignment="Center"/>
+                    </Button>
+
+                </StackPanel>
+
+                <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Margin="0,20,0,0">
+              
+                 
 
                 </StackPanel>
 

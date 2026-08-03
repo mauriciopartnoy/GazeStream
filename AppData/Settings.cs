@@ -379,7 +379,7 @@ namespace GazeStream.AppData
 
         //SYSTEM SETTINGS
         public BoolSetting IsStartupApp { get; } = new BoolSetting(SettingKeys.STARTUP_BOOT, true);
-        public EnumSetting<Eyetracker_Device> EyetrackerDevice { get; } = new EnumSetting<Eyetracker_Device>(SettingKeys.EYETRACKER_DEVICE, Eyetracker_Device.Joaco);
+        public EnumSetting<Eyetracker_Device> EyetrackerDevice { get; } = new EnumSetting<Eyetracker_Device>(SettingKeys.EYETRACKER_DEVICE, Eyetracker_Device.Ninguno);
 
         //STYLE PREFERENCES
 

@@ -544,8 +544,7 @@ public class StartCalibrationCommand : BaseWebsocketCommand
 
     public void RequestCalibration(int points, int eyes)
     {
-        WindowManager.OpenWindow<CalibrationWindow>();
-        GlobalEvents.OnStartCalibrationCommand.Invoke(points, eyes);
+        GazeManager.I.RequestCalibration(points, eyes);
     }
 }
 

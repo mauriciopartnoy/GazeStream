@@ -68,7 +68,6 @@ namespace GazeStream
 
             base.OnStartup(e);
 
-
             Instance = this;
             SettingsManager = new Settings();
             SettingsManager.Initialize();
