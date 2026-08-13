@@ -86,8 +86,9 @@ namespace GazeStream
             Websocket.StartWebsocketService();
 
             HookHotkeys();
-            OverlayInteraction = WindowManager.OpenWindow<OverlayInteraction>();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
+            OverlayInteraction = WindowManager.OpenWindow<OverlayInteraction>();
+
             //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
             _ = UpdateApp(5000);
         }
