@@ -470,27 +470,29 @@ namespace GazeStream.Eyetracker
 
             //UpdateGazePointFromScreen((float)data.intelliGazeX, (float)data.intelliGazeY);
 
-            if (data.leftEye.pupilDiameter == 0 && data.rightEye.pupilDiameter == 0)
-            {
-                //Blinking. Ignore point.
-            }
-            else if (data.intelliGazeX == 0 || data.intelliGazeX == -1 || data.intelliGazeY == 0 || data.intelliGazeY == -1)
-            {
-                //Ignore points.
-            }
-            else if (data.leftEye.gazePositionY == 0)
-            {
-                UpdateGazePointFromScreen((float)data.rightEye.gazePositionX, (float)data.rightEye.gazePositionY);
-            }
-            else if (data.rightEye.gazePositionY == 0)
-            {
-                UpdateGazePointFromScreen((float)data.leftEye.gazePositionX, (float)data.leftEye.gazePositionY);
-            }
-            else
-            {
-                //Both eyes point.
-                UpdateGazePointFromScreen((float)data.intelliGazeX, (float)data.intelliGazeY);
-            }
+            //USAR SOLAMENTE CON LA VERSION PRO QUE PERMITE USAR RAW DATA
+
+            //if (data.leftEye.pupilDiameter == 0 && data.rightEye.pupilDiameter == 0)
+            //{
+            //    //Blinking. Ignore point.
+            //}
+            //else if (data.intelliGazeX == 0 || data.intelliGazeX == -1 || data.intelliGazeY == 0 || data.intelliGazeY == -1)
+            //{
+            //    //Ignore points.
+            //}
+            //else if (data.leftEye.gazePositionY == 0)
+            //{
+            //    UpdateGazePointFromScreen((float)data.rightEye.gazePositionX, (float)data.rightEye.gazePositionY);
+            //}
+            //else if (data.rightEye.gazePositionY == 0)
+            //{
+            //    UpdateGazePointFromScreen((float)data.leftEye.gazePositionX, (float)data.leftEye.gazePositionY);
+            //}
+            //else
+            //{
+            //    //Both eyes point.
+            //    UpdateGazePointFromScreen((float)data.intelliGazeX, (float)data.intelliGazeY);
+            //}
             //UPDATE EYE DATA (El IsBlinking se llena en el callback BlinkReceived. Alternativamente chequear pupil diameter.)
 
             Vector2 lefteyePos = ScreenToViewport((float)data.leftEye.eyeballPosX, (float)data.leftEye.eyeballPosY);
@@ -530,7 +532,7 @@ namespace GazeStream.Eyetracker
 
             //Debug.WriteLine($"FIXATION received:  {data.timeStamp.ToString()} Duration: {data.duration.ToString()}");
             //Debug.WriteLine($"FIXATION COORD: X: {data.positionX} Y: {data.positionY}");
-            //UpdateGazePointFromScreen((float)data.positionX, (float)data.positionY);
+            UpdateGazePointFromScreen((float)data.positionX, (float)data.positionY);
 
             if (InvokeRequired)
             {
