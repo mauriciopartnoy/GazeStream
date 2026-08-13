@@ -19,7 +19,6 @@ namespace GazeStream.AppData
         public const string STARTUP_BOOT = "StartupBoot";
         public const string EYETRACKER_DEVICE = "EyetrackerDevice";
         
-
         public const string FONT_SIZE_TITLES = "FontSizeTitles";
         public const string FONT_SIZE_TITLES_OPTION = "FontSizeTitlesOption";
 
@@ -59,7 +58,8 @@ namespace GazeStream.AppData
         public const string INTERPOLATION_FILTER = "InterpolationFilter";
         public const string KALMAN_FILTER_OPTION = "KalmanFilterOption";
         public const string JOACO_SMOOTH_FILTER_OPTION = "InvensunSmoothValueOption";
-
+        public const string EDGE_BIAS = "EdgeBias";
+        public const string CLAMP_BUBBLE = "ClampBubble";
 
         public const string LAST_CALIBRATION = "LastCalibration";
         public const string LAST_CALIBRATION_EYES_OPTION = "LastCalibrationEyesOption";
@@ -428,8 +428,9 @@ namespace GazeStream.AppData
         public IntSetting SmoothFilter { get; } = new IntSetting(SettingKeys.JOACO_SMOOTH_FILTER, 10, new Int2(1, 10));
         public IntSetting KalmanFilter { get; } = new IntSetting(SettingKeys.KALMAN_FILTER, 20, new Int2(0, 100));
         public FloatSetting InterpolationFilter { get; } = new FloatSetting(SettingKeys.INTERPOLATION_FILTER, 0.05f, new Float2(0, 100));
-
         public KalmanFilterOptionSetting KalmanFilterOption { get; } = new KalmanFilterOptionSetting(SettingKeys.KALMAN_FILTER_OPTION, Percent.Twenty);
+        public FloatSetting EdgeBiasFilter { get; } = new FloatSetting(SettingKeys.EDGE_BIAS, 0, new Float2(0f, 1f));
+        public BoolSetting ClampBubblePosition { get; } = new BoolSetting(SettingKeys.CLAMP_BUBBLE, true);
 
         //CALIBRATION 
         public LastCalibration LastCalibrationBuff { get; } = new LastCalibration(SettingKeys.LAST_CALIBRATION, new byte[0]);                                 //byte[] Calibration.buff
@@ -578,6 +579,8 @@ namespace GazeStream.AppData
             RegisterSetting(KalmanFilter);
             RegisterSetting(InterpolationFilter);
             RegisterSetting(KalmanFilterOption);
+            RegisterSetting(EdgeBiasFilter);
+            RegisterSetting(ClampBubblePosition);
 
             RegisterSetting(LastCalibrationBuff);
             RegisterSetting(LastEyesOption);

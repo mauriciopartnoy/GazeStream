@@ -54,6 +54,16 @@ namespace GazeStream
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Salir", null, OnExit);
 
+            foreach (ToolStripItem item in menu.Items)
+            {
+                if (item is ToolStripMenuItem menuItem)
+                {
+                    menuItem.AutoSize = false;
+                    menu.Font = new Font(menu.Font.FontFamily, 14f);
+                    menuItem.Height = 48;
+                }
+            }
+
             return menu;
         }
 

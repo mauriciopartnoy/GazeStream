@@ -86,6 +86,7 @@ namespace GazeStream.Windows
             PreviewKeyDown += CancelCalibrationOnKeyPress;
             GlobalEvents.OnStartCalibrationCommand.Add(StartCalibrationAndCloseOnFinished);
             ForceTopmost();
+            DataContext = Settings.I;
         }
 
         void InitializePointArraysUsingScreenSpace()
@@ -222,6 +223,15 @@ namespace GazeStream.Windows
                 GazeManager.I.joacoA11.SetDefaultCalibration();
             }
         }
+
+        public void BestCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            if (GazeManager.I.IsJoacoDevice)
+            {
+                GazeManager.I.joacoA11.SetBestCalibrationFromPresets();
+            }
+        }
+
         public void DefaultCalibrationRight_Click(object sender, RoutedEventArgs e)
         {
             if (GazeManager.I.IsJoacoDevice)
@@ -500,9 +510,12 @@ namespace GazeStream.Windows
         void SaveCalibrationAsPreset(int points, int eyesOption, float scoreLeft, float scoreRight, byte[] buff)
         {
             Vector2 screenSize = Helper.GetScreenSize(this);
+            Vector2 sizeInInches = WindowsHelper.GetPhysicalScreenSizeInInches();
+            Debug.WriteLine("Physical monitor size is: " + sizeInInches);
+
             string name = $"Preset_{screenSize.X}_{screenSize.Y}";
             EyesData eyes = new EyesData(eyesData);
-            CalibrationPreset preset = new CalibrationPreset(name, scoreLeft, scoreRight, screenSize, gazeOrigin, eyes,points, eyesOption, buff);
+            CalibrationPreset preset = new CalibrationPreset(name, scoreLeft, scoreRight, screenSize, /*sizeInInches,*/ gazeOrigin, eyes,points, eyesOption, buff);
             CalibrationPresets.I.AddPreset(preset);            
         }
 

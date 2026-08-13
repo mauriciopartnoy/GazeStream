@@ -35,6 +35,8 @@ namespace GazeStream
 
         public InputSimulator InputSim { get; private set; }
         public OverlayWindow OverlayWindow { get; private set; }
+        public OverlayInteraction OverlayInteraction { get; private set; }
+
 
         Hotkeys hotkeys;
         static Mutex? singleInstanceMutex;
@@ -84,8 +86,8 @@ namespace GazeStream
             Websocket.StartWebsocketService();
 
             HookHotkeys();
+            OverlayInteraction = WindowManager.OpenWindow<OverlayInteraction>();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
-
             //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
             _ = UpdateApp(5000);
         }

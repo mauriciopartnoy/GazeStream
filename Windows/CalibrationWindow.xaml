@@ -12,7 +12,9 @@
         WindowStyle="None"
         ShowInTaskbar="True"
         Topmost="False"
-        d:Height="1080" d:Width="1920">
+        xmlns:settings="clr-namespace:GazeStream.AppData"      
+        d:DataContext="{d:DesignInstance Type=settings:Settings}"
+        Height="1080" Width="1920">
 
     <!--WindowStyle="None"
         ResizeMode="NoResize"-->
@@ -80,6 +82,8 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+
                 </Grid.RowDefinitions>
 
                 <!-- Title -->
@@ -240,15 +244,42 @@
                     TextAlignment="Center"/>
                     </Button>
 
+                    <Button x:Name="FastCalibList" 
+             Style="{StaticResource CalibrationButton}"
+             Click="BestCalibration_Click">
+                        <TextBlock Text="Calibración Automática con Database"
+       TextWrapping="Wrap"
+       TextAlignment="Center"/>
+                    </Button>
                 </StackPanel>
 
-                <StackPanel Grid.Row="4"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Center"
-                    Margin="0,20,0,0">
-              
-                 
+                <StackPanel Grid.Row="4" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+                    <TextBlock Grid.Row="3" Text="Filtros"  FontWeight="Bold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center" Margin="0,5,0,0"/>
 
+                    <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Edge Bias" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Slider x:Name="EdgeSlider" Grid.Column="1" Width="150" Minimum="0" Maximum="0.1" IsSnapToTickEnabled="True" TickFrequency="0.01" Value="{Binding EdgeBiasFilter.Value}"/>
+                        <TextBlock Text="{Binding Value, ElementName=EdgeSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Margin="170,5,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Clamp" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <ToggleButton Grid.Column="1" Style="{StaticResource ModernToggleStyle}" IsChecked="{Binding ClampBubblePosition.Value, Mode=TwoWay}" HorizontalAlignment="Left" />
+                    </Grid>
                 </StackPanel>
 
             </Grid>
@@ -262,16 +293,16 @@
                 </Grid.RowDefinitions>
                 <TextBlock Style="{StaticResource OptionTitle}" Text="Este punto está tardando demasiado. Te recomendamos empezar de nuevo" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Top" TextWrapping="Wrap"/>
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button Style="{StaticResource CalibrationButton}" Click="CancelCalibration_Click">
-                    <TextBlock Text="Empezar de nuevo" TextWrapping="Wrap" TextAlignment="Center"/>
-                </Button>
-                <Button Style="{StaticResource CalibrationButton}" Click="CloseRestartCalibrationWindow">
-                    <TextBlock Text="Reintentar punto" TextWrapping="Wrap" TextAlignment="Center"/>
-                </Button>
-            </StackPanel>
+                    <Button Style="{StaticResource CalibrationButton}" Click="CancelCalibration_Click">
+                        <TextBlock Text="Empezar de nuevo" TextWrapping="Wrap" TextAlignment="Center"/>
+                    </Button>
+                    <Button Style="{StaticResource CalibrationButton}" Click="CloseRestartCalibrationWindow">
+                        <TextBlock Text="Reintentar punto" TextWrapping="Wrap" TextAlignment="Center"/>
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
-        
+
         <!-- Error text -->
         <TextBlock x:Name="ErrorText"
                    Foreground="White"

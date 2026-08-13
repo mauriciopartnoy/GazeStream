@@ -69,6 +69,7 @@ namespace GazeStream.Eyetracker
 
         KalmanFilter kalmanFilter;
         InterpolationFilter interpolationFilter;
+        OutlierFilter outlierFilter;
         float sampleRateSeconds;
         const float TIMEOUT_TRESHOLD = .5f;
         InputSimulator input;
@@ -97,6 +98,7 @@ namespace GazeStream.Eyetracker
             gazeTargets = new();
             kalmanFilter = new();
             interpolationFilter = new();
+            outlierFilter = new();
             LoadSettings();
             SubscribeToSettings();
             SubscribeToCalibrationEvents();
@@ -221,8 +223,10 @@ namespace GazeStream.Eyetracker
             StartGazeDeviceUpdateLoop();
         }
 
+            int automaticCalibrationCounter = 0;
         async Task UpdateLoop(CancellationToken token)
         {
+
             while (!token.IsCancellationRequested)
             {
                 if (IsCalibrating || App.IsUpdating)
@@ -241,11 +245,26 @@ namespace GazeStream.Eyetracker
                     GetNewGazePointIfValid();
                     UpdateTimeoutTimer();
                     UpdateMousePosition();
+                    //UpdateCalibrationUsingLocalDatabase();
+
                 }
 
                 UpdateGazeTargetsAndUI();
 
                 await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
+            }
+        }
+
+        private void UpdateCalibrationUsingLocalDatabase()
+        {
+            if (IsJoacoDevice)
+            {
+                automaticCalibrationCounter++;
+                if (automaticCalibrationCounter > 60)
+                {
+                    automaticCalibrationCounter = 0;
+                    joacoA11.FindBestPresetForThisDevice();
+                }
             }
         }
 
@@ -320,11 +339,44 @@ namespace GazeStream.Eyetracker
             }
 
             //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
-            SmoothViewportPoint = kalmanFilter.GetFilteredPoint(GazePoint.viewportPoint);
+            SmoothViewportPoint = GazePoint.viewportPoint;
+            SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
+            SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
             SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
+            SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint, Settings.I.EdgeBiasFilter.Value);
+
+
+            //TEST FILTERS
+            //AGREGAR CLAMP PADDING
+            float padding = .005f;
+            if (Settings.I.ClampBubblePosition.Value == true)
+            {             
+              SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding, 1f - padding), Math.Clamp(SmoothViewportPoint.Y, 0f + padding, 1f - padding));
+            }
             SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
             SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
         }
+
+        Vector2 ApplyEdgeBias(Vector2 coord, float amount)
+        {
+            float x = EdgeBias(coord.X, amount);
+            float y = EdgeBias(coord.Y, amount);
+            return new Vector2(x, y);
+        }
+
+        float EdgeBias(float t, float amount)
+        {
+            float centered = (t - 0.5f) * 2f; // -1 .. +1
+            float bias = centered * centered * centered;
+
+            return t + bias * amount;
+        }
+
+        //float EdgeBias(float t, float amount)
+        //{
+        //    return Helper.Lerp(t, t + amount * (t - 0.5f) * Math.Abs(t - 0.5f) * 2f, 1f);
+        //}
+
 
         void UpdateUIDeltaTime()
         {

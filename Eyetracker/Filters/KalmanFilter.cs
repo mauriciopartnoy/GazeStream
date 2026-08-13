@@ -74,16 +74,11 @@ namespace GazeStream.Eyetracker.Filters
 
             // == KALMAN FILTER:  Standard update equations from the KF framework - these shouldn't be changed == //
             estimationNoise += (float)currentProcessNoise;
-            estimationNoise = (float)Math.Min(currentProcessNoise, 1); // Prevent saturation to Inf
+            estimationNoise = (float)Math.Min(currentProcessNoise, 1d); // Prevent saturation to Inf
 
             gain = estimationNoise / (estimationNoise + measurementNoise);
             estimationNoise = (1.0f - gain) * estimationNoise;
             estimatedPoint += (measurement - estimatedPoint) * gain;
-
-            float clampedX = Math.Clamp(estimatedPoint.X, 0, 1f);
-            float clampedY = Math.Clamp(estimatedPoint.Y, 0, 1f);
-            estimatedPoint.X = clampedX;
-            estimatedPoint.Y = clampedY;
 
             return estimatedPoint;
         }

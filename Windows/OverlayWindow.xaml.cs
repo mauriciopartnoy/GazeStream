@@ -26,7 +26,15 @@ namespace GazeStream.Windows
             Loaded += OnLoaded;
         }
 
+        const int GWL_EXSTYLE = -20;
+        const int WS_EX_TRANSPARENT = 0x20;
+        const int WS_EX_LAYERED = 0x80000;
 
+        [DllImport("user32.dll")]
+        static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [DllImport("user32.dll")]
+        static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -43,18 +51,26 @@ namespace GazeStream.Windows
             GazeManager.OnGazeDeviceChanged += OnGazeDeviceChanged;
         }
 
+        //ALTERNATIVO
+
+        //protected override void OnSourceInitialized(EventArgs e)
+        //{
+        //    base.OnSourceInitialized(e);
+
+        //    var hwnd = new WindowInteropHelper(this).Handle;
+
+        //    int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+        //    SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+        //}
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
 
-
-            //Vieja forma de hacer un overlay con clickthrough. No creo que lo necesite, pero queda aca por si los cambios mas recientes generan algun bug.
-
-            //var hwnd = new WindowInteropHelper(this).Handle;
-            //int exStyle = WindowsHelper.GetWindowStyle(hwnd);
-            //WindowsHelper.EnableClickThrough(hwnd, exStyle);
-            //SetWindowLong(hwnd, GWL_EXSTYLE,
-            //    exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
+            var hwnd = new WindowInteropHelper(this).Handle;
+            int exStyle = WindowsHelper.GetWindowStyle(hwnd);
+            WindowsHelper.EnableClickThrough(hwnd, exStyle);
+            SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT);
         }
 
         void OnCalibrationStart()
@@ -95,23 +111,23 @@ namespace GazeStream.Windows
 
         void OnGazeDeviceChanged(IGazeDevice gazeDevice)
         {
-            Debug.WriteLine("Gaze device changed.");
-            bool isIntelligaze;
-            if (gazeDevice == null)
-            {
-                isIntelligaze = false;
-            }
-            else
-            {           
-                isIntelligaze = gazeDevice.DeviceName == GazeManager.I.intelligaze.DeviceName;
-                Debug.WriteLine("Gaze device changed." + gazeDevice.DeviceName + isIntelligaze);
+            //Debug.WriteLine("Gaze device changed.");
+            //bool isIntelligaze;
+            //if (gazeDevice == null)
+            //{
+            //    isIntelligaze = false;
+            //}
+            //else
+            //{           
+            //    isIntelligaze = gazeDevice.DeviceName == GazeManager.I.intelligaze.DeviceName;
+            //    Debug.WriteLine("Gaze device changed." + gazeDevice.DeviceName + isIntelligaze);
 
-            }
-            Dispatcher.Invoke(()=>
-            {
-                Intelligaze_Button.Visibility = isIntelligaze ? Visibility.Visible : Visibility.Collapsed;
-                Intelligaze_Button.IsHitTestVisible = isIntelligaze ? true : false;
-            });
+            //}
+            //Dispatcher.Invoke(()=>
+            //{
+            //    Intelligaze_Button.Visibility = isIntelligaze ? Visibility.Visible : Visibility.Collapsed;
+            //    Intelligaze_Button.IsHitTestVisible = isIntelligaze ? true : false;
+            //});
         }
 
         void ShowBubble()

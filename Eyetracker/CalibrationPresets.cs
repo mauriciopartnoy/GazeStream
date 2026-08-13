@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Numerics;
 using Newtonsoft.Json;
 using GazeStream.AppData;
+using GazeStream.Utilities;
 using System.IO;
 using System.Diagnostics;
 
@@ -14,7 +15,7 @@ namespace GazeStream.Eyetracker
     public class CalibrationPresets
     {
         public static CalibrationPresets I;
-        List<CalibrationPreset> Presets = new();
+        public List<CalibrationPreset> Presets = new();
         const string FILE_NAME = "CalibrationPresets.json";
         public string FilePath => Path.Combine(AppPaths.CalibrationPresetsPath, FILE_NAME);
 
@@ -40,6 +41,7 @@ namespace GazeStream.Eyetracker
     {
         public string displayName;
         public Vector2 screenSize;
+        //public Vector2 monitorPhysicalSize;
         public int calibrationBuffSize;
         public int calibrationPoints;
         public int eyeOption;
@@ -51,10 +53,11 @@ namespace GazeStream.Eyetracker
         public EyesData eyesData;
         public byte[] calibrationBuff;
         public string hardCodeBufString;
-        public CalibrationPreset(string displayName, float scoreLeft, float scoreRight, Vector2 screenSize, Vector3 gazeOrigin, EyesData eyesData, int points, int eyeOption, byte[] calibrationBuff)
+        public CalibrationPreset(string displayName, float scoreLeft, float scoreRight, Vector2 screenSize, /*Vector2 monitorPhysicalSize,*/ Vector3 gazeOrigin, EyesData eyesData, int points, int eyeOption, byte[] calibrationBuff)
         {
             this.displayName = displayName;
             this.screenSize = screenSize;
+            //this.monitorPhysicalSize = monitorPhysicalSize;
             this.calibrationBuffSize = calibrationBuff.Length;
             this.calibrationPoints = points;
             this.eyeOption = eyeOption;
@@ -91,6 +94,5 @@ namespace GazeStream.Eyetracker
             Debug.WriteLine(bufBytesArray.ToString());
             return bufBytesArray.ToString();
         }
-
     }
 }

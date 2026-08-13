@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
+using Microsoft.Win32;
 
 
 namespace GazeStream.Utilities
@@ -550,6 +551,131 @@ namespace GazeStream.Utilities
             SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         }
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr MonitorFromWindow(
+        IntPtr hwnd,
+        uint dwFlags);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern bool GetMonitorInfo(
+            IntPtr hMonitor,
+            ref MONITORINFOEX lpmi);
+
+        private const uint MONITOR_DEFAULTTONEAREST = 2;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct MONITORINFOEX
+        {
+            public int cbSize;
+            public RECT rcMonitor;
+            public RECT rcWork;
+            public uint dwFlags;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string szDevice;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        public static (double WidthMm, double HeightMm)? GetPhysicalSize(Window window)
+        {
+            IntPtr hwnd = new WindowInteropHelper(window).Handle;
+
+            if (hwnd == IntPtr.Zero)
+                return null;
+
+            IntPtr hMonitor = MonitorFromWindow(
+                hwnd,
+                MONITOR_DEFAULTTONEAREST);
+
+            if (hMonitor == IntPtr.Zero)
+                return null;
+
+            var info = new MONITORINFOEX
+            {
+                cbSize = Marshal.SizeOf<MONITORINFOEX>()
+            };
+
+            if (!GetMonitorInfo(hMonitor, ref info))
+                return null;
+
+            // e.g. "\\.\DISPLAY1"
+            string displayName = info.szDevice;
+
+            // Extract DISPLAY1
+            string displayId = displayName
+                .Replace(@"\\.\", "");
+
+            using RegistryKey? monitors =
+                Registry.LocalMachine.OpenSubKey(
+                    @"SYSTEM\CurrentControlSet\Enum\DISPLAY");
+
+            if (monitors == null)
+                return null;
+
+            foreach (string manufacturer in monitors.GetSubKeyNames())
+            {
+                using RegistryKey? manufacturerKey =
+                    monitors.OpenSubKey(manufacturer);
+
+                if (manufacturerKey == null)
+                    continue;
+
+                foreach (string monitorId in manufacturerKey.GetSubKeyNames())
+                {
+                    using RegistryKey? monitorKey =
+                        manufacturerKey.OpenSubKey(monitorId);
+
+                    if (monitorKey == null)
+                        continue;
+
+                    foreach (string instance in monitorKey.GetSubKeyNames())
+                    {
+                        using RegistryKey? instanceKey =
+                            monitorKey.OpenSubKey(instance);
+
+                        if (instanceKey == null)
+                            continue;
+
+                        using RegistryKey? paramsKey =
+                            instanceKey.OpenSubKey("Device Parameters");
+
+                        if (paramsKey == null)
+                            continue;
+
+                        byte[]? edid =
+                            paramsKey.GetValue("EDID") as byte[];
+
+                        if (edid == null || edid.Length < 23)
+                            continue;
+
+                        // EDID bytes 21 and 22 contain the physical
+                        // horizontal and vertical size in centimeters.
+                        int widthCm = edid[21];
+                        int heightCm = edid[22];
+
+                        if (widthCm == 0 || heightCm == 0)
+                            continue;
+
+                        return (
+                            widthCm * 10.0,
+                            heightCm * 10.0
+                        );
+                    }
+                }
+            }
+
+            return null;
+        }
+
     }
 
 

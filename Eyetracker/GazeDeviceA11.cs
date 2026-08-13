@@ -103,7 +103,66 @@ public class GazeDeviceA11 : IGazeDevice
         Settings.I.LastCalibrationBuff.Value = coefficient.buf;
     }
 
-    public void SetDefaultCalibrationRight()
+    public void SetBestCalibrationFromPresets()
+    {
+        byte[] newBuff = FindBestPresetForThisDevice();
+        if (newBuff == null) return;
+        if (newBuff.Length == 0) return;
+
+        coefficient = new _7i_coefficient_t();
+        coefficient.buf = newBuff;   
+        ASeeTracker._7i_start_tracking(ref coefficient);
+        Settings.I.LastCalibrationBuff.Value = coefficient.buf;
+    }
+
+    public byte[] FindBestPresetForThisDevice()
+    {
+        var Presets = CalibrationPresets.I.Presets;
+        if (Presets == null) return new byte[0];
+        if (Presets.Count == 0) return new byte[0];
+
+        Vector2 monitorSize = Helper.GetPrimaryMonitorSize();
+        Debug.WriteLine("Monitor size is: " + monitorSize);
+        var elegible = Presets.Where(p => p.screenSize.X == monitorSize.X && p.screenSize.Y == monitorSize.Y).ToList();
+
+        if (elegible.Count == 0)
+        {
+            elegible = Presets;
+        }
+
+        //TODO: Agregar criterios de distancia o posición para filtrar la lista
+        float distanceToScreen = Math.Max(eyesCache.leftEye.pupilDistanceMm, eyesCache.rightEye.pupilDistanceMm);
+
+        //Prefer high point count && better score
+        CalibrationPreset bestPreset = elegible[0];
+        //foreach (CalibrationPreset p in elegible)
+        //{
+        //    float absDistanceToScreen = MathF.Abs(p.distanceToScreen - distanceToScreen);
+        //    float bestDistToScreen = MathF.Abs(bestPreset.distanceToScreen - distanceToScreen);
+        //    if (absDistanceToScreen < bestDistToScreen)
+        //    {
+        //        bestPreset = p;
+        //    }
+        //}
+
+        foreach (CalibrationPreset p in elegible)
+        {
+
+            if (p.calibrationPoints > bestPreset.calibrationPoints)
+            {
+                bestPreset = p;
+            }
+
+            if ((p.scoreLeft + p.scoreRight) > (bestPreset.scoreLeft + bestPreset.scoreRight))
+            {
+                bestPreset = p;
+            }
+        }
+
+        return bestPreset.calibrationBuff;
+    }
+
+public void SetDefaultCalibrationRight()
     {
         coefficient = new _7i_coefficient_t();
         coefficient.buf = GetDefaultCalibrationBuffRight();
