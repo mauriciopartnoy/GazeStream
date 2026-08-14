@@ -111,12 +111,26 @@ namespace GazeStream
 
         public static void AddAppToStartup()
         {
-            new Shortcuts().CreateShortcutForThisExe(ShortcutLocation.Startup);
+            try
+            {
+                new Shortcuts().CreateShortcutForThisExe(ShortcutLocation.Startup);
+            }
+            catch
+            { 
+            
+            }
         }
 
         public static void RemoveAppFromStartup()
         {
-            new Shortcuts().RemoveShortcutForThisExe(ShortcutLocation.Startup);
+            try
+            {
+                new Shortcuts().RemoveShortcutForThisExe(ShortcutLocation.Startup);
+            }
+            catch
+            { 
+            
+            }
         }
 
         private static void UpdateCurrentVersionName()

@@ -367,6 +367,7 @@ namespace GazeStream.Eyetracker
 
         void AddReport(string report)
         {
+            return;
             Debug.WriteLine(report);
         }
 
@@ -521,8 +522,8 @@ namespace GazeStream.Eyetracker
             {
                 // raw data only available with special license
                 //rawDataLbl.Text = String.Format("Head: pitch({0:0}) distance({1:0})", data.head.headPitch, data.head.headPosZ);
-                Debug.WriteLine($"RAW DATA RECEIVED no invoke: X: {data.intelliGazeX} Y: {data.intelliGazeY} LX: {data.leftEye.gazePositionX}");
-                Debug.WriteLine(String.Format("IntelliGaze ({0:0},{1:0})", data.intelliGazeX, data.intelliGazeY));
+                //Debug.WriteLine($"RAW DATA RECEIVED no invoke: X: {data.intelliGazeX} Y: {data.intelliGazeY} LX: {data.leftEye.gazePositionX}");
+                //Debug.WriteLine(String.Format("IntelliGaze ({0:0},{1:0})", data.intelliGazeX, data.intelliGazeY));
             }
         }
 
@@ -540,7 +541,7 @@ namespace GazeStream.Eyetracker
             }
             else
             {
-                Debug.WriteLine("Fix Start: " + data.timeStamp.ToString() + " Duration: " + data.duration.ToString());
+                //Debug.WriteLine("Fix Start: " + data.timeStamp.ToString() + " Duration: " + data.duration.ToString());
             }
         }
 
@@ -578,7 +579,7 @@ namespace GazeStream.Eyetracker
             }
             else
             {
-                Debug.WriteLine("Blink Start: " + data.timeStamp.ToString() + " Duration: " + data.duration.ToString());
+                //Debug.WriteLine("Blink Start: " + data.timeStamp.ToString() + " Duration: " + data.duration.ToString());
             }
         }
 
@@ -590,7 +591,7 @@ namespace GazeStream.Eyetracker
             }
             else
             {
-                Debug.WriteLine("Saccade Start: " + data.timeStamp.ToString() + " Duration: " + data.duration.ToString());
+                //Debug.WriteLine("Saccade Start: " + data.timeStamp.ToString() + " Duration: " + data.duration.ToString());
             }
         }
 
@@ -602,7 +603,7 @@ namespace GazeStream.Eyetracker
             }
             else
             {
-                Debug.WriteLine("NoEvent Start: " + data.timeStamp.ToString());
+                //Debug.WriteLine("NoEvent Start: " + data.timeStamp.ToString());
             }
         }
 
@@ -614,8 +615,8 @@ namespace GazeStream.Eyetracker
             }
             else
             {
-                String s = String.Format("LX({0:0.00})  LY({1:0.00})  LZ({2:0.00}) RX({3:0.00})  RY({4:0.00})  RZ({5:0.00})", eyeStatus.leftEyeX, eyeStatus.leftEyeY, eyeStatus.leftEyeZ, eyeStatus.rightEyeX, eyeStatus.rightEyeY, eyeStatus.rightEyeZ);
-                Debug.WriteLine(s);
+                //String s = String.Format("LX({0:0.00})  LY({1:0.00})  LZ({2:0.00}) RX({3:0.00})  RY({4:0.00})  RZ({5:0.00})", eyeStatus.leftEyeX, eyeStatus.leftEyeY, eyeStatus.leftEyeZ, eyeStatus.rightEyeX, eyeStatus.rightEyeY, eyeStatus.rightEyeZ);
+                //Debug.WriteLine(s);
             }
         }
 
@@ -627,8 +628,8 @@ namespace GazeStream.Eyetracker
             }
             else
             {
-                String s = String.Format("Left: {0:0} Right: {1:0}", leftEye, rightEye);
-                Debug.WriteLine(s);
+                //String s = String.Format("Left: {0:0} Right: {1:0}", leftEye, rightEye);
+                //Debug.WriteLine(s);
             }
         }
 

@@ -340,10 +340,13 @@ namespace GazeStream.Eyetracker
 
             //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
             SmoothViewportPoint = GazePoint.viewportPoint;
-            SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
-            SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
-            SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
-            SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint, Settings.I.EdgeBiasFilter.Value);
+            if (IsJoacoDevice)
+            {
+                SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
+                SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
+                SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
+                SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint, Settings.I.EdgeBiasFilter.Value);
+            }
 
 
             //TEST FILTERS
@@ -506,8 +509,15 @@ namespace GazeStream.Eyetracker
             if (input == null) return;
             if (UserNotPresentTimeOut) return;
 
-            (double x, double y) pos = Helper.ViewportToMousePosition(GazeManager.I.SmoothViewportPoint);
-            input.Mouse.MoveMouseToPositionOnVirtualDesktop(pos.x, pos.y);
+            try
+            {
+                (double x, double y) pos = Helper.ViewportToMousePosition(GazeManager.I.SmoothViewportPoint);
+                input.Mouse.MoveMouseToPositionOnVirtualDesktop(pos.x, pos.y);
+            }
+            catch
+            {
+                Debug.WriteLine("Windows simulator exception");
+            }
         }
 
         public void RegisterGazeTarget(FrameworkElement element, IGazeTarget target)
