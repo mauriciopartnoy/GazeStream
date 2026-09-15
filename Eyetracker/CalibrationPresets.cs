@@ -39,6 +39,9 @@ namespace GazeStream.Eyetracker
 
     public class CalibrationPreset
     {
+        public const int FILE_VERSION = 1;
+
+        public int fileVersion;
         public string displayName;
         public Vector2 screenSize;
         //public Vector2 monitorPhysicalSize;

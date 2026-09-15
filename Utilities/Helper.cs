@@ -14,6 +14,8 @@ namespace GazeStream.Utilities
 {
     internal static class Helper
     {
+       
+
         public static float Lerp(float a, float b, float t)
         {
             return a + (b - a) * t;
@@ -64,6 +66,17 @@ namespace GazeStream.Utilities
             Vector2 screenSize = GetPrimaryMonitorSize();
             float x = InverseLerp(0, screenSize.X, screenPoint.X);
             float y = InverseLerp(0, screenSize.Y, screenPoint.Y);
+            return new Vector2(x, y);
+        }
+
+        public static Vector2 ScreenToViewportClamped(Vector2 screenSize, float screenX, float screenY)
+        {
+            if (screenSize.X == 0 || screenSize.Y == 0) return Vector2.Zero;
+
+            screenX = Math.Clamp(screenX, 0, screenSize.X);
+            screenY = Math.Clamp(screenY, 0, screenSize.Y);
+            float x = screenX / screenSize.X;
+            float y = screenY / screenSize.Y;
             return new Vector2(x, y);
         }
 
@@ -210,6 +223,24 @@ namespace GazeStream.Utilities
             w.Topmost = false; // reset
             w.Focus();
         }
+
+        public static Vector2 PixelsToViewport01(int pixels)
+        {
+            Vector2 screen = WindowsHelper.GetDisplayResolutionInPixels();
+            float x = pixels / screen.X;
+            float y = pixels / screen.Y;
+            return new Vector2(x, y);
+        }
+
+        public static Vector2 DipsToViewport01(int dips)
+        {
+            double screenX = App.Instance.OverlayWindow.ActualWidth;
+            double screenY = App.Instance.OverlayWindow.ActualHeight;
+            double x = dips / screenX;
+            double y = dips / screenY;
+            return new Vector2((float)x, (float)y);
+        }
+
     }
 
 }

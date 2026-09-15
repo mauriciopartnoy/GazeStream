@@ -1,21 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+﻿using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Numerics;
 using System.Diagnostics;
 using GazeStream.Eyetracker;
 using GazeStream.Utilities;
-using GazeStream.Utilities.Save;
 using GazeStream.AppData;
 using GazeStream.Controls;
 using GazeStream.Utilities.Events;
@@ -26,45 +14,34 @@ namespace GazeStream.Windows
     public partial class CalibrationWindow : Window
     {
         public static CalibrationWindow I { get; private set; } //Singleton Instance
-
-        public static ASeeTracker.processCallback processCB = new ASeeTracker.processCallback(process_callback);
-        public static ASeeTracker.finishCallback finishCB = new ASeeTracker.finishCallback(finish_callback);
-        public static ASeeTracker.gazeCallback gazeCB = new ASeeTracker.gazeCallback(OnGazeCallback);
-
-        Task? calibrationTask;
-        CancellationTokenSource cts;
-        bool isCalibrating;
-        List<CalibrationPointGraphic> points = new List<CalibrationPointGraphic>();
-        static CalibrationPointGraphic? currentPoint;
-        static bool pointComplete;
-        _7i_coefficient_t coefficient;
-        static _7i_eye_data_ex_t eyesData;
-        static Vector3 gazeOrigin;
-        static bool calibrationPointChanged;
-        static DateTime lastCalibrationPointChangeTime;
-        static TimeSpan calibrationPointUnchangedTime;
         public static int CalibrationPointProgress { get; private set; }
         public static float CalibrationPointProgress01 { get; private set; }
 
+        public static ASeeTracker.processCallback processCB = new ASeeTracker.processCallback(process_callback);
+        public static ASeeTracker.finishCallback finishCB = new ASeeTracker.finishCallback(finish_callback);
 
+        bool isCalibrating;
+        Task? calibrationTask;
+        CancellationTokenSource cts;
+        List<CalibrationPointGraphic> points = new List<CalibrationPointGraphic>();
+        static CalibrationPointGraphic? currentPoint;
+        static bool pointComplete;
+        static bool calibrationPointChanged;
+        static DateTime lastCalibrationPointChangeTime;
+        static TimeSpan calibrationPointUnchangedTime;
+
+        //DEFAULT CALIBRATION POINT POSITIONS
         Vector2[] points3 = {
                 new Vector2(0.05f, 0.95f),
                 new Vector2(0.95f, 0.95f),
                 new Vector2(0.50f, 0.05f)};
 
-        //Vector2[] points5 = {
-        //        new Vector2(0.50f, 0.50f),
-        //        new Vector2(0.05f, 0.95f),
-        //        new Vector2(0.95f, 0.95f),
-        //        new Vector2(0.05f, 0.05f),
-        //        new Vector2(0.95f, 0.05f)};
-
         Vector2[] points5 = {
                 new Vector2(0.50f, 0.50f),
-                new Vector2(0.01f, 0.99f),
-                new Vector2(0.99f, 0.99f),
-                new Vector2(0.01f, 0.01f),
-                new Vector2(0.99f, 0.01f)};
+                new Vector2(0.05f, 0.95f),
+                new Vector2(0.95f, 0.95f),
+                new Vector2(0.05f, 0.05f),
+                new Vector2(0.95f, 0.05f)};
 
         Vector2[] points9 = {
                 new Vector2(0.50f, 0.50f),
@@ -89,21 +66,43 @@ namespace GazeStream.Windows
             DataContext = Settings.I;
         }
 
+        void ForceTopmost()
+        {
+            if (!this.IsVisible)
+            {
+                this.Show();
+            }
+
+            this.WindowState = WindowState.Maximized;
+            this.Activate();
+            this.Topmost = true;  // temporarily
+            this.Topmost = false; // reset
+            this.Focus();
+        }
+
+        void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("Landed on Calibration Page. Loading RadioButton settings.");
+            //InitializePointArraysUsingScreenSpace();
+            ResetPage();
+            LoadToggleOptions();
+            Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
+        }
         void InitializePointArraysUsingScreenSpace()
         {
-            Vector2 screen = new Vector2((float)this.ActualWidth, (float)this.ActualHeight); //Canvas is this size.
-            float pixelMargin = 20;
-            float left = pixelMargin / screen.X;
-            float right = 1f - left;
-            float top = pixelMargin / screen.Y;
-            float down = 1f - top;
+            //Vector2 screen = new Vector2((float)this.ActualWidth, (float)this.ActualHeight); //Canvas is this size.
+            //float pixelMargin = 5;
+            //float left = pixelMargin / screen.X;
+            //float right = 1f - left;
+            //float top = pixelMargin / screen.Y;
+            //float down = 1f - top;
 
             //TODO 
-            //float marginPercent = 0.03f;
-            //float left = marginPercent;
-            //float right = 1f - marginPercent;
-            //float top = marginPercent;
-            //float down = 1f - marginPercent;
+            float marginPercent = 0.02f;
+            float left = marginPercent;
+            float right = 1f - marginPercent;
+            float top = marginPercent;
+            float down = 1f - marginPercent;
 
             //Positions
             Vector2 middleCenter = new Vector2(.5f, .5f);
@@ -140,29 +139,6 @@ namespace GazeStream.Windows
             points9[8] = middleLeft;
         }
 
-        private void ForceTopmost()
-        {
-            if (!this.IsVisible)
-            {
-                this.Show();
-            }
-
-            this.WindowState = WindowState.Maximized;
-            this.Activate();
-            this.Topmost = true;  // temporarily
-            this.Topmost = false; // reset
-            this.Focus();
-        }
-
-        void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            Debug.WriteLine("Landed on Calibration Page. Loading RadioButton settings.");
-            InitializePointArraysUsingScreenSpace();
-            ResetPage();
-            LoadToggleOptions();
-            Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
-        }
-
         void OnClosed(object sender, EventArgs e)
         {
             Debug.WriteLine("Calibration Window closed. Loading RadioButton settings.");
@@ -193,18 +169,6 @@ namespace GazeStream.Windows
             CalibrationPointProgress01 = (float)percent / 100f;
             currentPoint?.UpdateCalibrationPoint(CalibrationPointProgress01);
             //Debug.WriteLine($"process: {index},{percent}");
-        }
-
-        public static void OnGazeCallback(ref _7i_eye_data_ex_t eyes, IntPtr context)
-        {
-            Debug.WriteLine($"Gaze Origin: X {eyes.recom_gaze.gaze_origin.x} Z {eyes.recom_gaze.gaze_origin.z} " +
-                $"GazeOriginLeft: X {eyes.left_gaze.gaze_origin.x} Z {eyes.left_gaze.gaze_origin.z} " +
-                $"PupilDistLeft: {eyes.left_pupil.pupil_distance} " +
-                $"LeftDiameter: {eyes.left_pupil.pupil_diameter} " +
-                $"LeftDmm: {eyes.left_pupil.pupil_diameter_mm}");
-            if (eyes.left_pupil.pupil_center.x <= 0 || eyes.right_pupil.pupil_center.x <= 0) return;
-            eyesData = eyes;
-            //Debug.WriteLine($"Pupil Mm: {eyes.right_pupil.pupil_diameter_mm} PupilPos: {eyes.right_pupil.pupil_center} PupilDist: {eyes.right_pupil.pupil_distance}");
         }
 
         public static void finish_callback(int index, int error, IntPtr context)
@@ -247,6 +211,71 @@ namespace GazeStream.Windows
             }
         }
 
+        public void SaveCalibration1_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("Save Calibration was clicked");
+            if (!GazeManager.I.IsJoacoDevice) return;
+            Debug.WriteLine("Save Calibration was a Joaco device");
+
+            Settings.I.Calibration1.Value = GazeManager.I.joacoA11.coefficient.buf;
+        }
+
+        public void SaveCalibration2_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            Settings.I.Calibration2.Value = GazeManager.I.joacoA11.coefficient.buf;
+        }
+
+        public void SaveCalibration3_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            Settings.I.Calibration3.Value = GazeManager.I.joacoA11.coefficient.buf;
+        }
+
+        public void SaveCalibration4_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            Settings.I.Calibration4.Value = GazeManager.I.joacoA11.coefficient.buf;
+        }
+
+        public void SaveCalibration5_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            Settings.I.Calibration5.Value = GazeManager.I.joacoA11.coefficient.buf;
+        }
+
+        public void LoadCalibration1_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("Load Calibration was clicked");
+            if (!GazeManager.I.IsJoacoDevice) return;
+            Debug.WriteLine("Load Calibration was a Joaco device");
+            GazeManager.I.joacoA11.StartTrackingWithCoefficient(Settings.I.Calibration1.Value);
+        }
+
+        public void LoadCalibration2_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            GazeManager.I.joacoA11.StartTrackingWithCoefficient(Settings.I.Calibration2.Value);
+        }
+
+        public void LoadCalibration3_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            GazeManager.I.joacoA11.StartTrackingWithCoefficient(Settings.I.Calibration3.Value);
+        }
+
+        public void LoadCalibration4_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            GazeManager.I.joacoA11.StartTrackingWithCoefficient(Settings.I.Calibration4.Value);
+        }
+
+        public void LoadCalibration5_Click(object sender, RoutedEventArgs e)
+        {
+            if (!GazeManager.I.IsJoacoDevice) return;
+            GazeManager.I.joacoA11.StartTrackingWithCoefficient(Settings.I.Calibration5.Value);
+        }
+
         public void Back_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
@@ -282,16 +311,17 @@ namespace GazeStream.Windows
 
             try
             {
-                DisableButtons();
-                if (!TryConnectEyetrackerDevice())
+
+                if (!GazeManager.I.joacoA11.IsConnected)
                 {
                     CancelCalibration();
                     return;
                 }
 
+                DisableButtons();
                 await FadeText.ShowMessage("Estos son tus ojos.", .5, 2, token);
                 await ShowEyeDisplay(token);
-                await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2, token);          
+                await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2, token);
                 await CalibrationTask(pointsArrayIndex, eyes, token);
             }
             catch
@@ -331,7 +361,7 @@ namespace GazeStream.Windows
             {
                 while (!tcs.Task.IsCompleted)
                 {
-                    EyeDisplay.UpdateEyeDisplay(eyesData);
+                    EyeDisplay.UpdateEyeDisplay(GazeDeviceA11.eyesData);
                     await Task.Delay(16, token);
                     timer += 16;
                     if (timer > timeoutMs)
@@ -348,59 +378,6 @@ namespace GazeStream.Windows
                 EyeDisplay.Visibility = Visibility.Collapsed;
             }
         }
-
-        public bool TryConnectEyetrackerDevice()
-        {
-            Disconnect();
-            int startResult = ASeeTracker._7i_start(AppPaths.EyetrackerConfigPath);
-            ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
-
-
-            if (startResult == 0)
-            {
-                GlobalEvents.OnEyetrackerConnected.Invoke();
-                ErrorText.Text = "";
-                Debug.WriteLine("Joaco Device connected.");
-                UpdateCoefficient();
-                int startTrackingResult = ASeeTracker._7i_start_tracking(ref coefficient);
-                Debug.WriteLine("Start tracking result: " + startTrackingResult);
-                return true;
-            }
-            else
-            {
-                GlobalEvents.OnEyetrackerConnectionFailed.Invoke();
-                ErrorText.Text = "¡Algo salió mal! No fue posible iniciar el dispositivo Joaco.";
-                Debug.WriteLine("Couldn't connect to Joaco Device. Are you using the correct SDK?");
-                return false;
-            }
-        }
-
-        void UpdateCoefficient()
-        {
-            coefficient = new _7i_coefficient_t();
-            coefficient.buf = Settings.I.LastCalibrationBuff.Value;
-            Debug.WriteLine("Las calibration buff: " + coefficient.buf.Length);
-
-            if (coefficient.buf == null || coefficient.buf.Length == 0)
-            {
-
-                coefficient.buf = GetDefaultCalibrationBuff();
-                Debug.WriteLine("coe2 = " + coefficient.buf);
-            }
-        }
-
-        public byte[] GetDefaultCalibrationBuff()
-        {
-            //CALIBRACIÓN PARA EL SDK ANTERIOR
-            //byte[] defaultCalibration = new byte[] { 141, 19, 0, 0, 193, 134, 1, 0, 0, 0, 0, 192, 226, 172, 35, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 48, 50, 52, 48, 57, 48, 52, 95, 49, 48, 50, 52, 95, 67, 79, 77, 80, 85, 84, 69, 67, 72, 65, 78, 71, 69, 0, 0, 0, 0, 0, 85, 85, 85, 60, 247, 18, 122, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 249, 64, 102, 102, 118, 64, 72, 225, 170, 63, 0, 0, 0, 0, 208, 151, 246, 188, 88, 153, 129, 191, 92, 73, 175, 19, 134, 192, 219, 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 235, 122, 182, 93, 82, 149, 63, 89, 151, 138, 178, 46, 97, 246, 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 178, 79, 181, 119, 71, 8, 219, 63, 210, 216, 56, 49, 140, 129, 246, 63, 51, 51, 51, 51, 51, 51, 31, 64, 205, 204, 204, 204, 204, 204, 16, 64, 102, 102, 102, 102, 102, 102, 245, 63, 205, 204, 204, 204, 204, 204, 20, 64, 0, 0, 0, 0, 0, 0, 240, 63, 141, 19, 0, 0, 193, 134, 1, 0, 0, 0, 0, 96, 24, 111, 33, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 48, 50, 52, 48, 57, 48, 52, 95, 49, 48, 50, 52, 95, 67, 79, 77, 80, 85, 84, 69, 67, 72, 65, 78, 71, 69, 0, 0, 0, 0, 0, 85, 85, 85, 60, 247, 18, 122, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 153, 249, 64, 102, 102, 118, 64, 72, 225, 170, 63, 0, 0, 0, 0, 64, 63, 224, 125, 43, 109, 123, 191, 33, 27, 133, 108, 104, 59, 221, 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54, 166, 81, 227, 240, 68, 189, 191, 246, 178, 138, 45, 169, 170, 244, 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 237, 249, 60, 24, 182, 114, 222, 63, 97, 121, 255, 70, 254, 108, 224, 63, 51, 51, 51, 51, 51, 51, 31, 64, 205, 204, 204, 204, 204, 204, 16, 64, 102, 102, 102, 102, 102, 102, 245, 63, 205, 204, 204, 204, 204, 204, 20, 64, 0, 0, 0, 0, 0, 0, 240, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-            //CALIBRACIÓN PARA LA ÚLTIMA VERSIÓN DEL SDK
-            byte[] defaultCalibration = new byte[] { 232, 3, 0, 0, 232, 3, 0, 0, 0, 0, 0, 192, 116, 254, 35, 64, 0, 0, 0, 192, 116, 254, 35, 64, 0, 0, 0, 0, 0, 0, 240, 63, 0, 0, 0, 0, 0, 0, 240, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 48, 50, 53, 49, 50, 48, 49, 95, 50, 48, 52, 56, 95, 80, 79, 76, 89, 83, 67, 82, 69, 69, 78, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 89, 153, 167, 236, 215, 179, 63, 121, 221, 221, 34, 55, 30, 96, 191, 190, 96, 71, 181, 178, 43, 31, 64, 184, 207, 181, 235, 139, 243, 27, 64, 133, 235, 81, 184, 30, 133, 245, 63, 0, 0, 0, 0, 0, 0, 0, 0, 101, 125, 56, 130, 105, 117, 105, 64, 1, 18, 37, 139, 149, 111, 71, 64, 126, 123, 102, 35, 0, 186, 128, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 154, 188, 27, 187, 62, 99, 239, 222, 214, 191, 70, 123, 128, 144, 40, 18, 186, 63, 196, 21, 108, 65, 96, 85, 187, 63, 24, 156, 213, 137, 103, 178, 99, 63, 0, 0, 0, 0, 0, 0, 178, 188, 234, 228, 10, 186, 10, 150, 228, 191, 177, 79, 88, 34, 116, 71, 150, 63, 250, 228, 129, 144, 132, 148, 192, 63, 99, 144, 120, 218, 62, 250, 167, 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 247, 230, 60, 193, 60, 89, 223, 63, 63, 77, 143, 200, 60, 125, 240, 63, 51, 51, 51, 51, 51, 51, 31, 64, 205, 204, 204, 204, 204, 204, 16, 64, 102, 102, 102, 102, 102, 102, 245, 63, 205, 204, 204, 204, 204, 204, 20, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 232, 3, 0, 0, 232, 3, 0, 0, 0, 0, 0, 192, 116, 254, 35, 64, 0, 0, 0, 192, 116, 254, 35, 64, 0, 0, 0, 0, 0, 0, 240, 63, 0, 0, 0, 0, 0, 0, 240, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 48, 50, 53, 49, 50, 48, 49, 95, 50, 48, 52, 56, 95, 80, 79, 76, 89, 83, 67, 82, 69, 69, 78, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 0, 0, 0, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 113, 26, 35, 234, 8, 230, 4, 192, 154, 74, 5, 134, 222, 98, 241, 191, 118, 50, 243, 81, 77, 51, 31, 64, 11, 81, 223, 251, 141, 119, 15, 64, 66, 21, 161, 179, 66, 51, 245, 63, 0, 0, 0, 0, 0, 0, 0, 0, 139, 98, 8, 17, 123, 128, 112, 64, 245, 133, 254, 6, 35, 30, 72, 64, 233, 239, 77, 178, 148, 183, 128, 192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 177, 60, 195, 60, 27, 139, 1, 210, 216, 191, 11, 193, 49, 195, 156, 134, 167, 63, 96, 95, 32, 175, 199, 47, 129, 63, 235, 33, 114, 64, 151, 158, 170, 63, 0, 0, 0, 0, 0, 0, 130, 188, 76, 206, 250, 111, 59, 35, 234, 191, 112, 23, 134, 219, 177, 2, 165, 63, 144, 55, 217, 165, 239, 232, 115, 191, 243, 140, 241, 185, 232, 80, 184, 191, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 221, 242, 10, 34, 160, 9, 215, 191, 213, 131, 141, 2, 236, 23, 238, 63, 51, 51, 51, 51, 51, 51, 31, 64, 205, 204, 204, 204, 204, 204, 16, 64, 102, 102, 102, 102, 102, 102, 245, 63, 205, 204, 204, 204, 204, 204, 20, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-            Debug.WriteLine(defaultCalibration.Length);
-            return defaultCalibration;
-        }
-
 
         async Task CalibrationTask(int pointsArrayIndex, int eyes, CancellationToken token)
         {
@@ -451,15 +428,13 @@ namespace GazeStream.Windows
             //En caso de interrupción
             if (pointIndex != pointCount + 1)
             {
-                result = ASeeTracker._7i_cancel_calibration();
-                Console.WriteLine("_7i_cancel_calibration: {0:D}", result);
                 CancelCalibration();
             }
 
             //En caso de exito
             int calibration_success = ASeeTracker._7i_compute_calibration(ref coefficient);
-            Debug.WriteLine($"_7i_compute_calibration: {calibration_success}");
             result = ASeeTracker._7i_complete_calibration();
+            Debug.WriteLine($"_7i_compute_calibration: {calibration_success}");
             Debug.WriteLine($"_7i_complete_calibration: {result}");
 
             //Puntaje para la calibración de cada ojo.
@@ -475,7 +450,7 @@ namespace GazeStream.Windows
             if (0 == calibration_success)
             {
                 Debug.WriteLine("Calibration success!");
-                Disconnect();
+                GazeManager.I.joacoA11.StartTrackingWithCoefficient(coefficient.buf);
                 await FadeText.ShowMessage("¡La calibración fue exitosa!", .5, 2, token);
                 Settings.I.LastEyesOption.Value = eyes;
                 Settings.I.LastPointsOption.Value = pointsArrayIndex;
@@ -514,9 +489,10 @@ namespace GazeStream.Windows
             Debug.WriteLine("Physical monitor size is: " + sizeInInches);
 
             string name = $"Preset_{screenSize.X}_{screenSize.Y}";
-            EyesData eyes = new EyesData(eyesData);
-            CalibrationPreset preset = new CalibrationPreset(name, scoreLeft, scoreRight, screenSize, /*sizeInInches,*/ gazeOrigin, eyes,points, eyesOption, buff);
-            CalibrationPresets.I.AddPreset(preset);            
+            EyesData eyes = new EyesData(GazeDeviceA11.eyesData);
+            Vector3 gazeOrigin = GazeDeviceA11.gazeOrigin;
+            CalibrationPreset preset = new CalibrationPreset(name, scoreLeft, scoreRight, screenSize, /*sizeInInches,*/ gazeOrigin, eyes, points, eyesOption, buff);
+            CalibrationPresets.I.AddPreset(preset);
         }
 
 
@@ -528,7 +504,7 @@ namespace GazeStream.Windows
             startedCancelProcess = true;
             cts.Cancel();
             ResetPage();
-            Disconnect();
+            ASeeTracker._7i_cancel_calibration();
             GlobalEvents.OnCalibrationCancel.Invoke();
             GlobalEvents.OnCalibrationFinished.Invoke();
             isCalibrating = false;
@@ -543,10 +519,13 @@ namespace GazeStream.Windows
         private void ResetPage()
         {
             Debug.WriteLine("Resetting Page");
-            //isCalibrating = false;
             pointComplete = false;
             CloseRestartCalibrationWindow(null, null);
+            Debug.WriteLine("1");
+
             DestroyCurrentCalibrationPoint();
+            Debug.WriteLine("2");
+
             EyeDisplay.Visibility = Visibility.Collapsed;
             EnableButtons();
             FadeText.HideMessage();
@@ -577,36 +556,15 @@ namespace GazeStream.Windows
             points.Clear();
         }
 
-        public void Disconnect()
-        {
-            try
-            {
-                Debug.WriteLine("Cancel calibration 1");
-                ASeeTracker._7i_cancel_calibration();
-                Debug.WriteLine("Cancel calibration 2");
-                ASeeTracker._7i_stop_tracking();
-                Debug.WriteLine("Cancel calibration 3");
-                ASeeTracker._7i_stop();
-            }
-            catch
-            {
-
-            }
-            finally
-            {
-                Debug.WriteLine("Cancel calibration 4");
-                ASeeTracker._7i_device_disconnect();
-                Debug.WriteLine("Cancel calibration 5");
-                GlobalEvents.OnEyetrackerDisconnected.Invoke();
-            }
-        }
-
+     
         void DisableButtons()
         {
             SettingsPanel.IsHitTestVisible = false;
             SettingsPanel.Visibility = Visibility.Collapsed;
             CloseButton.IsHitTestVisible = false;
             CloseButton.Visibility = Visibility.Collapsed;
+            BordeImantado.Visibility = Visibility.Collapsed;
+            BordePuntero.Visibility = Visibility.Collapsed;
         }
 
         void EnableButtons()
@@ -615,6 +573,8 @@ namespace GazeStream.Windows
             SettingsPanel.Visibility = Visibility.Visible;
             CloseButton.IsHitTestVisible = true;
             CloseButton.Visibility = Visibility.Visible;
+            BordeImantado.Visibility = Visibility.Visible;
+            BordePuntero.Visibility = Visibility.Visible;
         }
 
 

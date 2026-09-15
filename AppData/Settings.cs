@@ -58,13 +58,21 @@ namespace GazeStream.AppData
         public const string INTERPOLATION_FILTER = "InterpolationFilter";
         public const string KALMAN_FILTER_OPTION = "KalmanFilterOption";
         public const string JOACO_SMOOTH_FILTER_OPTION = "InvensunSmoothValueOption";
-        public const string EDGE_BIAS = "EdgeBias";
+        public const string EDGE_BIAS = "EdgeBiasPixels";
         public const string CLAMP_BUBBLE = "ClampBubble";
+        public const string CLAMP_DISTANCE = "ClampDistance";
+
 
         public const string LAST_CALIBRATION = "LastCalibration";
         public const string LAST_CALIBRATION_EYES_OPTION = "LastCalibrationEyesOption";
         public const string LAST_CALIBRATION_POINTS_OPTION = "LastCalibrationPointsOption";
         public const string SAVE_CALIBRATION_AS_PRESET = "SaveCalibrationAsPresetToggle";
+        public const string CALIBRATION_SLOT_1 = "CalibrationSlot1";
+        public const string CALIBRATION_SLOT_2 = "CalibrationSlot2";
+        public const string CALIBRATION_SLOT_3 = "CalibrationSlot3";
+        public const string CALIBRATION_SLOT_4 = "CalibrationSlot4";
+        public const string CALIBRATION_SLOT_5 = "CalibrationSlot5";
+        public const string DYNAMIC_CALIBRATION_TOGGLE = "DynamicCalibrationToggle";
         public const string CALIBRATION_POINT_STYLE = "CalibrationPointStyle";
         public const string CALIBRATION_POINT_CUSTOM_IMAGE = "CalibrationPointCustomImagePath";
 
@@ -366,6 +374,8 @@ namespace GazeStream.AppData
         Joaco,
         [Description("Intelligaze")]
         Intelligaze,
+        [Description("Skyle")]
+        Skyle,
         [Description("Otro")]
         Otro,
     }
@@ -429,11 +439,19 @@ namespace GazeStream.AppData
         public IntSetting KalmanFilter { get; } = new IntSetting(SettingKeys.KALMAN_FILTER, 20, new Int2(0, 100));
         public FloatSetting InterpolationFilter { get; } = new FloatSetting(SettingKeys.INTERPOLATION_FILTER, 0.05f, new Float2(0, 100));
         public KalmanFilterOptionSetting KalmanFilterOption { get; } = new KalmanFilterOptionSetting(SettingKeys.KALMAN_FILTER_OPTION, Percent.Twenty);
-        public FloatSetting EdgeBiasFilter { get; } = new FloatSetting(SettingKeys.EDGE_BIAS, 0, new Float2(0f, 1f));
+        public IntSetting EdgeBiasFilter { get; } = new IntSetting(SettingKeys.EDGE_BIAS, 0);
         public BoolSetting ClampBubblePosition { get; } = new BoolSetting(SettingKeys.CLAMP_BUBBLE, true);
+        public IntSetting ClampDistance { get; } = new IntSetting(SettingKeys.CLAMP_DISTANCE, 10);
+
 
         //CALIBRATION 
         public LastCalibration LastCalibrationBuff { get; } = new LastCalibration(SettingKeys.LAST_CALIBRATION, new byte[0]);                                 //byte[] Calibration.buff
+        public LastCalibration Calibration1 { get; } = new LastCalibration(SettingKeys.CALIBRATION_SLOT_1, new byte[0]);
+        public LastCalibration Calibration2 { get; } = new LastCalibration(SettingKeys.CALIBRATION_SLOT_2, new byte[0]);
+        public LastCalibration Calibration3 { get; } = new LastCalibration(SettingKeys.CALIBRATION_SLOT_3, new byte[0]);
+        public LastCalibration Calibration4 { get; } = new LastCalibration(SettingKeys.CALIBRATION_SLOT_4, new byte[0]);
+        public LastCalibration Calibration5 { get; } = new LastCalibration(SettingKeys.CALIBRATION_SLOT_5, new byte[0]);
+        public BoolSetting DynamicCalibrationToggle { get; } = new BoolSetting(SettingKeys.DYNAMIC_CALIBRATION_TOGGLE, false);
         public IntSetting LastEyesOption { get; } = new IntSetting(SettingKeys.LAST_CALIBRATION_EYES_OPTION, 0);         //Index de la opción
         public IntSetting LastPointsOption { get; } = new IntSetting(SettingKeys.LAST_CALIBRATION_POINTS_OPTION, 0);     //Index de la opción
         public BoolSetting SaveCalibrationAsPresetToggle { get; } = new BoolSetting(SettingKeys.SAVE_CALIBRATION_AS_PRESET, false);
@@ -510,6 +528,7 @@ namespace GazeStream.AppData
             RegisterSettings();
             LoadAllSettings();
             HookProfileSettings();
+            ClampDistance.OnValueChanged += OnClampDistanceChanged;
             //CreateDocumentationFile(); //TODO: Elegir un directorio para generarlo automáticamente.
         }
 
@@ -533,6 +552,12 @@ namespace GazeStream.AppData
         {
             //TODO: Los profiles son una clase especial de Setting que responde a cambios en otros settings. Si escalan hacer una clase aparte. 
             FilterProfile.HookProfileSettings();
+        }
+
+        void OnClampDistanceChanged(int value)
+        {
+            if (value <= EdgeBiasFilter.Value) return;
+            EdgeBiasFilter.Value = ClampDistance.Value;
         }
 
         private void RegisterSettings()
@@ -581,8 +606,15 @@ namespace GazeStream.AppData
             RegisterSetting(KalmanFilterOption);
             RegisterSetting(EdgeBiasFilter);
             RegisterSetting(ClampBubblePosition);
+            RegisterSetting(ClampDistance);
 
             RegisterSetting(LastCalibrationBuff);
+            RegisterSetting(Calibration1);
+            RegisterSetting(Calibration2);
+            RegisterSetting(Calibration3);
+            RegisterSetting(Calibration4);
+            RegisterSetting(Calibration5);
+            RegisterSetting(DynamicCalibrationToggle);
             RegisterSetting(LastEyesOption);
             RegisterSetting(LastPointsOption);
             RegisterSetting(SaveCalibrationAsPresetToggle);
@@ -1485,13 +1517,14 @@ namespace GazeStream.AppData
             get { return valueCache; }
             set
             {
-                if (EqualityComparer<byte[]>.Default.Equals(valueCache, value)) return;
+                //if (EqualityComparer<byte[]>.Default.Equals(valueCache, value)) return;
                 valueCache = value;
                 SaveSetting();
                 NotifyPropertyChanged(nameof(Value));
                 OnChanged?.Invoke();
                 OnValueChanged?.Invoke(valueCache);
-                GlobalEvents.OnSettingChanged.Invoke(Descriptor.saveKey);
+                //COMENTADO PARA NO ENVIARLO POR EL WEBSOCKET. NO TIENE SENTIDO PARA ESTE VALOR Y ES BASTANTE TEXTO. 
+                //GlobalEvents.OnSettingChanged.Invoke(Descriptor.saveKey);
             }
         }
         SettingDescriptor descriptor;

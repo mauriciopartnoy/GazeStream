@@ -32,6 +32,15 @@ namespace GazeStream.AppData
             }
         }
 
+        public static string EyetrackerConfigFilePath
+        {
+            get
+            {
+                string path = Path.Combine(EyetrackerPath, "config", "Configs.dat");
+                return path;
+            }
+        }
+
         public static string CustomPath
         {
             get

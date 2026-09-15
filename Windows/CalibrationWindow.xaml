@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GazeStream.Windows"
         xmlns:controls="clr-namespace:GazeStream.Controls"
+        xmlns:converters ="clr-namespace:GazeStream.Converters"
         mc:Ignorable="d"
         Title="CalibrationWindow"  
         WindowState="Maximized"
@@ -35,18 +36,38 @@
             <Setter Property="Height" Value="55"/>
             <Setter Property="Width" Value="140"/>
             <Setter Property="Margin" Value="10"/>
+
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{StaticResource SeriousButton}"
-                                BorderBrush="White"
-                                BorderThickness="1"
-                                CornerRadius="12"
-                                Padding="10">
+                        <Border x:Name="ButtonBorder"
+                        Background="{StaticResource SeriousButton}"
+                        BorderBrush="White"
+                        BorderThickness="1"
+                        CornerRadius="12"
+                        Padding="10">
+
                             <ContentPresenter
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"/>
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
                         </Border>
+
+                        <ControlTemplate.Triggers>
+
+                            <EventTrigger RoutedEvent="Button.Click">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <ColorAnimation
+                    Storyboard.TargetName="ButtonBorder"
+                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                    To="#FFA0D992"
+                    Duration="0:0:0.08"
+                    AutoReverse="True"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -55,9 +76,6 @@
     </Window.Resources>
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="{StaticResource SeriousBackground}">
 
-        <Button x:Name="CloseButton" Background="Red" Click="Back_Click" Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Top">
-            <TextBlock Text="X" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
-        </Button>
         <!-- Overlay canvas -->
         <Canvas x:Name="MainCanvas"
                 Background="Transparent"
@@ -65,6 +83,14 @@
 
         <!-- Eye display -->
         <controls:EyeDisplay x:Name="EyeDisplay" Width="484" Height="484"/>
+
+        <Border x:Name="BordePuntero" BorderThickness="2" BorderBrush="Green" Margin="{Binding ClampDistance.Value}"/>
+        <Border x:Name="BordeImantado" BorderThickness="2" BorderBrush="Red" Margin="{Binding EdgeBiasFilter.Value}"/>
+
+        <Button x:Name="CloseButton" Background="Red" Click="Back_Click" Width="30" Height="30" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <TextBlock Text="X" Foreground="White" FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"/>
+        </Button>
+
 
         <!-- Settings panel -->
         <Border x:Name="SettingsPanel"
@@ -80,6 +106,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -247,14 +274,118 @@
                     <Button x:Name="FastCalibList" 
              Style="{StaticResource CalibrationButton}"
              Click="BestCalibration_Click">
-                        <TextBlock Text="Calibración Automática con Database"
+                        <TextBlock Text="Calibración Automática"
        TextWrapping="Wrap"
        TextAlignment="Center"/>
                     </Button>
                 </StackPanel>
 
                 <StackPanel Grid.Row="4" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+                    <TextBlock Text="Guardar/Cargar Calibración"  FontWeight="Bold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center" Margin="0,5,0,0"/>
+                    <UniformGrid Columns="5" HorizontalAlignment="Stretch">
+
+                        <!-- Slot 1 -->
+                        <Grid Margin="5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Style="{StaticResource CalibrationButton}" Click="LoadCalibration1_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Calibración 1" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Calibration1.Value, Converter={StaticResource CalibrationSlotTextConverter}}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="1" Style="{StaticResource CalibrationButton}" Margin="0,0,0,0" Click="SaveCalibration1_Click">
+                                <TextBlock Text="Guardar" HorizontalAlignment="Center"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Slot 2 -->
+                        <Grid Margin="5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Style="{StaticResource CalibrationButton}" Click="LoadCalibration2_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Calibración 2" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Calibration2.Value, Converter={StaticResource CalibrationSlotTextConverter}}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="1" Style="{StaticResource CalibrationButton}" Margin="0,0,0,0" Click="SaveCalibration2_Click">
+                                <TextBlock Text="Guardar" HorizontalAlignment="Center"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Slot 3 -->
+                        <Grid Margin="5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Style="{StaticResource CalibrationButton}" Click="LoadCalibration3_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Calibración 3" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Calibration3.Value, Converter={StaticResource CalibrationSlotTextConverter}}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="1" Style="{StaticResource CalibrationButton}" Margin="0,0,0,0" Click="SaveCalibration3_Click">
+                                <TextBlock Text="Guardar" HorizontalAlignment="Center"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Slot 4 -->
+                        <Grid Margin="5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Style="{StaticResource CalibrationButton}" Click="LoadCalibration4_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Calibración 4" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Calibration4.Value, Converter={StaticResource CalibrationSlotTextConverter}}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="1" Style="{StaticResource CalibrationButton}" Margin="0,0,0,0" Click="SaveCalibration4_Click">
+                                <TextBlock Text="Guardar" HorizontalAlignment="Center"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Slot 5 -->
+                        <Grid Margin="5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0" Style="{StaticResource CalibrationButton}" Click="LoadCalibration5_Click">
+                                <StackPanel>
+                                    <TextBlock Text="Calibración 5" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Calibration5.Value, Converter={StaticResource CalibrationSlotTextConverter}}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="1" Style="{StaticResource CalibrationButton}" Margin="0,0,0,0" Click="SaveCalibration5_Click">
+                                <TextBlock Text="Guardar" HorizontalAlignment="Center"/>
+                            </Button>
+                        </Grid>
+                    </UniformGrid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Grid.Row="5" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,0">
                     <TextBlock Grid.Row="3" Text="Filtros"  FontWeight="Bold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center" Margin="0,5,0,0"/>
+
+
 
                     <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
@@ -264,10 +395,64 @@
 
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Edge Bias" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        <Slider x:Name="EdgeSlider" Grid.Column="1" Width="150" Minimum="0" Maximum="0.1" IsSnapToTickEnabled="True" TickFrequency="0.01" Value="{Binding EdgeBiasFilter.Value}"/>
-                        <TextBlock Text="{Binding Value, ElementName=EdgeSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Filtro Kalman" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Slider x:Name="KalmanSlider" Grid.Column="1" Width="150" Minimum="0" Maximum="30" IsSnapToTickEnabled="True" TickFrequency="0.1" Value="{Binding KalmanFilter.Value}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=KalmanSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Left"/>
                     </Grid>
+
+                    <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Filtro Joaco" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Slider x:Name="JoacoSlider" Grid.Column="1" Width="150" Minimum="1" Maximum="10" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding SmoothFilter.Value}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=JoacoSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Left"/>
+                    </Grid>
+
+                    <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Borde Imantado" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Slider x:Name="EdgeSlider" Grid.Column="1" Width="150" Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding EdgeBiasFilter.Value}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=EdgeSlider, StringFormat={}{0:F3}}" Foreground="White" HorizontalAlignment="Left"/>
+                    </Grid>
+
+
+                    <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48*" />
+                            <ColumnDefinition Width="178*"/>
+                            <ColumnDefinition Width="227*" />
+                            <ColumnDefinition Width="227*" />
+
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Límite de Puntero" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.ColumnSpan="2"/>
+                        <Slider x:Name="ClampSlider" Grid.Column="2" Width="150" Minimum="0" Maximum="100" IsSnapToTickEnabled="True" TickFrequency="1" Value="{Binding ClampDistance.Value}" Margin="38,0,38,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=ClampSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Left" Grid.ColumnSpan="2" Margin="226,0,0,0"/>
+                    </Grid>
+                    <Grid Margin="170,5,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Activar Límite de Puntero" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <ToggleButton Grid.Column="1" Style="{StaticResource ModernToggleStyle}" IsChecked="{Binding ClampBubblePosition.Value, Mode=TwoWay}" HorizontalAlignment="Left" Margin="35,0"/>
+                    </Grid>
+
+
 
                     <Grid Margin="170,5,0,0" HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
@@ -277,8 +462,8 @@
 
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Clamp" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                        <ToggleButton Grid.Column="1" Style="{StaticResource ModernToggleStyle}" IsChecked="{Binding ClampBubblePosition.Value, Mode=TwoWay}" HorizontalAlignment="Left" />
+                        <TextBlock Text="Calibración Dinámica (Experimental)" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <ToggleButton Grid.Column="1" Style="{StaticResource ModernToggleStyle}" IsChecked="{Binding DynamicCalibrationToggle.Value, Mode=TwoWay}" HorizontalAlignment="Left" Margin="35,0" />
                     </Grid>
                 </StackPanel>
 

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <None Remove="Resources\Icons\adduser.png" />
+    <None Remove="Resources\Icons\arrows-clockwise.png" />
     <None Remove="Resources\Icons\back.png" />
     <None Remove="Resources\Icons\backward.png" />
     <None Remove="Resources\Icons\calib.png" />
@@ -36,6 +37,11 @@
     <None Remove="Resources\Icons\check.png" />
     <None Remove="Resources\Icons\circle-fill.png" />
     <None Remove="Resources\Icons\circle.png" />
+    <None Remove="Resources\Icons\cloud-arrow-down.png" />
+    <None Remove="Resources\Icons\cloud-arrow-up.png" />
+    <None Remove="Resources\Icons\cloud-check.png" />
+    <None Remove="Resources\Icons\coffee.png" />
+    <None Remove="Resources\Icons\command.png" />
     <None Remove="Resources\Icons\corners-in.png" />
     <None Remove="Resources\Icons\corners-out.png" />
     <None Remove="Resources\Icons\crosshair.png" />
@@ -142,6 +148,9 @@
     <Resource Include="Resources\Icons\adduser.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Resources\Icons\arrows-clockwise.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Resources\Icons\back.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
@@ -212,6 +221,21 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\Icons\circle.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cloud-arrow-down.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cloud-arrow-up.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\cloud-check.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\coffee.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Icons\command.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Resources\Icons\corners-in.png">
@@ -449,13 +473,13 @@
     <None Update="libnlopt-0.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Logger.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="nlopt.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="opencv_world320.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="skylelib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="TobiiGazeCore64.dll">

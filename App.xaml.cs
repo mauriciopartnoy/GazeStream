@@ -32,7 +32,6 @@ namespace GazeStream
         public CalibrationPresets CalibrationPresets { get; private set; }
         public GazeManager GazeManager { get; private set; }
         public TrayService Tray { get; private set; }
-
         public InputSimulator InputSim { get; private set; }
         public OverlayWindow OverlayWindow { get; private set; }
         public OverlayInteraction OverlayInteraction { get; private set; }
@@ -71,15 +70,16 @@ namespace GazeStream
             base.OnStartup(e);
 
             Instance = this;
+            UIDispatcher = this.Dispatcher;
             SettingsManager = new Settings();
             SettingsManager.Initialize();
 
             SettingsManager.SampleRateHZ.Value = 60;
+           // SettingsManager.EyetrackerDevice.Value = Eyetracker_Device.Skyle; //SKYLE TEST ONLY
             LoadStartupState();
 
             InputSim = new InputSimulator();
             Tray = new TrayService();
-            UIDispatcher = this.Dispatcher;
             CalibrationPresets = new CalibrationPresets();
             GazeManager = new GazeManager();
             Websocket = new WebSocketStream();
@@ -90,11 +90,14 @@ namespace GazeStream
             OverlayInteraction = WindowManager.OpenWindow<OverlayInteraction>();
 
             //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
-            _ = UpdateApp(5000);
+            //_ = UpdateApp(5000);
         }
 
         void LoadStartupState()
         {
+#if DEBUG
+            return;
+#endif
             try
             {
                 if (Settings.I.IsStartupApp.Value)
@@ -111,6 +114,9 @@ namespace GazeStream
 
         public static void AddAppToStartup()
         {
+#if DEBUG
+            return;
+#endif
             try
             {
                 new Shortcuts().CreateShortcutForThisExe(ShortcutLocation.Startup);
@@ -203,6 +209,9 @@ namespace GazeStream
             //vpk pack --packId GazeStream --packVersion 1.0.0 --packDir ./publish
         public static async Task UpdateApp(int delay = 0)
         {
+#if DEBUG
+            return;
+#endif
             updateCts = new();
             await Task.Delay(delay, updateCts.Token);
             try

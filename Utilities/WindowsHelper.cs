@@ -447,6 +447,21 @@ namespace GazeStream.Utilities
             return new Vector2(physicalWidthInches, physicalHeightInches);
         }
 
+        public static Vector2 GetPhysicalScreenSizeInMillimetres()
+        {
+            // Get the device context of the screen
+            IntPtr hdc = GetDC(IntPtr.Zero);
+
+            // Get the physical width and height in millimeters
+            int physicalWidthMm = GetDeviceCaps(hdc, HORZSIZE);
+            int physicalHeightMm = GetDeviceCaps(hdc, VERTSIZE);
+
+            // Release the device context
+            ReleaseDC(IntPtr.Zero, hdc);
+
+            return new Vector2(physicalWidthMm, physicalHeightMm);
+        }
+
         public static void SetWindowCornerRadius(IntPtr hwnd, DWM_WINDOW_CORNER_PREFERENCE cornerPreference)
         {
             var attribute = DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE;

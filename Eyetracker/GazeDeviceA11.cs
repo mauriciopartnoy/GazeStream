@@ -7,21 +7,23 @@ using System.Numerics;
 using GazeStream.AppData;
 using GazeStream.Windows;
 using System.Text;
+using System.IO;
 public class GazeDeviceA11 : IGazeDevice
 {
     public string DeviceName => "Eyetracker Joaco A11";
     public bool IsConnected { get; private set; }
     public bool UserIsPresent => UserIsPresentStatic;
+    public GazePoint GazePoint => gazePointCache;
+    public GazePoint RawGazePoint => rawGazePointCache;
     public EyesData Eyes => eyesCache;
-
 
     GazePoint gazePointCache;
     GazePoint rawGazePointCache;
-
-    _7i_coefficient_t coefficient;
     EyesData eyesCache = new();
-    static _7i_eye_data_ex_t eyes;
+
+    public _7i_coefficient_t coefficient;
     public static _7i_eye_data_ex_t eyesData;
+    public static Vector3 gazeOrigin;
 
     static ASeeTracker.gazeCallback gazeCB = new ASeeTracker.gazeCallback(OnGazeCallback);
     static float gaze_x = 0.0f;
@@ -31,19 +33,20 @@ public class GazeDeviceA11 : IGazeDevice
     static bool gazePointChanged;
     static bool UserIsPresentStatic;
     static bool HasValidCalibration;
+    Vector2 screenSizeMillimetres;
 
-    public GazePoint GazePoint => gazePointCache;
-
-    public GazePoint RawGazePoint => rawGazePointCache;
-
-    public bool Initialize()
+    public async Task<bool> Initialize()
     {
+        screenSizeMillimetres = WindowsHelper.GetPhysicalScreenSizeInMillimetres();
         Debug.WriteLine("About to initialize Joaco.");
         int startResult = 1;
         try
         {
-            startResult = ASeeTracker._7i_start(AppPaths.EyetrackerConfigPath);
             ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+            SetCheckCalib(true);
+            SetDetectEyelid(true);
+            SetSmoothWay(0);
+            startResult = ASeeTracker._7i_start(string.Empty);
         }
         catch
         {
@@ -54,6 +57,7 @@ public class GazeDeviceA11 : IGazeDevice
         if (startResult == 0)
         {
             IsConnected = true;
+            //PreFlashData();
             GlobalEvents.OnEyetrackerConnected.Invoke();
             SetCurrentUserCalibration();
             Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
@@ -70,7 +74,73 @@ public class GazeDeviceA11 : IGazeDevice
 
     }
 
-    
+    public void SetCheckCalib(bool enable)
+    {
+        string strKey = "check_calib";
+        byte[] asciiBytes = System.Text.Encoding.ASCII.GetBytes(strKey);
+        string asciiStringFromBytes = System.Text.Encoding.ASCII.GetString(asciiBytes);
+
+        string strData = (true == enable) ? "1" : "0";
+        byte[] asciiData = System.Text.Encoding.ASCII.GetBytes(strData);
+        int ret = ASeeTracker._7i_set_data(asciiStringFromBytes, asciiStringFromBytes.Length, asciiData, asciiData.Length);
+        Console.WriteLine($"_7i_set_data(check_calib): , {ret}");
+    }
+
+    public void SetDetectEyelid(bool enable)
+    {
+        string strKey = "detect_eyelid";
+        byte[] asciiBytes = System.Text.Encoding.ASCII.GetBytes(strKey);
+        string asciiStringFromBytes = System.Text.Encoding.ASCII.GetString(asciiBytes);
+
+        string strData = (true == enable) ? "1" : "0";
+        byte[] asciiData = System.Text.Encoding.ASCII.GetBytes(strData);
+        int ret = ASeeTracker._7i_set_data(asciiStringFromBytes, asciiStringFromBytes.Length, asciiData, asciiData.Length);
+        Console.WriteLine($"_7i_set_data(detect_eyelid): , {ret}");
+    }
+
+    public void SetSmoothWay(int way)
+    {
+        if (way < 0 || way > 2)
+        {
+            return;
+        }
+
+        string[] strData = new string[3];
+        strData[0] = "0";
+        strData[1] = "1";
+        strData[2] = "2";
+
+        string strKey = "smoothWay";
+        byte[] asciiBytes = System.Text.Encoding.ASCII.GetBytes(strKey);
+        string asciiStringFromBytes = System.Text.Encoding.ASCII.GetString(asciiBytes);
+
+        byte[] asciiData = System.Text.Encoding.ASCII.GetBytes(strData[way]);
+        int ret = ASeeTracker._7i_set_data(asciiStringFromBytes, asciiStringFromBytes.Length, asciiData, asciiData.Length);
+        Console.WriteLine($"_7i_set_data(smoothWay): , {ret}");
+    }
+
+    void PreFlashData()
+    {
+        string filePath = AppPaths.EyetrackerConfigFilePath;
+        if (!File.Exists(filePath))
+        {
+            File.Create(filePath);
+        }
+        FileOps.OpenDirectory(AppPaths.EyetrackerConfigPath);
+
+        FileStream fs = new FileStream(filePath, FileMode.Open);
+        int flash_size = (int)fs.Length;
+        byte[] flash_data = new byte[flash_size];
+
+        BinaryReader br = new BinaryReader(fs);
+        flash_data = br.ReadBytes(flash_size);
+        br.Close();
+
+        IntPtr ptr = Marshal.UnsafeAddrOfPinnedArrayElement(flash_data, 0);
+
+        int ret = ASeeTracker._7i_set_gazepre_flash_data(ptr, flash_size, screenSizeMillimetres.X, screenSizeMillimetres.Y);
+        Console.WriteLine($"_7i_set_gazepre_flash_data: {ret}");
+    }
 
     void SetCurrentUserCalibration()
     {
@@ -96,7 +166,7 @@ public class GazeDeviceA11 : IGazeDevice
     //Pero en caso de querer un botón mas general puede agregarse este metodo a la interfaz IGazeDevice.
     public void SetDefaultCalibration()
     {
-     
+
         coefficient = new _7i_coefficient_t();
         coefficient.buf = GetDefaultCalibrationBuff();
         ASeeTracker._7i_start_tracking(ref coefficient);
@@ -106,13 +176,7 @@ public class GazeDeviceA11 : IGazeDevice
     public void SetBestCalibrationFromPresets()
     {
         byte[] newBuff = FindBestPresetForThisDevice();
-        if (newBuff == null) return;
-        if (newBuff.Length == 0) return;
-
-        coefficient = new _7i_coefficient_t();
-        coefficient.buf = newBuff;   
-        ASeeTracker._7i_start_tracking(ref coefficient);
-        Settings.I.LastCalibrationBuff.Value = coefficient.buf;
+        StartTrackingWithCoefficient(newBuff);
     }
 
     public byte[] FindBestPresetForThisDevice()
@@ -162,18 +226,24 @@ public class GazeDeviceA11 : IGazeDevice
         return bestPreset.calibrationBuff;
     }
 
-public void SetDefaultCalibrationRight()
+    public void SetDefaultCalibrationRight()
     {
-        coefficient = new _7i_coefficient_t();
-        coefficient.buf = GetDefaultCalibrationBuffRight();
-        ASeeTracker._7i_start_tracking(ref coefficient);
-        Settings.I.LastCalibrationBuff.Value = coefficient.buf;
+        byte[] coe = GetDefaultCalibrationBuffRight();
+        StartTrackingWithCoefficient(coe);
     }
 
     public void SetDefaultCalibrationLeft()
-    {   
-        coefficient = new _7i_coefficient_t();
-        coefficient.buf = GetDefaultCalibrationBuffLeft();
+    {
+        byte[] coe = GetDefaultCalibrationBuffLeft();
+        StartTrackingWithCoefficient(coe);
+    }
+
+
+    public void StartTrackingWithCoefficient(byte[] buff)
+    {
+        if (buff == null) return;
+        if (buff.Length == 0) return;
+        coefficient.buf = buff;
         ASeeTracker._7i_start_tracking(ref coefficient);
         Settings.I.LastCalibrationBuff.Value = coefficient.buf;
     }
@@ -232,6 +302,10 @@ public void SetDefaultCalibrationRight()
 
         if (!HasValidCalibration) return;
         eyesData = eyes;
+        float xDist = (eyes.left_gaze.gaze_origin.x + eyes.right_gaze.gaze_origin.x) / 2;
+        float yDist = (eyes.left_gaze.gaze_origin.y + eyes.right_gaze.gaze_origin.y) / 2;
+        float zDist = (eyes.left_pupil.pupil_distance + eyes.right_pupil.pupil_distance) / 2;   //Este valor está en mm.
+        gazeOrigin = new Vector3(xDist, yDist, zDist);
         if (1 == _is_valid_recom_eye_gaze_point(ref eyes) && eyes.recom_gaze.gaze_point.x != -1)
         {
             //if (eyes.recom_gaze.gaze_point.x == -1) return; //-1, -1 es el valor que devuelve cuando el punto es falopa.
@@ -395,12 +469,13 @@ public void SetDefaultCalibrationRight()
     }
 
     void ShowCamera()
-    {    
-            WindowManager.OpenWindow<EyesWindow>();
+    {
+        WindowManager.OpenWindow<EyesWindow>();
     }
 
     void HideCamera()
-    {      
-            WindowManager.CloseWindow<EyesWindow>();
+    {
+        WindowManager.CloseWindow<EyesWindow>();
     }
+
 }

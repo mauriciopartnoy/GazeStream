@@ -14,6 +14,7 @@ using System.Windows;
 using GazeStream.Eyetracker;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Threading.Tasks;
 
 namespace GazeStream.Eyetracker
 {
@@ -48,7 +49,7 @@ namespace GazeStream.Eyetracker
         public GazeDeviceA11? joacoA11;
         public GazeDeviceIntelligaze intelligaze;
         public GazeDeviceTobiiInteraction tobiiInteraction;
-
+        public GazeDeviceSkyle skyle;
         public bool mouseControlEnabled => Settings.I.MouseToggle.Value;
         public bool IsCalibrating { get; private set; }
 
@@ -169,15 +170,19 @@ namespace GazeStream.Eyetracker
                 case Eyetracker_Device.Ninguno:
                     break;
                 case Eyetracker_Device.Joaco:
-                    joacoA11 = new GazeDeviceA11();
+                    if (joacoA11 == null) { joacoA11 = new GazeDeviceA11(); }
                     supportedDevices.Add(joacoA11);
                     break;
                 case Eyetracker_Device.Intelligaze:
-                    intelligaze = new GazeDeviceIntelligaze();
+                    if (intelligaze == null) { intelligaze = new GazeDeviceIntelligaze(); }
                     supportedDevices.Add(intelligaze);
                     break;
+                case Eyetracker_Device.Skyle:
+                    if (skyle == null) { skyle = new GazeDeviceSkyle(); }
+                    supportedDevices.Add(skyle);
+                    break;
                 case Eyetracker_Device.Otro:
-                    tobiiInteraction = new GazeDeviceTobiiInteraction();
+                    if (tobiiInteraction == null) { tobiiInteraction = new GazeDeviceTobiiInteraction(); }
                     supportedDevices.Add(tobiiInteraction);
                     break;
             }
@@ -245,7 +250,7 @@ namespace GazeStream.Eyetracker
                     GetNewGazePointIfValid();
                     UpdateTimeoutTimer();
                     UpdateMousePosition();
-                    //UpdateCalibrationUsingLocalDatabase();
+                    UpdateCalibrationUsingLocalDatabase();
 
                 }
 
@@ -257,6 +262,7 @@ namespace GazeStream.Eyetracker
 
         private void UpdateCalibrationUsingLocalDatabase()
         {
+            if (Settings.I.DynamicCalibrationToggle.Value == false) return;
             if (IsJoacoDevice)
             {
                 automaticCalibrationCounter++;
@@ -274,7 +280,7 @@ namespace GazeStream.Eyetracker
             {
                 if (GazeDevice == null)
                 {
-                    TryInitializeGazeDevice();
+                  await TryInitializeGazeDevice();
                 }
                 await Task.Delay(500, token);
             }
@@ -344,31 +350,40 @@ namespace GazeStream.Eyetracker
             {
                 SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
                 SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
-                SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
-                SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint, Settings.I.EdgeBiasFilter.Value);
+                //SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
             }
 
 
             //TEST FILTERS
-            //AGREGAR CLAMP PADDING
-            float padding = .005f;
             if (Settings.I.ClampBubblePosition.Value == true)
-            {             
-              SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding, 1f - padding), Math.Clamp(SmoothViewportPoint.Y, 0f + padding, 1f - padding));
+            {
+                SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint);
+                Vector2 padding = Helper.DipsToViewport01(Settings.I.ClampDistance.Value);
+                SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding.X, 1f - padding.X), Math.Clamp(SmoothViewportPoint.Y, 0f + padding.Y, 1f - padding.Y));
             }
             SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
             SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
         }
 
-        Vector2 ApplyEdgeBias(Vector2 coord, float amount)
+        Vector2 ApplyEdgeBias(Vector2 coord)
         {
-            float x = EdgeBias(coord.X, amount);
-            float y = EdgeBias(coord.Y, amount);
+            Vector2 padding = Helper.DipsToViewport01(Settings.I.EdgeBiasFilter.Value);
+            float x = coord.X;
+            float y = coord.Y;
+            if (coord.X < padding.X || coord.X > (1f - padding.X))
+            { 
+                x = EdgeBias(coord.X, .03f);            
+            }
+            if (coord.Y < padding.Y || coord.X > (1f - padding.Y))
+            {
+                y = EdgeBias(coord.Y, .03f);
+            }
             return new Vector2(x, y);
         }
 
         float EdgeBias(float t, float amount)
         {
+
             float centered = (t - 0.5f) * 2f; // -1 .. +1
             float bias = centered * centered * centered;
 
@@ -404,7 +419,7 @@ namespace GazeStream.Eyetracker
             }
         }
 
-        public void TryInitializeGazeDevice()
+        public async Task TryInitializeGazeDevice()
         {
             kalmanFilter.ResetStartingValues();
             DisconnectDevice();
@@ -416,7 +431,10 @@ namespace GazeStream.Eyetracker
             foreach (IGazeDevice device in supportedDevices)
             {
                 Debug.WriteLine("Trying to initialize: " + device.DeviceName);
-                if (device.Initialize())
+
+                bool initializeSucessful = await device.Initialize();
+
+                if (initializeSucessful)
                 {
                     GazeDevice = device;
                     OnGazeDeviceChanged?.Invoke(GazeDevice);

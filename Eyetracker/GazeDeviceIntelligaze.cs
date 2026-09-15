@@ -44,7 +44,7 @@ namespace GazeStream.Eyetracker
         Vector2 screenSize;
         bool isCalibrating;
         public bool IsStreaming { get; private set; }
-        public bool Initialize()
+        public async Task<bool> Initialize()
         {
             screenSize = Helper.GetPrimaryMonitorSize();
 

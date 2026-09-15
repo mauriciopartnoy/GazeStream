@@ -29,14 +29,16 @@ namespace GazeStream.Windows
 
         void OnGazeDeviceChanged(IGazeDevice gazeDevice)
         {
-            Debug.WriteLine("Gaze device changed.");
+            string connectedDevice = gazeDevice == null ? "No device connected." : $"{gazeDevice.DeviceName} connected.";
+            Debug.WriteLine($"Gaze device changed." + connectedDevice);
             bool isIntelligaze;
-            if (gazeDevice == null)
+            if (GazeManager.I == null || GazeManager.I.GazeDevice == null || GazeManager.I.intelligaze == null)
             {
                 isIntelligaze = false;
             }
             else
             {
+               
                 isIntelligaze = gazeDevice.DeviceName == GazeManager.I.intelligaze.DeviceName;
                 Debug.WriteLine("Gaze device changed." + gazeDevice.DeviceName + isIntelligaze);
 

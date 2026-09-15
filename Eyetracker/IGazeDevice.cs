@@ -5,7 +5,7 @@ namespace GazeStream.Eyetracker
     {
         string DeviceName { get; }
         bool IsConnected { get; }
-        bool Initialize();
+        Task<bool> Initialize();
         void Disconnect();
         void UpdateData();
         void OpenCalibrationPage();

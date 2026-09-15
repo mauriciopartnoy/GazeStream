@@ -28,7 +28,7 @@ namespace GazeStream.Eyetracker
 
 
         public EyesData Eyes { get; private set; } = new EyesData();
-        public bool Initialize()
+        public async Task<bool> Initialize()
         {
             Debug.WriteLine("Initializing Tobii Interaction");
             intlib = InteractionLibFactory.CreateInteractionLib(FieldOfUse.Interactive);
@@ -38,7 +38,7 @@ namespace GazeStream.Eyetracker
             intlib.CoordinateTransformSetOriginOffset(0, 0);
             UnsubscribeToEvents();
             SubscribeToEvents();
-            Thread.Sleep(500);
+            await Task.Delay(500);
             return HasStreamCapability();
         }
 

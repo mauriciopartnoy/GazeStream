@@ -9,5 +9,9 @@
     <converters:EnumDescriptionConverter x:Key="EnumDescriptionConverter"/>
     <converters:EnumToDisplayConverter x:Key="EnumToDisplay"/>
     <converters:BasicColorToBrushConverter x:Key="BasicColorToBrush"/>
+    <converters:CalibrationSlotTextConverter x:Key="CalibrationSlotTextConverter"/>
+    <converters:SumConverter x:Key="SumConverter"/>
+    <converters:SumToMarginConverter x:Key="SumToMarginConverter"/>
+
 
 </ResourceDictionary>

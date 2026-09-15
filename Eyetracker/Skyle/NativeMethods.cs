@@ -1,0 +1,111 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+
+namespace SkyleAvaloniaExample.Interop;
+
+/// <summary>
+/// P/Invoke surface for the skylelib shared library plus a resolver that loads
+/// the copy of the library placed next to the executable by the build.
+/// </summary>
+internal static class NativeMethods
+{
+    public const string Lib = "skylelib";
+
+    private static IntPtr _handle;
+    private static readonly object Gate = new();
+
+    static NativeMethods()
+    {
+        NativeLibrary.SetDllImportResolver(typeof(NativeMethods).Assembly,
+            (name, _, _) => name == Lib ? LibraryHandle : IntPtr.Zero);
+        Debug.WriteLine("Skyle library handle: " + LibraryHandle);
+    }
+
+    /// <summary>Loaded module handle (also used for <see cref="NativeLibrary.GetExport"/>).</summary>
+    public static IntPtr LibraryHandle
+    {
+        get
+        {
+            lock (Gate)
+            {
+                if (_handle != IntPtr.Zero) return _handle;
+                foreach (var candidate in Candidates())
+                {
+                    if (NativeLibrary.TryLoad(candidate, out _handle)) return _handle;
+                    var full = Path.Combine(AppContext.BaseDirectory, candidate);
+                    if (File.Exists(full) && NativeLibrary.TryLoad(full, out _handle)) return _handle;
+                }
+                throw new DllNotFoundException(
+                    "Could not load the skylelib native library. Build the C library and make " +
+                    "sure the shared library is copied next to the executable (see README.md).");
+            }
+        }
+    }
+
+    private static IEnumerable<string> Candidates()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            yield return "libskylelib.dylib";
+            yield return "libskylelib.0.1.0.dylib";
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            yield return "skylelib.dll";
+        }
+        else
+        {
+            yield return "libskylelib.so";
+            yield return "libskylelib.so.0.1.0";
+        }
+    }
+
+    // ---- Client lifecycle / streaming ----
+
+    [DllImport(Lib)] public static extern IntPtr skyle_client_get_instance();
+    [DllImport(Lib)] public static extern int skyle_client_set_transport(IntPtr client, ref SkyleTransportConfig cfg);
+    [DllImport(Lib)] public static extern int skyle_client_set_callbacks(IntPtr client, ref SkyleCallbackConfig cfg);
+    [DllImport(Lib)] public static extern int skyle_client_connect(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_client_disconnect(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_client_get_state(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_client_stop_background(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_client_request_version(IntPtr client);
+
+    [DllImport(Lib)] public static extern int skyle_client_enable_gaze(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
+    [DllImport(Lib)] public static extern int skyle_client_enable_positioning(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
+    [DllImport(Lib)] public static extern int skyle_client_enable_video(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
+
+    // ---- Skyle Link (transport supervisor + host control) ----
+
+    [DllImport(Lib)] public static extern void skyle_link_set_identity([MarshalAs(UnmanagedType.LPUTF8Str)] string appId, byte tier, [MarshalAs(UnmanagedType.U1)] bool usbCapable);
+    [DllImport(Lib)] public static extern void skyle_link_set_supervisor_enabled([MarshalAs(UnmanagedType.U1)] bool enabled);
+    [DllImport(Lib)] public static extern int skyle_link_get_supervisor_mode();
+    [DllImport(Lib)] [return: MarshalAs(UnmanagedType.U1)] public static extern bool skyle_client_is_local_link(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_link_send_host_control(IntPtr client, ushort controlId, byte[]? value, ushort valueLen);
+
+    // ---- macOS IOKit transport ----
+
+    [DllImport(Lib)] public static extern IntPtr skyle_transport_iokit_create(ref SkyleTransportIokitConfig cfg);
+    [DllImport(Lib)] public static extern void skyle_transport_iokit_destroy(IntPtr transport);
+    [DllImport(Lib)] public static extern IntPtr skyle_transport_iokit_get_check_callback();
+
+    // ---- Windows WinUSB transport ----
+
+    [DllImport(Lib)] public static extern IntPtr skyle_transport_usb_create(ref SkyleTransportUsbConfig cfg);
+    [DllImport(Lib)] public static extern void skyle_transport_usb_destroy(IntPtr transport);
+    [DllImport(Lib)] public static extern IntPtr skyle_transport_usb_get_check_callback();
+    [DllImport(Lib)] public static extern bool skyle_transport_usb_is_connected(ref IntPtr transport);
+    [DllImport(Lib)]public static extern bool skyle_transport_usb_device_exists(ref SkyleTransportUsbConfig cfg);
+
+    //Calibration Methods
+
+    [DllImport(Lib)] public static extern int skyle_client_start_calibration(IntPtr client, ref SkyleCalibrationConfig cfg);
+    [DllImport(Lib)] public static extern int skyle_client_collect_calibration_points(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_client_abort_calibration(IntPtr client);
+
+
+}
