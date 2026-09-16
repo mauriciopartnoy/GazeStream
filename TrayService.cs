@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Windows.Forms;
 using W = System.Windows;
 using GazeStream.Utilities;
 using GazeStream.Windows;
@@ -13,62 +14,86 @@ namespace GazeStream
     public class TrayService : IDisposable
     {
         private readonly NotifyIcon trayIcon;
+        private readonly ContextMenuStrip contextMenu;
+        private ToolStripMenuItem versionItem;
+
+        // Keep references so they can be disposed when the tray is disposed.
+        private readonly Image calibrationImg;
+        private readonly Image restartEyetrackerImg;
+        private readonly Image calibResImg;
+        private readonly Image camImg;
+        private readonly Image optionsImg;
+        private readonly Image systemImg;
 
         public TrayService()
         {
+            // Load images once.
+            calibrationImg = LoadTrayImage(
+                "pack://application:,,,/GazeStream;component/Resources/Icons/calib.png");
+
+            restartEyetrackerImg = LoadTrayImage(
+                "pack://application:,,,/GazeStream;component/Resources/Icons/arrows-clockwise.png");
+
+            calibResImg = LoadTrayImage(
+                "pack://application:,,,/GazeStream;component/Resources/Icons/carpetas.png");
+
+            camImg = LoadTrayImage(
+                "pack://application:,,,/GazeStream;component/Resources/Icons/camera.png");
+
+            optionsImg = LoadTrayImage(
+                "pack://application:,,,/GazeStream;component/Resources/Icons/eyetracker-options.png");
+
+            systemImg = LoadTrayImage(
+                "pack://application:,,,/GazeStream;component/Resources/Icons/options.png");
+
+            // Create the menu once.
+            contextMenu = BuildMenu();
+
             trayIcon = new NotifyIcon
             {
                 Icon = LoadTrayIcon(),
                 Text = "GazeStream",
                 Visible = true,
-                ContextMenuStrip = BuildMenu()
+                ContextMenuStrip = contextMenu
             };
+
             GlobalEvents.OnVersionChecked.Add(UpdateVersion);
         }
 
         private static Icon LoadTrayIcon()
         {
-            var uri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/tray5.ico",UriKind.Absolute);
-            using var stream = System.Windows.Application.GetResourceStream(uri)!.Stream;
+            var uri = new Uri(
+                "pack://application:,,,/GazeStream;component/Resources/Icons/tray5.ico",
+                UriKind.Absolute);
+
+            using var stream =
+                W.Application.GetResourceStream(uri)!.Stream;
+
             return new Icon(stream);
         }
 
-        void UpdateVersion()
+        private static Image LoadTrayImage(string resourcePath)
         {
-            Debug.WriteLine("Version update called");
-            trayIcon.ContextMenuStrip = BuildMenu();
+            var uri = new Uri(resourcePath, UriKind.Absolute);
+
+            using var stream =
+                W.Application.GetResourceStream(uri)!.Stream;
+
+            // Image.FromStream() keeps a dependency on the source stream.
+            // Clone it into a Bitmap so the resource stream can be disposed.
+            using var source = Image.FromStream(stream);
+
+            return new Bitmap(source);
         }
 
         private ContextMenuStrip BuildMenu()
         {
-            //Images
-            var calibrationUri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/calib.png", UriKind.Absolute);
-            var calibrationStream = System.Windows.Application.GetResourceStream(calibrationUri).Stream;
-            Image calibrationImg = Image.FromStream(calibrationStream);
-
-            var restartEyetrackerUri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/arrows-clockwise.png", UriKind.Absolute);
-            var restartEyetrackerStream = System.Windows.Application.GetResourceStream(restartEyetrackerUri).Stream;
-            Image restartEyetrackerImg = Image.FromStream(restartEyetrackerStream);
-
-            var calibResUri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/carpetas.png", UriKind.Absolute);
-            var calibResStream = System.Windows.Application.GetResourceStream(calibResUri).Stream;
-            Image calibResImg = Image.FromStream(calibResStream);
-
-            var camUri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/camera.png", UriKind.Absolute);
-            var camStream = System.Windows.Application.GetResourceStream(camUri).Stream;
-            Image camImg = Image.FromStream(camStream);
-
-            var optionsUri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/eyetracker-options.png", UriKind.Absolute);
-            var optionsStream = System.Windows.Application.GetResourceStream(optionsUri).Stream;
-            Image optionsImg = Image.FromStream(optionsStream);
-
-            var systemUri = new Uri("pack://application:,,,/GazeStream;component/Resources/Icons/options.png", UriKind.Absolute);
-            var systemStream = System.Windows.Application.GetResourceStream(systemUri).Stream;
-            Image systemImg = Image.FromStream(systemStream);
-
             var menu = new ContextMenuStrip();
-            string version = $"Versión {App.CurrentVersion}";
-            menu.Items.Add(version, null, Empty);
+
+            versionItem = new ToolStripMenuItem(
+                $"Versión {App.CurrentVersion}");
+
+            menu.Items.Add(versionItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Reiniciar Eyetracker", restartEyetrackerImg, OnRestartEyetracker);
             menu.Items.Add("Calibración", calibrationImg, OnCalibration);
@@ -79,12 +104,13 @@ namespace GazeStream
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Salir", null, OnExit);
 
+            menu.Font = new Font(menu.Font.FontFamily, 14f);
+
             foreach (ToolStripItem item in menu.Items)
             {
                 if (item is ToolStripMenuItem menuItem)
                 {
                     menuItem.AutoSize = false;
-                    menu.Font = new Font(menu.Font.FontFamily, 14f);
                     menuItem.Height = 48;
                     menuItem.ImageAlign = ContentAlignment.MiddleCenter;
                     menuItem.TextAlign = ContentAlignment.MiddleCenter;
@@ -94,14 +120,17 @@ namespace GazeStream
             return menu;
         }
 
-       
-
-        void Empty(object? sender, EventArgs e)
-        { 
-        
+        private void UpdateVersion()
+        {
+            Debug.WriteLine("Version update called");
+            versionItem.Text = $"Versión {App.CurrentVersion}";
         }
 
-        void OnRestartEyetracker(object? sender, EventArgs e)
+        private void Empty(object? sender, EventArgs e)
+        {
+        }
+
+        private void OnRestartEyetracker(object? sender, EventArgs e)
         {
             GazeManager.I.DisconnectDevice();
         }
@@ -118,7 +147,6 @@ namespace GazeStream
 
         private void OnCalibration(object? sender, EventArgs e)
         {
-            //DEFAULT
             if (GazeManager.I.GazeDevice == null)
             {
                 GazeManager.I.joacoA11.OpenCalibrationPage();
@@ -137,6 +165,7 @@ namespace GazeStream
         {
             WindowManager.OpenWindow<EyesWindow>();
         }
+
         private void OnExit(object? sender, EventArgs e)
         {
             W.Application.Current.Shutdown();
@@ -145,6 +174,16 @@ namespace GazeStream
         public void Dispose()
         {
             trayIcon.Visible = false;
+
+            contextMenu.Dispose();
+
+            calibrationImg.Dispose();
+            restartEyetrackerImg.Dispose();
+            calibResImg.Dispose();
+            camImg.Dispose();
+            optionsImg.Dispose();
+            systemImg.Dispose();
+
             trayIcon.Dispose();
         }
     }

@@ -42,10 +42,6 @@ public class GazeDeviceA11 : IGazeDevice
         int startResult = 1;
         try
         {
-            ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
-            SetCheckCalib(true);
-            SetDetectEyelid(true);
-            SetSmoothWay(0);
             startResult = ASeeTracker._7i_start(string.Empty);
         }
         catch
@@ -53,10 +49,15 @@ public class GazeDeviceA11 : IGazeDevice
             return false;
         }
 
+
         Debug.WriteLine("Initializing Joaco. Start result: " + startResult);
         if (startResult == 0)
         {
             IsConnected = true;
+            ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+            SetCheckCalib(true);
+            SetDetectEyelid(true);
+            SetSmoothWay(0);
             //PreFlashData();
             GlobalEvents.OnEyetrackerConnected.Invoke();
             SetCurrentUserCalibration();
@@ -72,6 +73,30 @@ public class GazeDeviceA11 : IGazeDevice
             return false;
         }
 
+    }
+
+    public void Disconnect()
+    {
+        try
+        {
+            int stopTrackingResult = ASeeTracker._7i_stop_tracking();
+            Debug.WriteLine("StopTracking result: " + aSeeResults.StopTrackingResultToString(stopTrackingResult));
+            int stopResult = ASeeTracker._7i_stop();
+            Debug.WriteLine("Stop result: " + aSeeResults.StopResultToString(stopResult));
+        }
+        catch
+        {
+
+        }
+        finally
+        {
+            int disconnectResult = ASeeTracker._7i_device_disconnect();
+            Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
+            GlobalEvents.OnEyetrackerDisconnected.Invoke();
+            Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
+
+            IsConnected = false;
+        }
     }
 
     public void SetCheckCalib(bool enable)
@@ -421,29 +446,7 @@ public class GazeDeviceA11 : IGazeDevice
         Settings.I.SaveSettings();
     }
 
-    public void Disconnect()
-    {
-        try
-        {
-            int stopTrackingResult = ASeeTracker._7i_stop_tracking();
-            Debug.WriteLine("StopTracking result: " + aSeeResults.StopTrackingResultToString(stopTrackingResult));
-            int stopResult = ASeeTracker._7i_stop();
-            Debug.WriteLine("Stop result: " + aSeeResults.StopResultToString(stopResult));
-        }
-        catch
-        {
 
-        }
-        finally
-        {
-            int disconnectResult = ASeeTracker._7i_device_disconnect();
-            Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
-            GlobalEvents.OnEyetrackerDisconnected.Invoke();
-            Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
-
-            IsConnected = false;
-        }
-    }
 
 
     public void OpenCalibrationPage()
