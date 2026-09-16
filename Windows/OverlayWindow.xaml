@@ -32,8 +32,8 @@
         </eye:GazeButton>
         
         
-    <Canvas x:Name="RootCanvas" IsHitTestVisible="False">
-        <controls:GazeCursor x:Name="Cursor" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+    <Canvas x:Name="RootCanvas" IsHitTestVisible="False" SnapsToDevicePixels="False" UseLayoutRounding="False">
+        <controls:GazeCursor x:Name="Cursor" IsHitTestVisible="False"/>
     </Canvas>
     </Grid>
 </Window>

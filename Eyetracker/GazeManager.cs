@@ -228,7 +228,7 @@ namespace GazeStream.Eyetracker
             StartGazeDeviceUpdateLoop();
         }
 
-            int automaticCalibrationCounter = 0;
+        int automaticCalibrationCounter = 0;
         async Task UpdateLoop(CancellationToken token)
         {
 
@@ -257,6 +257,7 @@ namespace GazeStream.Eyetracker
                 UpdateGazeTargetsAndUI();
 
                 await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
+                //await Task.Yield();
             }
         }
 
@@ -280,7 +281,7 @@ namespace GazeStream.Eyetracker
             {
                 if (GazeDevice == null)
                 {
-                  await TryInitializeGazeDevice();
+                    await TryInitializeGazeDevice();
                 }
                 await Task.Delay(500, token);
             }
@@ -323,18 +324,28 @@ namespace GazeStream.Eyetracker
                 }));
         }
 
+        public void UpdatePointer(double x, double y)
+        {
+            App.Current.Dispatcher.BeginInvoke(() =>
+              {
+                  App.Instance.OverlayWindow.UpdateBubblePosition(x, y);
+
+              });
+        }
+
         void GetNewGazePointIfValid()
         {
             if (GazeDevice == null) return;
 
             RawGazePoint = GazeDevice.RawGazePoint;
             GazePoint newPoint = GazeDevice.GazePoint;
+
             if (newPoint.IsValid)
             {
                 GazePoint = newPoint;
             }
 
-            if (newPoint.viewportPoint.X == 0 && newPoint.viewportPoint.Y == 0)
+            if (newPoint.viewportPoint.X == 0 || newPoint.viewportPoint.Y == 0)
             {
                 ReceivedNewData = false;
                 return;
@@ -344,7 +355,8 @@ namespace GazeStream.Eyetracker
                 ReceivedNewData = true;
             }
 
-            //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
+            Debug.WriteLine("GM:" + GazePoint.viewportPoint);
+
             SmoothViewportPoint = GazePoint.viewportPoint;
             if (IsJoacoDevice)
             {
@@ -371,8 +383,8 @@ namespace GazeStream.Eyetracker
             float x = coord.X;
             float y = coord.Y;
             if (coord.X < padding.X || coord.X > (1f - padding.X))
-            { 
-                x = EdgeBias(coord.X, .03f);            
+            {
+                x = EdgeBias(coord.X, .03f);
             }
             if (coord.Y < padding.Y || coord.X > (1f - padding.Y))
             {

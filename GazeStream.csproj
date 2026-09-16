@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="config\Configs.dat" />
     <None Remove="Resources\Icons\adduser.png" />
     <None Remove="Resources\Icons\arrows-clockwise.png" />
     <None Remove="Resources\Icons\back.png" />
@@ -120,6 +121,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="config\Configs.dat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="InputSimulatorEx" Version="2.1.1" />
     <PackageReference Include="MessagePack" Version="3.1.4" />
     <PackageReference Include="NAudio" Version="2.3.0" />
@@ -129,6 +136,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="config\cali\" />
+    <Folder Include="config\gaze\" />
     <Folder Include="Websocket\" />
   </ItemGroup>
 
@@ -461,6 +470,9 @@
     <None Update="aSeeX.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="aSeeX.lib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="EtApi.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -471,6 +483,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="libnlopt-0.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Logger.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="nlopt.dll">

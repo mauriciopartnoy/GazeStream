@@ -285,6 +285,7 @@ namespace GazeStream.Windows
         public void StartCalibration_Click(object sender, RoutedEventArgs e)
         {
             if (isCalibrating) return;
+            Debug.WriteLine("Starting calibration!");
             StartCalibrationTaskUsingPanelSettings();
         }
 
@@ -332,7 +333,7 @@ namespace GazeStream.Windows
             {
                 ResetPage();
                 isCalibrating = false;
-                GazeManager.I?.GazeDevice?.Initialize();
+                //GazeManager.I?.GazeDevice?.Initialize();
                 GlobalEvents.OnCalibrationFinished.Invoke();
                 Debug.WriteLine("Calibration Finished!");
                 if (closeOnFinished)
@@ -521,10 +522,7 @@ namespace GazeStream.Windows
             Debug.WriteLine("Resetting Page");
             pointComplete = false;
             CloseRestartCalibrationWindow(null, null);
-            Debug.WriteLine("1");
-
             DestroyCurrentCalibrationPoint();
-            Debug.WriteLine("2");
 
             EyeDisplay.Visibility = Visibility.Collapsed;
             EnableButtons();

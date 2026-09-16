@@ -42,7 +42,13 @@ public class GazeDeviceA11 : IGazeDevice
         int startResult = 1;
         try
         {
-            startResult = ASeeTracker._7i_start(string.Empty);
+            ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+            SetCheckCalib(true);
+            SetDetectEyelid(true);
+            SetSmoothWay(0);
+            PreFlashData();
+            string path = "./config";
+            startResult = ASeeTracker._7i_start(path);
         }
         catch
         {
@@ -54,11 +60,6 @@ public class GazeDeviceA11 : IGazeDevice
         if (startResult == 0)
         {
             IsConnected = true;
-            ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
-            SetCheckCalib(true);
-            SetDetectEyelid(true);
-            SetSmoothWay(0);
-            //PreFlashData();
             GlobalEvents.OnEyetrackerConnected.Invoke();
             SetCurrentUserCalibration();
             Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
@@ -146,12 +147,14 @@ public class GazeDeviceA11 : IGazeDevice
 
     void PreFlashData()
     {
-        string filePath = AppPaths.EyetrackerConfigFilePath;
+        string filePath = @".\config\Configs.dat";
+
+        //string filePath = AppPaths.EyetrackerConfigFilePath;
         if (!File.Exists(filePath))
         {
             File.Create(filePath);
         }
-        FileOps.OpenDirectory(AppPaths.EyetrackerConfigPath);
+        //FileOps.OpenDirectory(AppPaths.EyetrackerConfigPath);
 
         FileStream fs = new FileStream(filePath, FileMode.Open);
         int flash_size = (int)fs.Length;
@@ -331,8 +334,14 @@ public class GazeDeviceA11 : IGazeDevice
         float yDist = (eyes.left_gaze.gaze_origin.y + eyes.right_gaze.gaze_origin.y) / 2;
         float zDist = (eyes.left_pupil.pupil_distance + eyes.right_pupil.pupil_distance) / 2;   //Este valor está en mm.
         gazeOrigin = new Vector3(xDist, yDist, zDist);
-        if (1 == _is_valid_recom_eye_gaze_point(ref eyes) && eyes.recom_gaze.gaze_point.x != -1)
+
+        if (1 == _is_valid_recom_eye_gaze_point(ref eyes) /*&& eyes.recom_gaze.gaze_point.x != -1*/)
         {
+            float x = eyes.recom_gaze.gaze_point.x;
+            float y = eyes.recom_gaze.gaze_point.y;
+            if (float.IsNaN(x) || float.IsNaN(y)) return;
+            if (x == 0.0 || y == 0.0) return;
+            if (x == -1f || y == -1f) return;
             //if (eyes.recom_gaze.gaze_point.x == -1) return; //-1, -1 es el valor que devuelve cuando el punto es falopa.
             gazePointChanged = true;
             gaze_x = eyes.recom_gaze.gaze_point.x;
@@ -346,6 +355,10 @@ public class GazeDeviceA11 : IGazeDevice
             UserIsPresentStatic = false;
             gazePointChanged = false;
         }
+
+
+
+        //GazeManager.I.UpdatePointer(gaze_x, gaze_y);
     }
 
     private static void ShowDebugData(_7i_eye_data_ex_t eyes)
@@ -394,7 +407,10 @@ public class GazeDeviceA11 : IGazeDevice
     {
         if (!HasValidCalibration) return;
         if (!gazePointChanged) return;
-        if (!UserIsPresentStatic) return;
+        //if (!UserIsPresentStatic) return;
+        if (float.IsNaN(gaze_x) || float.IsNaN(gaze_y)) return;
+        if (gaze_x < 0.0 || gaze_y < 0.0) return;
+     
         gazePointCache = new GazePoint(new Vector2(gaze_x, gaze_y));
         rawGazePointCache = new GazePoint(new Vector2(rawGaze_x, rawGaze_y));
     }

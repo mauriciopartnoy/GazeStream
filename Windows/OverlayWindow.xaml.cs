@@ -85,6 +85,13 @@ namespace GazeStream.Windows
             OnBubbleToggled(Settings.I.BubbleToggle.Value);
         }
 
+
+        public void UpdateBubblePosition(double viewportX, double viewportY)
+        {
+            var point = Helper.ViewportToUIElementPoint(RootCanvas, viewportX, viewportY);
+            Canvas.SetLeft(Cursor, point.X - Cursor.ActualWidth / 2);
+            Canvas.SetTop(Cursor, point.Y - Cursor.ActualHeight / 2);
+        }
         private void UpdateBubblePosition()
         {
             var point = Helper.ViewportToUIElementPoint(RootCanvas, GazeManager.I.SmoothViewportPoint);
