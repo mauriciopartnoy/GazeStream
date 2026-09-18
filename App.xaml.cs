@@ -73,8 +73,8 @@ namespace GazeStream
             UIDispatcher = this.Dispatcher;
             SettingsManager = new Settings();
             SettingsManager.Initialize();
-
             SettingsManager.SampleRateHZ.Value = 60;
+            //SettingsManager.LastCalibrationBuff.Value = new byte[0];
            // SettingsManager.EyetrackerDevice.Value = Eyetracker_Device.Skyle; //SKYLE TEST ONLY
             LoadStartupState();
 

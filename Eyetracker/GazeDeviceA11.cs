@@ -171,11 +171,12 @@ public class GazeDeviceA11 : IGazeDevice
     {
         Debug.WriteLine("Setting current user calibration");
         if (!IsConnected) return;
-        //if (App.Instance.ActiveUser == null) return;
-        //Debug.WriteLine("Current user available.");
-
-        GetCoefficient();
+        UpdateCoefficientBuff();
         LoadSmooth();
+        if (coefficient.buf == null || coefficient.buf.Length <= 0)
+        {
+            coefficient.buf = new byte[0];
+        }
         int startTrackingResult = ASeeTracker._7i_start_tracking(ref coefficient);
         HasValidCalibration = startTrackingResult == 0 ? true : false;
         Debug.WriteLine("Start tracking result: " + startTrackingResult);
@@ -273,7 +274,7 @@ public class GazeDeviceA11 : IGazeDevice
         Settings.I.LastCalibrationBuff.Value = coefficient.buf;
     }
 
-    void GetCoefficient()
+    void UpdateCoefficientBuff()
     {
         coefficient = new _7i_coefficient_t();
         coefficient.buf = Settings.I.LastCalibrationBuff.Value;
@@ -283,9 +284,8 @@ public class GazeDeviceA11 : IGazeDevice
 
         if (coefficient.buf == null || coefficient.buf.Length == 0)
         {
-
             coefficient.buf = GetDefaultCalibrationBuff();
-            Debug.WriteLine("coe2 = " + coefficient.buf);
+            Debug.WriteLine("Setting default calibration buff: " + coefficient.buf.Length);
         }
     }
 
