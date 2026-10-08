@@ -86,7 +86,7 @@ namespace GazeStream.Windows
             //InitializePointArraysUsingScreenSpace();
             ResetPage();
             LoadToggleOptions();
-            Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
+            //Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
         }
         void InitializePointArraysUsingScreenSpace()
         {
@@ -159,7 +159,7 @@ namespace GazeStream.Windows
         {
             SetEyesSelectionRadioButton(Settings.I.LastEyesOption.Value);
             SetPointsSettingRadioButton(Settings.I.LastPointsOption.Value);
-            SetFilterSelectionRadioButton(Settings.I.FilterProfile.Value);
+            //SetFilterSelectionRadioButton(Settings.I.FilterProfile.Value);
         }
 
         public static void process_callback(int index, int percent, IntPtr context)
@@ -320,6 +320,7 @@ namespace GazeStream.Windows
                 }
 
                 DisableButtons();
+                await FadeText.ShowMessage($"Iniciando calibración: {EyesOptionToString(eyes)} - {PointsOptionToString(pointsArrayIndex)} puntos.", .5, 1.2, token);
                 await FadeText.ShowMessage("Estos son tus ojos.", .5, 2, token);
                 await ShowEyeDisplay(token);
                 await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2, token);
@@ -606,56 +607,60 @@ namespace GazeStream.Windows
             }
         }
 
-        public int GetFilterSelection()
-        {
-            if (FilterSetting_Bajo.IsChecked == true)
-            {
-                return 0;
-            }
-            else if (FilterSetting_Medio.IsChecked == true)
-            {
-                return 1;
-            }
-            else return 2;  //Filter Alto
-        }
+        //SELECCION DE FILTER PROFILE REMOVIDO EN FAVOR DE CONFIGURACIÓN DE FILTROS INDIVIDUALES
 
-        public void SetFilterSelectionRadioButton(FilterProfile profile)
-        {
-            int filterOption = (int)profile;
-            if (filterOption == 0)
-            {
-                FilterSetting_Bajo.IsChecked = true;
-            }
-            else if (filterOption == 1)
-            {
-                FilterSetting_Medio.IsChecked = true;
-            }
-            else
-            {
-                FilterSetting_Alto.IsChecked = true;
-            }
-        }
+        //public int GetFilterSelection()
+        //{
+        //    if (FilterSetting_Bajo.IsChecked == true)
+        //    {
+        //        return 0;
+        //    }
+        //    else if (FilterSetting_Medio.IsChecked == true)
+        //    {
+        //        return 1;
+        //    }
+        //    else return 2;  //Filter Alto
+        //}
 
-        private void FilterSetting_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.RadioButton rb)
-            {
-                switch (rb.Name)
-                {
-                    case nameof(FilterSetting_Bajo):
-                        Settings.I.FilterProfile.Value = (FilterProfile)0;
-                        break;
+        //public void SetFilterSelectionRadioButton(FilterProfile profile)
+        //{
+        //    int filterOption = (int)profile;
+        //    if (filterOption == 0)
+        //    {
+        //        FilterSetting_Bajo.IsChecked = true;
+        //    }
+        //    else if (filterOption == 1)
+        //    {
+        //        FilterSetting_Medio.IsChecked = true;
+        //    }
+        //    else
+        //    {
+        //        FilterSetting_Alto.IsChecked = true;
+        //    }
+        //}
 
-                    case nameof(FilterSetting_Medio):
-                        Settings.I.FilterProfile.Value = (FilterProfile)1;
-                        break;
+        //private void FilterSetting_Checked(object sender, RoutedEventArgs e)
+        //{
+        //    //QUITADOS LOS PERFILES EN FAVOR DE CONFIGURACION MANUAL DE FILTROS
 
-                    case nameof(FilterSetting_Alto):
-                        Settings.I.FilterProfile.Value = (FilterProfile)2;
-                        break;
-                }
-            }
-        }
+        //    if (sender is System.Windows.Controls.RadioButton rb)
+        //    {
+        //        switch (rb.Name)
+        //        {
+        //            case nameof(FilterSetting_Bajo):
+        //                Settings.I.FilterProfile.Value = (FilterProfile)0;
+        //                break;
+
+        //            case nameof(FilterSetting_Medio):
+        //                Settings.I.FilterProfile.Value = (FilterProfile)1;
+        //                break;
+
+        //            case nameof(FilterSetting_Alto):
+        //                Settings.I.FilterProfile.Value = (FilterProfile)2;
+        //                break;
+        //        }
+        //    }
+        //}
 
         public int GetPointsSelection()
         {
@@ -686,6 +691,30 @@ namespace GazeStream.Windows
                 case 2: points = points9; break;
             }
             return points;
+        }
+
+        public string PointsOptionToString(int option)
+        {
+            string points = "1";
+            switch (option)
+            {
+                case 0: points = "3"; break;
+                case 1: points = "5"; break;
+                case 2: points = "9"; break;
+            }
+            return points;
+        }
+
+        public string EyesOptionToString(int eyesOption)
+        {
+            string eyes = "1";
+            switch (eyesOption)
+            {
+                case 0: eyes = "Ambos Ojos"; break;
+                case 1: eyes = "Ojo Izquierdo"; break;
+                case 2: eyes = "Ojo Derecho"; break;
+            }
+            return eyes;
         }
 
         public void SetPointsSettingRadioButton(int pointsOption)

@@ -19,6 +19,8 @@ using Velopack.Locators;
 using Velopack.Windows;
 using System.IO;
 using GazeStream.Utilities.Events;
+using System.Windows.Interop;
+using System.Runtime.InteropServices;
 
 namespace GazeStream
 {
@@ -36,6 +38,8 @@ namespace GazeStream
         public OverlayWindow OverlayWindow { get; private set; }
         public OverlayInteraction OverlayInteraction { get; private set; }
 
+        IntPtr overlayWindowHwnd;
+        IntPtr interactionWindowHwnd;
 
         Hotkeys hotkeys;
         static Mutex? singleInstanceMutex;
@@ -47,6 +51,8 @@ namespace GazeStream
         public static bool IsUpdating { get; private set; }
 
         static CancellationTokenSource updateCts;
+        static CancellationTokenSource keepOverlayCts;
+
         static UpdateWindow updateWindow;
 
         protected override void OnStartup(W.StartupEventArgs e)
@@ -88,9 +94,35 @@ namespace GazeStream
             HookHotkeys();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
             OverlayInteraction = WindowManager.OpenWindow<OverlayInteraction>();
+            overlayWindowHwnd = new WindowInteropHelper(OverlayWindow).Handle;
+            interactionWindowHwnd = new WindowInteropHelper(OverlayInteraction).Handle;
+            _ = KeepOverlaysTopmost();
 
             //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
             //_ = UpdateApp(5000);
+        }
+
+        async Task KeepOverlaysTopmost()
+        {
+            keepOverlayCts = new();
+            while (!keepOverlayCts.IsCancellationRequested)
+            {
+                SetOverlayWindowsTopmost();
+                await Task.Delay(500, keepOverlayCts.Token);
+            }
+        }
+
+        public void SetOverlayWindowsTopmost()
+        {
+            WindowsHelper.SetWindowTopmost(interactionWindowHwnd);
+            WindowsHelper.SetWindowTopmost(overlayWindowHwnd);
+        }
+
+
+        void CancelKeepOverlayTopmost()
+        {
+            if (keepOverlayCts.IsCancellationRequested) return;
+            keepOverlayCts.Cancel();
         }
 
         void LoadStartupState()
@@ -203,6 +235,7 @@ namespace GazeStream
             updateCts.Cancel();
         }
 
+
             //COMANDOS PARA GENERAR EL UPDATE DESCARGABLE, PRIMERO TENER VPK: dotnet tool install -g vpk 
 
             //dotnet publish --self-contained -r win-x64 -o .\publish
@@ -278,6 +311,8 @@ namespace GazeStream
             if (Websocket != null) Websocket.Dispose();
             if (GazeManager != null) GazeManager.Dispose();
             if (Tray != null) Tray.Dispose();
+            CancelUpdate();
+            CancelKeepOverlayTopmost();
         }
 
         private static void DisposeMutex()

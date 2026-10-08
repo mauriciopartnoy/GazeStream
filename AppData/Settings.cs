@@ -61,6 +61,7 @@ namespace GazeStream.AppData
         public const string EDGE_BIAS = "EdgeBiasPixels";
         public const string CLAMP_BUBBLE = "ClampBubble";
         public const string CLAMP_DISTANCE = "ClampDistance";
+        public const string FILTER_OUTLIER_POINTS = "FilterOutliers";
 
 
         public const string LAST_CALIBRATION = "LastCalibration";
@@ -442,7 +443,7 @@ namespace GazeStream.AppData
         public IntSetting EdgeBiasFilter { get; } = new IntSetting(SettingKeys.EDGE_BIAS, 0);
         public BoolSetting ClampBubblePosition { get; } = new BoolSetting(SettingKeys.CLAMP_BUBBLE, true);
         public IntSetting ClampDistance { get; } = new IntSetting(SettingKeys.CLAMP_DISTANCE, 10);
-
+        public BoolSetting FilterOutlierPoints { get; } = new BoolSetting(SettingKeys.FILTER_OUTLIER_POINTS, false);
 
         //CALIBRATION 
         public LastCalibration LastCalibrationBuff { get; } = new LastCalibration(SettingKeys.LAST_CALIBRATION, new byte[0]);                                 //byte[] Calibration.buff
@@ -607,6 +608,7 @@ namespace GazeStream.AppData
             RegisterSetting(EdgeBiasFilter);
             RegisterSetting(ClampBubblePosition);
             RegisterSetting(ClampDistance);
+            RegisterSetting(FilterOutlierPoints);
 
             RegisterSetting(LastCalibrationBuff);
             RegisterSetting(Calibration1);

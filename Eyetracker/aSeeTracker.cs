@@ -147,8 +147,13 @@ using System.Threading;
 
     public class ASeeTracker
     {
-        // 设置眼图回调函数
-        [DllImport("aSeeX.dll", EntryPoint = "_7i_set_camera_state_callback",
+
+    [DllImport("aSeeX.dll", EntryPoint = "_7i_set_fps",
+ CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+    public static extern int _7i_set_fps(Int32 points);
+
+    // 设置眼图回调函数
+    [DllImport("aSeeX.dll", EntryPoint = "_7i_set_camera_state_callback",
     CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         public static extern int _7i_set_camera_state_callback(IntPtr cb, IntPtr context);
 

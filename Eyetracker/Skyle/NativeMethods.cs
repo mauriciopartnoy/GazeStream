@@ -76,6 +76,7 @@ internal static class NativeMethods
     [DllImport(Lib)] public static extern int skyle_client_request_version(IntPtr client);
 
     [DllImport(Lib)] public static extern int skyle_client_enable_gaze(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
+    [DllImport(Lib)] public static extern int skyle_client_enable_control(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
     [DllImport(Lib)] public static extern int skyle_client_enable_positioning(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
     [DllImport(Lib)] public static extern int skyle_client_enable_video(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
 

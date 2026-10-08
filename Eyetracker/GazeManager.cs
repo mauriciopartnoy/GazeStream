@@ -333,6 +333,8 @@ namespace GazeStream.Eyetracker
               });
         }
 
+        Vector2 targetPoint;
+
         void GetNewGazePointIfValid()
         {
             if (GazeDevice == null) return;
@@ -355,14 +357,25 @@ namespace GazeStream.Eyetracker
                 ReceivedNewData = true;
             }
 
-            Debug.WriteLine("GM:" + GazePoint.viewportPoint);
-
-            SmoothViewportPoint = GazePoint.viewportPoint;
+            //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
             if (IsJoacoDevice)
             {
-                SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
-                SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
-                //SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
+                targetPoint = GazePoint.viewportPoint;
+                //Filter outlier points
+                if (Settings.I.FilterOutlierPoints.Value == true)
+                {
+                    targetPoint = outlierFilter.Update(targetPoint);
+                }
+                //Kalman Filter
+                if (Settings.I.KalmanFilter.Value > 0)
+                {
+                    targetPoint = kalmanFilter.GetFilteredPoint(targetPoint);
+                }
+                //Interpolation Filter
+                if (Settings.I.InterpolationFilter.Value > 0)
+                {
+                    SmoothViewportPoint = Helper.Lerp(SmoothViewportPoint, targetPoint, Settings.I.InterpolationFilter.Value);
+                }
             }
 
 
@@ -375,6 +388,25 @@ namespace GazeStream.Eyetracker
             }
             SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
             SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
+
+            //SmoothViewportPoint = GazePoint.viewportPoint;
+            //if (IsJoacoDevice)
+            //{
+            //    SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
+            //    SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
+            //    //SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
+            //}
+
+
+            ////TEST FILTERS
+            //if (Settings.I.ClampBubblePosition.Value == true)
+            //{
+            //    SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint);
+            //    Vector2 padding = Helper.DipsToViewport01(Settings.I.ClampDistance.Value);
+            //    SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding.X, 1f - padding.X), Math.Clamp(SmoothViewportPoint.Y, 0f + padding.Y, 1f - padding.Y));
+            //}
+            //SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
+            //SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
         }
 
         Vector2 ApplyEdgeBias(Vector2 coord)

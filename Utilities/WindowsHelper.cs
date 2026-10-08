@@ -250,10 +250,11 @@ namespace GazeStream.Utilities
         const uint SWP_NOACTIVATE = 0x0010;
         const uint SWP_SHOWWINDOW = 0x0040;
 
-        public static void KeepOverlayOnTop(IntPtr hwnd)
+        public static void SetWindowTopmost(IntPtr hwnd)
         {
-            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            if (hwnd == IntPtr.Zero) return;
+
+            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
         }
 
         public static int GetWindowStyle(IntPtr hwnd)

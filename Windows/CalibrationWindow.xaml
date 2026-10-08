@@ -149,9 +149,9 @@
                                Text="Seleccione cantidad de puntos a calibrar"
                                Style="{StaticResource OptionTitle}"/>
 
-                    <TextBlock Grid.Row="2" Grid.Column="0"
+                    <!--<TextBlock Grid.Row="2" Grid.Column="0"
                                Text="Seleccione filtro de calibración"
-                               Style="{StaticResource OptionTitle}"/>
+                               Style="{StaticResource OptionTitle}"/>-->
 
                     <!-- Eyes -->
                     <RadioButton Grid.Row="0" Grid.Column="1"
@@ -194,7 +194,7 @@
                                  Margin="10"/>
 
                     <!-- Filter -->
-                    <RadioButton Grid.Row="2" Grid.Column="1"
+                    <!--<RadioButton Grid.Row="2" Grid.Column="1"
                                  GroupName="FilterSetting"
                                  x:Name="FilterSetting_Bajo"
                                  Content="Bajo"
@@ -214,7 +214,7 @@
                                  Content="Alto"
                                  IsChecked="True"
                                  Margin="10"
-                                 Checked="FilterSetting_Checked"/>
+                                 Checked="FilterSetting_Checked"/>-->
 
                 </Grid>
 
@@ -385,7 +385,18 @@
                 <StackPanel Grid.Row="5" Orientation="Vertical" HorizontalAlignment="Stretch" Margin="0,0,0,0">
                     <TextBlock Grid.Row="3" Text="Filtros"  FontWeight="Bold" Foreground="White" TextWrapping="Wrap" TextAlignment="Center" Margin="0,5,0,0"/>
 
+                    <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
 
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Filtro Interpolación" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Slider x:Name="LerpSlider" Grid.Column="1" Width="150" Minimum="0" Maximum="0.25" IsSnapToTickEnabled="True" TickFrequency="0.01" Value="{Binding InterpolationFilter.Value}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=LerpSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Left"/>
+                    </Grid>
 
                     <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
@@ -452,9 +463,19 @@
                         <ToggleButton Grid.Column="1" Style="{StaticResource ModernToggleStyle}" IsChecked="{Binding ClampBubblePosition.Value, Mode=TwoWay}" HorizontalAlignment="Left" Margin="35,0"/>
                     </Grid>
 
-
-
                     <Grid Margin="170,5,0,0" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Filtrar puntos dudosos" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <ToggleButton Grid.Column="1" Style="{StaticResource ModernToggleStyle}" IsChecked="{Binding FilterOutlierPoints.Value, Mode=TwoWay}" HorizontalAlignment="Left" Margin="35,0" />
+                    </Grid>
+
+                    <!--<Grid Margin="170,5,0,0" HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -464,7 +485,7 @@
 
                         <TextBlock Text="Calibración Dinámica (Experimental)" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                         <ToggleButton Grid.Column="1" Style="{StaticResource ModernToggleStyle}" IsChecked="{Binding DynamicCalibrationToggle.Value, Mode=TwoWay}" HorizontalAlignment="Left" Margin="35,0" />
-                    </Grid>
+                    </Grid>-->
                 </StackPanel>
 
             </Grid>

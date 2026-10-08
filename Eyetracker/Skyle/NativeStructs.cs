@@ -16,28 +16,28 @@ namespace SkyleAvaloniaExample.Interop;
 // ============================================================================
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkylePointF // 8 bytes
+public struct SkylePointF // 8 bytes
 {
     public float X;
     public float Y;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleSizeF // 8 bytes
+public struct SkyleSizeF // 8 bytes
 {
     public float Width;
     public float Height;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleSizeU
+public struct SkyleSizeU
 {
     public ushort Width;
     public ushort Height;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleRectF // 16 bytes
+public struct SkyleRectF // 16 bytes
 {
     public float Top;
     public float Left;
@@ -46,7 +46,7 @@ internal struct SkyleRectF // 16 bytes
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleRectU // 8 bytes
+public struct SkyleRectU // 8 bytes
 {
     public ushort Top;
     public ushort Left;
@@ -55,7 +55,7 @@ internal struct SkyleRectU // 8 bytes
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleRotatedRect // 20 bytes
+public struct SkyleRotatedRect // 20 bytes
 {
     public SkylePointF Center;
     public SkyleSizeF Size;
@@ -63,7 +63,7 @@ internal struct SkyleRotatedRect // 20 bytes
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleMessageHeader // 24 bytes
+public struct SkyleMessageHeader // 24 bytes
 {
     public ushort MessageType;
     public ushort PayloadLength;
@@ -71,10 +71,41 @@ internal struct SkyleMessageHeader // 24 bytes
     [MarshalAs(UnmanagedType.U1)] public bool HasTimestamp;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct SkyleControlMessage
+{
+    public SkyleMessageHeader Header;
+
+    [MarshalAs(UnmanagedType.U1)]
+    public bool IsStandbyEnabled;       // byte 0
+
+    [MarshalAs(UnmanagedType.U1)]
+    public bool IsAutoPauseEnabled;    // byte 1
+
+    [MarshalAs(UnmanagedType.U1)]
+    public bool IsPauseEnabled;        // byte 2
+
+    public byte TrackingMode;          // byte 3
+    public byte GazeFilter;            // byte 4
+    public byte FixationFilter;        // byte 5
+
+    [MarshalAs(UnmanagedType.U1)]
+    public bool IsAssistiveTouchEnabled; // byte 6
+
+    [MarshalAs(UnmanagedType.U1)]
+    public bool ShowTrackingDetails;     // byte 7
+
+    [MarshalAs(UnmanagedType.U1)]
+    public bool IsHidEnabled;            // byte 8
+
+    [MarshalAs(UnmanagedType.U1)]
+    public bool IsEthernetEnabled;       // byte 9
+}
+
 // ---- Gaze ----
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleComplexGaze // 20 bytes (17 on the wire, padded in memory)
+public struct SkyleComplexGaze // 20 bytes (17 on the wire, padded in memory)
 {
     public SkylePointF Raw;
     public SkylePointF Smoothed;
@@ -82,7 +113,7 @@ internal struct SkyleComplexGaze // 20 bytes (17 on the wire, padded in memory)
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleGazeResponse
+public struct SkyleGazeResponse
 {
     public SkyleMessageHeader Header;
     public SkyleComplexGaze Left;
@@ -93,7 +124,7 @@ internal struct SkyleGazeResponse
 // ---- Positioning ----
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleComplexFeature // 44 bytes
+public struct SkyleComplexFeature // 44 bytes
 {
     public SkylePointF Center;
     public SkyleRectF BoundingRect;
@@ -101,7 +132,7 @@ internal struct SkyleComplexFeature // 44 bytes
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleComplexIris // 44 bytes
+public struct SkyleComplexIris // 44 bytes
 {
     public SkylePointF Center;
     public SkylePointF Top;
@@ -112,7 +143,7 @@ internal struct SkyleComplexIris // 44 bytes
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleComplexEye // 184 bytes
+public struct SkyleComplexEye // 184 bytes
 {
     public SkyleRectU BoundingRect;   // image-space (uint16)
     public SkyleComplexFeature Pupil;
@@ -122,21 +153,21 @@ internal struct SkyleComplexEye // 184 bytes
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleComplexEyes // 368 bytes
+public struct SkyleComplexEyes // 368 bytes
 {
     public SkyleComplexEye Left;
     public SkyleComplexEye Right;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleComplexFace // 384 bytes
+public struct SkyleComplexFace // 384 bytes
 {
     public SkyleRectF BoundingRect;   // screen-space
     public SkyleComplexEyes Eyes;
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkylePositioningResponse
+public struct SkylePositioningResponse
 {
     public SkyleMessageHeader Header;
     public SkyleComplexFace Face;
@@ -145,7 +176,7 @@ internal struct SkylePositioningResponse
 // ---- Video ----
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleVideoResponse
+public struct SkyleVideoResponse
 {
     public ushort Width;
     public ushort Height;
@@ -157,7 +188,7 @@ internal struct SkyleVideoResponse
 // ---- Version ----
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleVersionResponse
+public struct SkyleVersionResponse
 {
     public SkyleMessageHeader Header;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)] public byte[] Firmware;
@@ -172,7 +203,7 @@ internal struct SkyleVersionResponse
 // ---- Transport / callback configuration (passed to the library) ----
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleTransportIokitConfig
+public struct SkyleTransportIokitConfig
 {
     public ushort VendorId;
     public ushort ProductId;
@@ -181,7 +212,7 @@ internal struct SkyleTransportIokitConfig
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleTransportUsbConfig
+public struct SkyleTransportUsbConfig
 {
     public ushort VendorId;
     public ushort ProductId;
@@ -190,7 +221,7 @@ internal struct SkyleTransportUsbConfig
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleTransportConfig
+public struct SkyleTransportConfig
 {
     public IntPtr TransportWrite;       // native fn pointer
     public IntPtr TransportRead;        // native fn pointer
@@ -203,7 +234,7 @@ internal struct SkyleTransportConfig
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleCallbackConfig
+public struct SkyleCallbackConfig
 {
     public IntPtr OnGaze;
     public IntPtr OnPositioning;
@@ -223,7 +254,7 @@ internal struct SkyleCallbackConfig
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleCalibrationConfig
+public struct SkyleCalibrationConfig
 {
     public ushort PointsCount;
     public IntPtr Points;
@@ -239,7 +270,7 @@ internal struct SkyleCalibrationConfig
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleNextCalibrationPoint
+public struct SkyleNextCalibrationPoint
 {
     public SkyleMessageHeader Header;
     public byte Index;
@@ -247,7 +278,7 @@ internal struct SkyleNextCalibrationPoint
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleCollectingCalibrationPoints
+public struct SkyleCollectingCalibrationPoints
 {
     public SkyleMessageHeader Header;
     public byte Index;
@@ -255,7 +286,7 @@ internal struct SkyleCollectingCalibrationPoints
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal struct SkyleQualityPoint
+public struct SkyleQualityPoint
 {
     public byte Index;
     public SkylePointF Accuracy;
@@ -264,7 +295,7 @@ internal struct SkyleQualityPoint
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct SkyleFinishedCalibration
+public struct SkyleFinishedCalibration
 {
     public SkyleMessageHeader Header;
 

@@ -43,6 +43,8 @@ public class GazeDeviceA11 : IGazeDevice
         try
         {
             ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+            ASeeTracker._7i_set_screen_size(screenSizeMillimetres.X, screenSizeMillimetres.Y);
+            ASeeTracker._7i_set_fps(60);
             SetCheckCalib(true);
             SetDetectEyelid(true);
             SetSmoothWay(0);

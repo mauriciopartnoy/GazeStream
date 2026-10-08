@@ -29,6 +29,7 @@ namespace GazeStream.Eyetracker
         private readonly SkyleClient client = new();
         private readonly DispatcherTimer dispatcherTimer = new(); //no se si lo necesito
 
+        public SkyleClient Client => client;
 
         // Latest values written from the library's I/O thread (reference swaps are atomic).
         private volatile PositioningSnapshot? _latestPos;
@@ -119,6 +120,8 @@ namespace GazeStream.Eyetracker
                 client.SetHostMenuBarVisible(true);
                 client.EnableGaze(true);
                 client.EnablePositioning(true);
+                client.EnableControl(true);
+               
             }
         }
 
