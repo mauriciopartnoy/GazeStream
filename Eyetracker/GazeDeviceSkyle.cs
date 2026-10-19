@@ -8,6 +8,9 @@ using SkyleAvaloniaExample.Interop;
 using System.Diagnostics;
 using System.Numerics;
 using GazeStream.Utilities;
+using GazeStream.Windows;
+using GazeStream.AppData;
+using GazeStream.Utilities.Events;
 
 namespace GazeStream.Eyetracker
 {
@@ -127,13 +130,16 @@ namespace GazeStream.Eyetracker
 
         public void OpenCalibrationPage()
         {
-            TryCalibrate();
+            WindowManager.OpenWindow<SkyleCalibrationWindow>();
         }
 
 
         public void RequestCalibration(int pointsArray, int eyes)
         {
-            TryCalibrate();
+            Settings.I.LastPointsOption.Value = pointsArray;
+            Settings.I.LastEyesOption.Value = eyes;
+            OpenCalibrationPage();
+            GlobalEvents.OnStartCalibrationCommand.Invoke(pointsArray, eyes);
         }
         private void TryCalibrate()
         {

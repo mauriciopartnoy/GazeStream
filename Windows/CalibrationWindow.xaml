@@ -247,7 +247,7 @@
              HorizontalAlignment="Center"
              Margin="0,20,0,0">
 
-                    <Button x:Name="FastCalibLeft"
+                    <!--<Button x:Name="FastCalibLeft"
              Style="{StaticResource CalibrationButton}"
              Click="DefaultCalibrationLeft_Click">
                         <TextBlock Text="Calibración Rápida Ojo Izquierdo"
@@ -269,7 +269,7 @@
                         <TextBlock Text="Calibración Rápida Ambos Ojos"
                     TextWrapping="Wrap"
                     TextAlignment="Center"/>
-                    </Button>
+                    </Button>-->
 
                     <Button x:Name="FastCalibList" 
              Style="{StaticResource CalibrationButton}"
@@ -398,7 +398,7 @@
                         <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=LerpSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Left"/>
                     </Grid>
 
-                    <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
+                    <!--<Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
@@ -409,7 +409,7 @@
                         <TextBlock Text="Filtro Kalman" Foreground="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                         <Slider x:Name="KalmanSlider" Grid.Column="1" Width="150" Minimum="0" Maximum="30" IsSnapToTickEnabled="True" TickFrequency="0.1" Value="{Binding KalmanFilter.Value}"/>
                         <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=KalmanSlider, StringFormat={}{0:F2}}" Foreground="White" HorizontalAlignment="Left"/>
-                    </Grid>
+                    </Grid>-->
 
                     <Grid Margin="170,10,0,0" HorizontalAlignment="Stretch">
                         <Grid.ColumnDefinitions>

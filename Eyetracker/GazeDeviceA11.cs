@@ -34,23 +34,43 @@ public class GazeDeviceA11 : IGazeDevice
     static bool UserIsPresentStatic;
     static bool HasValidCalibration;
     Vector2 screenSizeMillimetres;
-
+    int ret = 0;
     public async Task<bool> Initialize()
     {
         screenSizeMillimetres = WindowsHelper.GetPhysicalScreenSizeInMillimetres();
         Debug.WriteLine("About to initialize Joaco.");
         int startResult = 1;
+
+        //PRE INIT CONFIG
+        ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+        ASeeTracker._7i_set_screen_size(screenSizeMillimetres.X, screenSizeMillimetres.Y);
+        SetCheckCalib(true);
+        SetDetectEyelid(true);
+        SetSmoothWay(0);
+
+        startResult = ASeeTracker._7i_start();
+        //DEVICE INITIALIZE
+        string path = "./config";
+        ret = ASeeTracker._7i_init(path);
+        if (0 != ret)
+        {
+            return false;
+        }
+
+        //DEVICE CONNECT
+        _7i_ukey_info_t keyInfo = new _7i_ukey_info_t();
+        ret = ASeeTracker._7i_device_connect("", ref keyInfo);
+        if (0 != ret)
+        {
+            string msg = String.Format("connect error: {0:D}", ret);
+            Debug.WriteLine(msg);
+            ASeeTracker._7i_release();
+            return false;
+        }
+
+        //DEVICE START
         try
         {
-            ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
-            ASeeTracker._7i_set_screen_size(screenSizeMillimetres.X, screenSizeMillimetres.Y);
-            ASeeTracker._7i_set_fps(60);
-            SetCheckCalib(true);
-            SetDetectEyelid(true);
-            SetSmoothWay(0);
-            PreFlashData();
-            string path = "./config";
-            startResult = ASeeTracker._7i_start(path);
         }
         catch
         {
@@ -62,6 +82,7 @@ public class GazeDeviceA11 : IGazeDevice
         if (startResult == 0)
         {
             IsConnected = true;
+            PreFlashData();
             GlobalEvents.OnEyetrackerConnected.Invoke();
             SetCurrentUserCalibration();
             Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
@@ -86,6 +107,8 @@ public class GazeDeviceA11 : IGazeDevice
             Debug.WriteLine("StopTracking result: " + aSeeResults.StopTrackingResultToString(stopTrackingResult));
             int stopResult = ASeeTracker._7i_stop();
             Debug.WriteLine("Stop result: " + aSeeResults.StopResultToString(stopResult));
+
+
         }
         catch
         {
@@ -95,6 +118,8 @@ public class GazeDeviceA11 : IGazeDevice
         {
             int disconnectResult = ASeeTracker._7i_device_disconnect();
             Debug.WriteLine("Disconnect result: " + aSeeResults.DisconnectResultToString(disconnectResult));
+            int releaseResult = ASeeTracker._7i_release();
+            Debug.WriteLine("Release result: " + aSeeResults.StopResultToString(releaseResult));
             GlobalEvents.OnEyetrackerDisconnected.Invoke();
             Settings.I.SmoothFilter.OnChanged -= LoadSmooth;
 
@@ -111,7 +136,8 @@ public class GazeDeviceA11 : IGazeDevice
         string strData = (true == enable) ? "1" : "0";
         byte[] asciiData = System.Text.Encoding.ASCII.GetBytes(strData);
         int ret = ASeeTracker._7i_set_data(asciiStringFromBytes, asciiStringFromBytes.Length, asciiData, asciiData.Length);
-        Console.WriteLine($"_7i_set_data(check_calib): , {ret}");
+        Debug.WriteLine($"_7i_set_data(check_calib): , {ret}");
+
     }
 
     public void SetDetectEyelid(bool enable)
@@ -123,7 +149,8 @@ public class GazeDeviceA11 : IGazeDevice
         string strData = (true == enable) ? "1" : "0";
         byte[] asciiData = System.Text.Encoding.ASCII.GetBytes(strData);
         int ret = ASeeTracker._7i_set_data(asciiStringFromBytes, asciiStringFromBytes.Length, asciiData, asciiData.Length);
-        Console.WriteLine($"_7i_set_data(detect_eyelid): , {ret}");
+        Debug.WriteLine($"_7i_set_data(detect_eyelid): , {ret}");
+
     }
 
     public void SetSmoothWay(int way)
@@ -329,9 +356,12 @@ public class GazeDeviceA11 : IGazeDevice
     public static void OnGazeCallback(ref _7i_eye_data_ex_t eyes, IntPtr context)
     {
         //ShowDebugData(eyes);
-
         if (!HasValidCalibration) return;
         eyesData = eyes;
+        //Debug.WriteLine("Pupil center: " + eyes.left_pupil.pupil_center.x);
+        //Debug.WriteLine("Gaze Origin: " + eyes.left_gaze.gaze_origin.x);
+        //Debug.WriteLine("Recomm origin: " + eyes.recom_gaze.gaze_origin.x);
+
         float xDist = (eyes.left_gaze.gaze_origin.x + eyes.right_gaze.gaze_origin.x) / 2;
         float yDist = (eyes.left_gaze.gaze_origin.y + eyes.right_gaze.gaze_origin.y) / 2;
         float zDist = (eyes.left_pupil.pupil_distance + eyes.right_pupil.pupil_distance) / 2;   //Este valor está en mm.
@@ -341,6 +371,8 @@ public class GazeDeviceA11 : IGazeDevice
         {
             float x = eyes.recom_gaze.gaze_point.x;
             float y = eyes.recom_gaze.gaze_point.y;
+            Debug.WriteLine($"Recomm point: X: {x} Y:{y}");
+
             if (float.IsNaN(x) || float.IsNaN(y)) return;
             if (x == 0.0 || y == 0.0) return;
             if (x == -1f || y == -1f) return;
@@ -411,8 +443,7 @@ public class GazeDeviceA11 : IGazeDevice
         if (!gazePointChanged) return;
         //if (!UserIsPresentStatic) return;
         if (float.IsNaN(gaze_x) || float.IsNaN(gaze_y)) return;
-        if (gaze_x < 0.0 || gaze_y < 0.0) return;
-     
+
         gazePointCache = new GazePoint(new Vector2(gaze_x, gaze_y));
         rawGazePointCache = new GazePoint(new Vector2(rawGaze_x, rawGaze_y));
     }

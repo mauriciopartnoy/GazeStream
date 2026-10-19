@@ -26,7 +26,7 @@ namespace GazeStream.Windows
         List<CalibrationPointGraphic> points = new List<CalibrationPointGraphic>();
         CalibrationPointGraphic? currentPoint;
         bool isCalibrating;
-
+        int currentCalibrationPointCount;
         SkyleClient Client { get; set; }
 
         public SkyleCalibrationWindow()
@@ -38,7 +38,6 @@ namespace GazeStream.Windows
             PreviewKeyDown += CancelCalibrationOnKeyPress;
             ForceTopmost();
             DataContext = Settings.I;
-            Client = GazeManager.I.skyle.Client;
             //GlobalEvents.OnStartCalibrationCommand.Add(StartCalibrationAndCloseOnFinished);
         }
 
@@ -76,6 +75,7 @@ namespace GazeStream.Windows
 
         void OnLoaded(object sender, RoutedEventArgs e)
         {
+            Client = GazeManager.I.skyle.Client;
             SubscribeCallbacks();
             ResetPage();
             //LoadToggleOptions();
@@ -96,20 +96,63 @@ namespace GazeStream.Windows
             int percent = points.Progress;
             calibrationPointChanged = percent != CalibrationPointProgress;
             CalibrationPointProgress = percent;
-            CalibrationPointProgress01 = (float)percent / 100f;
-            currentPoint?.UpdateCalibrationPoint(CalibrationPointProgress01);
+            CalibrationPointProgress01 = (float)percent / 255f; //Progress devuelve un valor entre 0 - 255
+            
+            App.Instance.UIDispatcher.BeginInvoke(() =>
+            {
+                currentPoint?.UpdateCalibrationPoint(CalibrationPointProgress01);
+                if (points.Index == currentCalibrationPointCount - 1)
+                {
+                    CalibrationFinishedAction();
+                }
+            });
+
+         
         }
         void OnCalibrationPoint(SkyleNextCalibrationPoint point)
         {
-            Vector2 pointViewport = Helper.ScreenPointToViewport(new Vector2(point.Point.X, point.Point.Y));
-            SpawnCalibrationPoint(pointViewport);
-            Debug.WriteLine("New calibration point called");
+            App.Instance.UIDispatcher.BeginInvoke(() =>
+            {
+                Vector2 pointViewport = Helper.ScreenPointToViewport(new Vector2(point.Point.X, point.Point.Y));
+                SpawnCalibrationPoint(pointViewport);
+            });
+
+            Debug.WriteLine("New calibration point called at index: " + point.Index);
+            Debug.WriteLine($"Point position: X:{point.Point.X} Y:{point.Point.Y}");
+            Thread.Sleep(TimeSpan.FromSeconds(2));
+            Client.CollectCalibrationPoint();
         }
+
+        async Task CollectCalibrationPointAfterDelay(SkyleNextCalibrationPoint point)
+        {
+            App.Instance.UIDispatcher.BeginInvoke(() =>
+            {
+                Vector2 pointViewport = Helper.ScreenPointToViewport(new Vector2(point.Point.X, point.Point.Y));
+                SpawnCalibrationPoint(pointViewport);
+            });
+
+            Debug.WriteLine("New calibration point called at index: " + point.Index);
+            Debug.WriteLine($"Point position: X:{point.Point.X} Y:{point.Point.Y}");
+            await Task.Delay(2000);
+            Client.CollectCalibrationPoint();
+        }
+
 
         void OnCalibrationFinished(SkyleFinishedCalibration finished)
         {
             Debug.WriteLine("Skyle Calibration finished");
-            EnableButtons();
+            CalibrationFinishedAction();
+        }
+
+        private void CalibrationFinishedAction()
+        {
+            isCalibrating = false;
+            App.Instance.UIDispatcher.BeginInvoke(() =>
+            {
+                DestroyCurrentCalibrationPoint();
+                GlobalEvents.OnCalibrationFinished.Invoke();
+                EnableButtons();
+            });
         }
 
         public void SpawnCalibrationPoint(Vector2 viewportPos)
@@ -146,6 +189,8 @@ namespace GazeStream.Windows
         public void StartCalibration_Click(object sender, RoutedEventArgs e)
         {
             if (isCalibrating) return;
+            Debug.WriteLine("About to start calibration");
+            StartCalibration();
             //StartCalibrationTaskUsingPanelSettings();
         }
 
@@ -155,13 +200,19 @@ namespace GazeStream.Windows
         }
 
         void StartCalibration()
-        { 
-            
+        {
+            isCalibrating = true;
+            DisableButtons();
+            currentCalibrationPointCount = 9; //Modificar si hay multiples calibraciones. O directamente generar acá el calibration config en vez de en el cliente.
+            GlobalEvents.OnCalibrationStart.Invoke();
+            GazeManager.I.skyle.Client.StartCalibration5();
         }
 
         void CancelCalibration()
-        { 
-        
+        {
+            isCalibrating = false;
+            Client.AbortCalibration();
+            ResetPage();
         }
 
         void DisableButtons()
@@ -187,6 +238,7 @@ namespace GazeStream.Windows
         private void ResetPage()
         {
             Debug.WriteLine("Resetting Page");
+            isCalibrating = false;
             DestroyCurrentCalibrationPoint();
             EyeDisplay.Visibility = Visibility.Collapsed;
             EnableButtons();

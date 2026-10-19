@@ -2,6 +2,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
+using System.Numerics;
+using GazeStream.Utilities;
 
 namespace SkyleAvaloniaExample.Interop;
 
@@ -63,8 +65,6 @@ public class SkyleClient : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void VersionCb(IntPtr client, IntPtr version, IntPtr user);
 
-
-
     //Calibration callbacks
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void CalibrationPointCb(IntPtr client, IntPtr version, IntPtr user);
@@ -73,7 +73,7 @@ public class SkyleClient : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void CalibrationPausedCb(IntPtr client, IntPtr user);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate void CalibrationFinishedCb(IntPtr client, IntPtr version, IntPtr user);
+    private delegate void CalibrationFinishedCb(IntPtr client, IntPtr result, IntPtr user);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void CalibrationAbortedCb(IntPtr client, IntPtr user);
 
@@ -108,9 +108,14 @@ public class SkyleClient : IDisposable
     public event Action<SkyleFinishedCalibration>? CalibrationFinishedReceived;
     public event Action? CalibrationAbortedReceived;
 
-
+    Vector2 monitorPhysicalSize;
+    Vector2 screenPixels;
+    SkyleCalibrationConfig calConfig5 = new();
     public void Start()
     {
+        monitorPhysicalSize = WindowsHelper.GetPhysicalScreenSizeInMillimetres();
+        screenPixels = WindowsHelper.GetFullScreenSize();
+        CreateCalibrationConfigs(screenPixels, monitorPhysicalSize);
         VerifyStructLayouts();
 
         _client = NativeMethods.skyle_client_get_instance();
@@ -262,16 +267,43 @@ public class SkyleClient : IDisposable
 
     public int StartHostCalibration() => SendHostControl((ushort)SkyleLinkHostControl.StartCalibration, null); // empty value = app default points
 
+
+    void CreateCalibrationConfigs(Vector2 pixelResolution, Vector2 physicalSize)
+    {
+        calConfig5 = new SkyleCalibrationConfig();
+        //byte[] points = { 0, 1, 2, 3, 4 };
+        //GCHandle pointsHandle = GCHandle.Alloc(points, GCHandleType.Pinned);
+        //SkylePointF[]? coordinates = null;
+        //calConfig5.PointsCount = 5;
+        //calConfig5.CoordinatesCount = 5;
+        //calConfig5.Points = pointsHandle.AddrOfPinnedObject();
+        calConfig5.Resolution = new SkyleSizeU(pixelResolution.X, pixelResolution.Y);
+        calConfig5.Size = new SkyleSizeF(physicalSize.X, physicalSize.Y);
+    }
+    public void StartCalibration5()
+    {
+       int result = NativeMethods.skyle_client_start_calibration(_client, ref calConfig5);
+       Debug.WriteLine("Start Calibration result: " + result);
+    }
+
+    public void AbortCalibration()
+    {
+        int result = NativeMethods.skyle_client_abort_calibration(_client);
+        Debug.WriteLine("Abort Calibration result: " + result);
+    }
+
     // ---- native callbacks (run on the library's background I/O thread) ----
 
     private void OnCalibrationPoint(IntPtr client, IntPtr calibrationPoint, IntPtr user)
     {
+        Debug.WriteLine("Native OnCalibrationPoint received");
         var r = Marshal.PtrToStructure<SkyleNextCalibrationPoint>(calibrationPoint);
         CalibrationPointReceived?.Invoke(r);
     }
 
     private void OnCalibrationProgress(IntPtr client, IntPtr progress, IntPtr user)
     {
+        Debug.WriteLine("Native OnCalibrationProgress received");
         var r = Marshal.PtrToStructure<SkyleCollectingCalibrationPoints>(progress);
         CalibrationProgressReceived?.Invoke(r);
     }
@@ -283,6 +315,7 @@ public class SkyleClient : IDisposable
 
     private void OnCalibrationFinished(IntPtr client, IntPtr finishedData, IntPtr user)
     {
+        Debug.WriteLine("Native OnCalibrationFinished received");
         var r = Marshal.PtrToStructure<SkyleFinishedCalibration>(finishedData);
         CalibrationFinishedReceived?.Invoke(r);
     }
@@ -367,6 +400,17 @@ public class SkyleClient : IDisposable
                 throw new InvalidOperationException(
                     $"FFI layout mismatch: {typeof(T).Name} is {actual} bytes, expected {expected}.");
         }
+    }
+
+    public void CollectCalibrationPointAt(byte index)
+    {
+        NativeMethods.skyle_client_collect_calibration_points_at(_client, index);
+    }
+
+    //LEGACY
+    public void CollectCalibrationPoint()
+    {
+        NativeMethods.skyle_client_collect_calibration_points(_client);
     }
 
     public void Dispose()

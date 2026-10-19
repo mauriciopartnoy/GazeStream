@@ -106,7 +106,8 @@ internal static class NativeMethods
 
     [DllImport(Lib)] public static extern int skyle_client_start_calibration(IntPtr client, ref SkyleCalibrationConfig cfg);
     [DllImport(Lib)] public static extern int skyle_client_collect_calibration_points(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_client_collect_calibration_points_at(IntPtr client, byte index);
     [DllImport(Lib)] public static extern int skyle_client_abort_calibration(IntPtr client);
-
+    [DllImport(Lib)] public static extern int skyle_free_finished_calibration();
 
 }

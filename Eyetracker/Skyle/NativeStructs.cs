@@ -27,6 +27,18 @@ public struct SkyleSizeF // 8 bytes
 {
     public float Width;
     public float Height;
+
+    public SkyleSizeF()
+    {
+        Width = default;
+        Height = default;
+    }
+
+    public SkyleSizeF(float width, float height)
+    {
+        this.Width = width;
+        this.Height = height;
+    }
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -34,6 +46,18 @@ public struct SkyleSizeU
 {
     public ushort Width;
     public ushort Height;
+
+    public SkyleSizeU()
+    {
+        Width = default;
+        Height = default;
+    }
+
+    public SkyleSizeU(float width, float height)
+    {
+        this.Width = (ushort)width;
+        this.Height = (ushort)height;
+    }
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -262,8 +286,8 @@ public struct SkyleCalibrationConfig
     public ushort CoordinatesCount;
     public IntPtr Coordinates;
 
-    public SkyleSizeU Resolution;
-    public SkyleSizeF Size;
+    public SkyleSizeU Resolution; //Screen pixels
+    public SkyleSizeF Size;       //Physical size in mm
 
     [MarshalAs(UnmanagedType.U1)]
     public bool Improve;
@@ -297,11 +321,22 @@ public struct SkyleQualityPoint
 [StructLayout(LayoutKind.Sequential)]
 public struct SkyleFinishedCalibration
 {
-    public SkyleMessageHeader Header;
+    public SkyleMessageHeader header;
 
-    public ushort LeftCount;
-    public IntPtr Left;
+    public ushort left_count;
+    public IntPtr left;
 
-    public ushort RightCount;
-    public IntPtr Right;
+    public ushort right_count;
+    public IntPtr right;
+
+    ////Los siguientes campos aparecian en la documentación pero no en los includes de c++. ¬¬ 
+    //[MarshalAs(UnmanagedType.I1)]
+    //public bool HasDetails;
+
+    //[MarshalAs(UnmanagedType.I1)]
+    //public bool Success;
+
+    //public SkyleCalibrationFailureReason Reason;
+
+    //public float ZeroQualityAccuracyDeg;
 }

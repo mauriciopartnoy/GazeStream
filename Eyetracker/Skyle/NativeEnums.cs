@@ -26,6 +26,16 @@ public enum SkyleResult
     Memory = -6,
 }
 
+public enum SkyleCalibrationFailureReason : int
+{
+    Unspecified = 0,
+    Timeout = 1,
+    PointTimeout = 2,
+    FitRejected = 3,
+    OtherClientCalibrating = 4,
+    ConfigurationRejected = 5
+}
+
 /// <summary>Mirror of <c>skyle_link_host_control</c> (skyle_link.h).</summary>
 public enum SkyleLinkHostControl : ushort
 {

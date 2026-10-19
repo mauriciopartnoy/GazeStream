@@ -347,15 +347,15 @@ namespace GazeStream.Eyetracker
                 GazePoint = newPoint;
             }
 
-            if (newPoint.viewportPoint.X == 0 || newPoint.viewportPoint.Y == 0)
-            {
-                ReceivedNewData = false;
-                return;
-            }
-            else
-            {
-                ReceivedNewData = true;
-            }
+            //if (newPoint.viewportPoint.X == 0 || newPoint.viewportPoint.Y == 0)
+            //{
+            //    ReceivedNewData = false;
+            //    return;
+            //}
+            //else
+            //{
+            //    ReceivedNewData = true;
+            //}
 
             //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
             if (IsJoacoDevice)
@@ -366,15 +366,21 @@ namespace GazeStream.Eyetracker
                 {
                     targetPoint = outlierFilter.Update(targetPoint);
                 }
-                //Kalman Filter
-                if (Settings.I.KalmanFilter.Value > 0)
-                {
-                    targetPoint = kalmanFilter.GetFilteredPoint(targetPoint);
-                }
+                //Kalman Filter Desactivado en favor de usar solo interpolación.
+
+                //if (Settings.I.KalmanFilter.Value > 0)
+                //{
+                //    targetPoint = kalmanFilter.GetFilteredPoint(targetPoint);
+                //}
                 //Interpolation Filter
+
                 if (Settings.I.InterpolationFilter.Value > 0)
                 {
                     SmoothViewportPoint = Helper.Lerp(SmoothViewportPoint, targetPoint, Settings.I.InterpolationFilter.Value);
+                }
+                else
+                {
+                    SmoothViewportPoint = targetPoint;
                 }
             }
 
