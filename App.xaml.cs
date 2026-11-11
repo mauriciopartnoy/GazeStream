@@ -19,6 +19,8 @@ using Velopack.Locators;
 using Velopack.Windows;
 using System.IO;
 using GazeStream.Utilities.Events;
+using System.Windows.Interop;
+using System.Runtime.InteropServices;
 
 namespace GazeStream
 {
@@ -36,6 +38,8 @@ namespace GazeStream
         public OverlayWindow OverlayWindow { get; private set; }
         public OverlayInteraction OverlayInteraction { get; private set; }
 
+        IntPtr overlayWindowHwnd;
+        IntPtr interactionWindowHwnd;
 
         Hotkeys hotkeys;
         static Mutex? singleInstanceMutex;
@@ -47,6 +51,8 @@ namespace GazeStream
         public static bool IsUpdating { get; private set; }
 
         static CancellationTokenSource updateCts;
+        static CancellationTokenSource keepOverlayCts;
+
         static UpdateWindow updateWindow;
 
         protected override void OnStartup(W.StartupEventArgs e)
@@ -59,13 +65,10 @@ namespace GazeStream
             VelopackApp.Build().Run();
             UpdateCurrentVersionName();
 
-            //COMMENTED OUT PARA CHEQUEAR SI INTERFIERE CON LOS UPDATES.            
-            if (e.Args.Contains("--restart"))
-            {
-                Thread.Sleep(1000); // wait for previous instance to exit
-            }
-
-            if (ForcedSingleInstance()) return;
+            //Con --restart la instancia anterior todavía se está cerrando: se espera a que libere el mutex
+            //(antes se dormía 1 s fijo y, si el cierre tardaba más, la nueva instancia se cerraba y la app quedaba sin correr).
+            bool isRestart = e.Args.Contains("--restart");
+            if (ForcedSingleInstance(isRestart)) return;
 
             base.OnStartup(e);
 
@@ -73,8 +76,8 @@ namespace GazeStream
             UIDispatcher = this.Dispatcher;
             SettingsManager = new Settings();
             SettingsManager.Initialize();
+
             SettingsManager.SampleRateHZ.Value = 60;
-            //SettingsManager.LastCalibrationBuff.Value = new byte[0];
            // SettingsManager.EyetrackerDevice.Value = Eyetracker_Device.Skyle; //SKYLE TEST ONLY
             LoadStartupState();
 
@@ -88,9 +91,43 @@ namespace GazeStream
             HookHotkeys();
             OverlayWindow = WindowManager.OpenWindow<OverlayWindow>();
             OverlayInteraction = WindowManager.OpenWindow<OverlayInteraction>();
+            overlayWindowHwnd = new WindowInteropHelper(OverlayWindow).Handle;
+            interactionWindowHwnd = new WindowInteropHelper(OverlayInteraction).Handle;
+            _ = KeepOverlaysTopmost();
 
             //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
             //_ = UpdateApp(5000);
+        }
+
+        async Task KeepOverlaysTopmost()
+        {
+            keepOverlayCts = new();
+            CancellationToken token = keepOverlayCts.Token;
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    SetOverlayWindowsTopmost();
+                    await Task.Delay(500, token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                //Cierre de la app.
+            }
+        }
+
+        public void SetOverlayWindowsTopmost()
+        {
+            WindowsHelper.SetWindowTopmost(interactionWindowHwnd);
+            WindowsHelper.SetWindowTopmost(overlayWindowHwnd);
+        }
+
+
+        void CancelKeepOverlayTopmost()
+        {
+            //Es null si la app se cerró antes de crear los overlays (por ejemplo, una segunda instancia).
+            keepOverlayCts?.Cancel();
         }
 
         void LoadStartupState()
@@ -199,9 +236,10 @@ namespace GazeStream
 
         public static void CancelUpdate()
         {
-            if (updateCts.IsCancellationRequested) return;
-            updateCts.Cancel();
+            //Es null si nunca se buscó una actualización (UpdateApp está desactivado): antes esto lanzaba una excepción en cada cierre.
+            updateCts?.Cancel();
         }
+
 
             //COMANDOS PARA GENERAR EL UPDATE DESCARGABLE, PRIMERO TENER VPK: dotnet tool install -g vpk 
 
@@ -270,35 +308,105 @@ namespace GazeStream
             });
         }
 
-        protected override async void OnExit(ExitEventArgs e)
+        /// <summary>
+        /// Cierre ordenado. El orden importa:
+        /// 1. Se cortan las tareas periódicas de la UI.
+        /// 2. GazeManager detiene y espera sus bucles y libera el SDK del eyetracker (hilos nativos incluidos).
+        /// 3. El WebSocket avisa el cierre a los clientes y libera el puerto 3000.
+        /// 4. Recién al final se libera el mutex de instancia única, para que una instancia nueva (reinicio o
+        ///    actualización) no arranque mientras ésta todavía tiene la cámara o el puerto.
+        /// Antes el mutex se liberaba primero, GazeManager no esperaba a sus hilos y una excepción
+        /// (updateCts null) cortaba el resto de la limpieza.
+        /// </summary>
+        protected override void OnExit(ExitEventArgs e)
         {
-            DisposeMutex();
+            RunExitStep("overlays", CancelKeepOverlayTopmost);
+            RunExitStep("actualización", CancelUpdate);
+            RunExitStep("atajos de teclado", () => hotkeys?.Dispose());
+            RunExitStep("GazeManager", () => GazeManager?.Dispose());
+            RunExitStep("WebSocket", () => Websocket?.Dispose());
+            RunExitStep("bandeja", () => Tray?.Dispose());
             base.OnExit(e);
-            if (hotkeys != null) hotkeys.Dispose();
-            if (Websocket != null) Websocket.Dispose();
-            if (GazeManager != null) GazeManager.Dispose();
-            if (Tray != null) Tray.Dispose();
+            DisposeMutex();
         }
+
+        static void RunExitStep(string name, Action step)
+        {
+            try
+            {
+                step();
+            }
+            catch (Exception ex)
+            {
+                //Un paso que falla no debe impedir los siguientes (en especial liberar el eyetracker y el mutex).
+                Debug.WriteLine($"Error al cerrar ({name}): {ex}");
+            }
+        }
+
+        // ---- Instancia única ----
+        //Global\: el puerto 3000 y las cámaras son de toda la máquina, así que la instancia es única por equipo
+        //y no por sesión de Windows (antes el nombre sin prefijo era por sesión).
+        const string SINGLE_INSTANCE_MUTEX = @"Global\GazeStream.TrayApp.SingleInstance";
+        static readonly TimeSpan RESTART_WAIT_TIMEOUT = TimeSpan.FromSeconds(15);
+        static bool ownsSingleInstanceMutex;
 
         private static void DisposeMutex()
         {
-            singleInstanceMutex?.ReleaseMutex();
-            singleInstanceMutex?.Dispose();
-            singleInstanceMutex = null;
+            try
+            {
+                //ReleaseMutex sólo es válido si este proceso lo tomó; en una segunda instancia lanzaba una excepción al cerrar.
+                if (ownsSingleInstanceMutex) singleInstanceMutex?.ReleaseMutex();
+            }
+            catch (ApplicationException ex)
+            {
+                Debug.WriteLine("No se pudo liberar el mutex de instancia única: " + ex.Message);
+            }
+            finally
+            {
+                ownsSingleInstanceMutex = false;
+                singleInstanceMutex?.Dispose();
+                singleInstanceMutex = null;
+            }
         }
 
-        bool ForcedSingleInstance()
+        /// <summary>
+        /// Devuelve true si ya hay otra instancia en ejecución; en ese caso esta instancia se cierra.
+        /// Con <paramref name="isRestart"/> se espera a que la instancia anterior termine de cerrarse.
+        /// </summary>
+        bool ForcedSingleInstance(bool isRestart)
         {
-            const string mutexName = "GazeStream.TrayApp.SingleInstance";
-            bool createdNew;
-            singleInstanceMutex = new Mutex(true, mutexName, out createdNew);
-            if (!createdNew)
+            try
             {
-                // Another instance is already running
-                Shutdown();
+                singleInstanceMutex = new Mutex(initiallyOwned: true, SINGLE_INSTANCE_MUTEX, out bool createdNew);
+                if (createdNew || TryAcquireExisting(singleInstanceMutex, isRestart ? RESTART_WAIT_TIMEOUT : TimeSpan.Zero))
+                {
+                    ownsSingleInstanceMutex = true;
+                    return false;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                //El mutex existe pero lo creó otro usuario de Windows: hay una instancia corriendo en otra sesión.
+            }
+
+            Debug.WriteLine("GazeStream ya está en ejecución. Se cierra esta instancia.");
+            singleInstanceMutex?.Dispose();
+            singleInstanceMutex = null;
+            Shutdown();
+            return true;
+        }
+
+        static bool TryAcquireExisting(Mutex mutex, TimeSpan timeout)
+        {
+            try
+            {
+                return mutex.WaitOne(timeout);
+            }
+            catch (AbandonedMutexException)
+            {
+                //La instancia anterior terminó sin liberarlo (por ejemplo, un cierre forzado): el mutex queda para esta.
                 return true;
             }
-            return false;
         }
 
         void HookHotkeys()

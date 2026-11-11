@@ -109,11 +109,26 @@ namespace GazeStream.Utilities
             return DipsToPixels(window, dips);
         }
 
-        public static Vector2 ViewportToUIElementPoint(FrameworkElement element, Vector2 viewportPoint)
+        //public static Vector2 ViewportToUIElementPoint(FrameworkElement element, Vector2 viewportPoint)
+        //{
+        //    return new Vector2(viewportPoint.X * (float)element.ActualWidth, viewportPoint.Y * (float)element.ActualHeight);
+        //    //float x = Lerp(0f, (float)element.ActualWidth, viewportPoint.X);
+        //    //float y = Lerp(0f, (float)element.ActualHeight, viewportPoint.Y);
+        //    //return new Vector2(x, y);
+        //}
+
+        public static System.Windows.Point ViewportToUIElementPoint(FrameworkElement element, Vector2 viewportPoint)
         {
-            float x = Lerp(0f, (float)element.ActualWidth, viewportPoint.X);
-            float y = Lerp(0f, (float)element.ActualHeight, viewportPoint.Y);
-            return new Vector2(x, y);
+            return new System.Windows.Point(
+                viewportPoint.X * element.ActualWidth,
+                viewportPoint.Y * element.ActualHeight);
+        }
+
+        public static System.Windows.Point ViewportToUIElementPoint(FrameworkElement element, double viewportX, double viewportY)
+        {
+            return new System.Windows.Point(
+                viewportX * element.ActualWidth,
+                viewportY * element.ActualHeight);
         }
 
         public static Vector2 ViewportToWindowDips(Window window, Vector2 viewport)

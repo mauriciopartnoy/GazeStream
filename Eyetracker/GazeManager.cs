@@ -74,10 +74,10 @@ namespace GazeStream.Eyetracker
         float sampleRateSeconds;
         const float TIMEOUT_TRESHOLD = .5f;
         InputSimulator input;
-        Task loopTask;
-        Task getDeviceTask;
-        CancellationTokenSource loopCts;
-        CancellationTokenSource getDeviceCts;
+        Task? loopTask;
+        Task? getDeviceTask;
+        //Una sola cancelación para los dos bucles de la sesión actual.
+        CancellationTokenSource? loopCts;
 
         Stopwatch UIdeltaTimeWatch;
         Stopwatch timeOutTimer;
@@ -87,7 +87,8 @@ namespace GazeStream.Eyetracker
 
         public bool IsThisAJoacoDevice(string deviceName)
         {
-            return GazeDevice == null ? false : deviceName == GazeDevice.DeviceName;
+            //Antes comparaba el nombre recibido con el del dispositivo activo, por lo que devolvía true para cualquier dispositivo.
+            return joacoA11 != null && deviceName == joacoA11.DeviceName;
         }
 
         public GazeManager()
@@ -194,31 +195,54 @@ namespace GazeStream.Eyetracker
 
         }
 
+        // ---- Ciclo de vida de los bucles y del dispositivo ----
+        //
+        // Hay dos bucles en el thread pool: FindGazeDeviceLoop (conecta el dispositivo) y UpdateLoop (lee datos).
+        // Los dos comparten un único CancellationTokenSource por "sesión" de bucles.
+        //
+        // deviceGate serializa todo lo que toca el SDK nativo del dispositivo: Initialize, UpdateData y Disconnect.
+        // Antes podían correr a la vez (por ejemplo, UpdateData en un hilo mientras otro desconectaba), y una
+        // inicialización lenta de un bucle ya cancelado podía terminar dejando conectado un dispositivo viejo.
+
+        readonly SemaphoreSlim deviceGate = new(1, 1);
+        readonly object loopGate = new();
+        bool disposed;
+
+        //Al cerrar la app se espera a que los bucles terminen; una inicialización en curso (Skyle, Intelligaze) puede tardar varios segundos.
+        static readonly TimeSpan LOOP_STOP_TIMEOUT = TimeSpan.FromSeconds(6);
+        static readonly TimeSpan DEVICE_GATE_TIMEOUT_ON_EXIT = TimeSpan.FromSeconds(3);
+
         void CancelLoop()
         {
-            getDeviceCts.Cancel();
-            loopCts.Cancel();
+            lock (loopGate)
+            {
+                loopCts?.Cancel();
+            }
         }
 
         public void StartGazeDeviceUpdateLoop()
         {
-            if (loopTask != null && !loopTask.IsCompleted) return;
+            lock (loopGate)
+            {
+                if (disposed) return;
+                //Si hay una sesión activa no se crea otra. Si la anterior se canceló (por ejemplo al calibrar) se arranca
+                //una nueva aunque la vieja todavía esté terminando: deviceGate y el token evitan que se pisen.
+                if (loopCts != null && !loopCts.IsCancellationRequested) return;
 
-            UIdeltaTimeWatch.Restart();
-            UIdeltaTimeLastSample = new TimeSpan(0);
-            UIdeltaTime = new TimeSpan(0);
-            getDeviceCts = new CancellationTokenSource();
-            getDeviceTask = Task.Run(() => FindGazeDeviceLoop(getDeviceCts.Token));
-            loopCts = new CancellationTokenSource();
-            loopTask = Task.Run(() => UpdateLoop(loopCts.Token));
+                UIdeltaTimeWatch.Restart();
+                UIdeltaTimeLastSample = new TimeSpan(0);
+                UIdeltaTime = new TimeSpan(0);
+
+                var cts = new CancellationTokenSource();
+                loopCts = cts;
+                getDeviceTask = Task.Run(() => FindGazeDeviceLoop(cts.Token));
+                loopTask = Task.Run(() => UpdateLoop(cts.Token));
+            }
         }
 
         public void StopGazeDeviceUpdateLoop()
         {
-            if (getDeviceCts != null) { getDeviceCts.Cancel(); }
-            if (loopCts != null) { loopCts.Cancel(); }
-            getDeviceTask = null;
-            loopTask = null;
+            CancelLoop();
             DisconnectDevice();
         }
 
@@ -228,36 +252,64 @@ namespace GazeStream.Eyetracker
             StartGazeDeviceUpdateLoop();
         }
 
-            int automaticCalibrationCounter = 0;
+        int automaticCalibrationCounter = 0;
         async Task UpdateLoop(CancellationToken token)
         {
-
-            while (!token.IsCancellationRequested)
+            try
             {
-                if (IsCalibrating || App.IsUpdating)
+                while (!token.IsCancellationRequested)
                 {
-                    continue;
+                    if (IsCalibrating || App.IsUpdating)
+                    {
+                        //Sin este delay el bucle giraba sin pausa y consumía un núcleo entero.
+                        await Task.Delay(100, token);
+                        continue;
+                    }
+
+                    await deviceGate.WaitAsync(token);
+                    try
+                    {
+                        UpdateDeviceStep();
+                    }
+                    catch (Exception e)
+                    {
+                        //Antes una excepción terminaba el bucle en silencio y la mirada dejaba de enviarse para siempre.
+                        Debug.WriteLine("GazeManager: error en el bucle de actualización. " + e);
+                    }
+                    finally
+                    {
+                        deviceGate.Release();
+                    }
+
+                    UpdateGazeTargetsAndUI();
+
+                    await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
                 }
-                if (GazeDevice != null && !GazeDevice.IsConnected)
-                {
-                    DisconnectDevice();
-                    continue;
-                }
-
-                if (GazeDevice != null)
-                {
-                    GazeDevice.UpdateData();
-                    GetNewGazePointIfValid();
-                    UpdateTimeoutTimer();
-                    UpdateMousePosition();
-                    UpdateCalibrationUsingLocalDatabase();
-
-                }
-
-                UpdateGazeTargetsAndUI();
-
-                await Task.Delay(TimeSpan.FromSeconds(sampleRateSeconds), token);
             }
+            catch (OperationCanceledException)
+            {
+                //Cancelación normal.
+            }
+        }
+
+        /// <summary>Una iteración de lectura del dispositivo. Se llama con deviceGate tomado.</summary>
+        void UpdateDeviceStep()
+        {
+            IGazeDevice? device = GazeDevice;
+            if (device == null) return;
+
+            if (!device.IsConnected)
+            {
+                Debug.WriteLine(device.DeviceName + " lost connection.");
+                DisconnectDeviceCore(device);
+                return;
+            }
+
+            device.UpdateData();
+            GetNewGazePointIfValid();
+            UpdateTimeoutTimer();
+            UpdateMousePosition();
+            UpdateCalibrationUsingLocalDatabase();
         }
 
         private void UpdateCalibrationUsingLocalDatabase()
@@ -269,20 +321,39 @@ namespace GazeStream.Eyetracker
                 if (automaticCalibrationCounter > 60)
                 {
                     automaticCalibrationCounter = 0;
-                    joacoA11.FindBestPresetForThisDevice();
+                    //Antes se calculaba el mejor preset pero se descartaba el resultado.
+                    joacoA11?.ApplyBestPresetIfDifferent();
                 }
             }
         }
 
         async Task FindGazeDeviceLoop(CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
+            try
             {
-                if (GazeDevice == null)
+                while (!token.IsCancellationRequested)
                 {
-                  await TryInitializeGazeDevice();
+                    if (GazeDevice == null)
+                    {
+                        try
+                        {
+                            await TryInitializeGazeDevice(token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.WriteLine("GazeManager: error buscando dispositivos. " + e);
+                        }
+                    }
+                    await Task.Delay(500, token);
                 }
-                await Task.Delay(500, token);
+            }
+            catch (OperationCanceledException)
+            {
+                //Cancelación normal.
             }
         }
 
@@ -323,34 +394,65 @@ namespace GazeStream.Eyetracker
                 }));
         }
 
+        public void UpdatePointer(double x, double y)
+        {
+            App.Current.Dispatcher.BeginInvoke(() =>
+              {
+                  App.Instance.OverlayWindow.UpdateBubblePosition(x, y);
+
+              });
+        }
+
+        Vector2 targetPoint;
+
         void GetNewGazePointIfValid()
         {
             if (GazeDevice == null) return;
 
             RawGazePoint = GazeDevice.RawGazePoint;
             GazePoint newPoint = GazeDevice.GazePoint;
+
             if (newPoint.IsValid)
             {
                 GazePoint = newPoint;
             }
 
-            if (newPoint.viewportPoint.X == 0 && newPoint.viewportPoint.Y == 0)
-            {
-                ReceivedNewData = false;
-                return;
-            }
-            else
-            {
-                ReceivedNewData = true;
-            }
+            //if (newPoint.viewportPoint.X == 0 || newPoint.viewportPoint.Y == 0)
+            //{
+            //    ReceivedNewData = false;
+            //    return;
+            //}
+            //else
+            //{
+            //    ReceivedNewData = true;
+            //}
 
             //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
-            SmoothViewportPoint = GazePoint.viewportPoint;
-            if (IsJoacoDevice)
+            //Los filtros se aplican a todos los dispositivos. Antes dependían de IsJoacoDevice,
+            //que por error era true para cualquier equipo; al corregirlo, Tobii e Intelligaze se habrían quedado sin suavizado.
             {
-                SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
-                SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
-                //SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
+                targetPoint = GazePoint.viewportPoint;
+                //Filter outlier points
+                if (Settings.I.FilterOutlierPoints.Value == true)
+                {
+                    targetPoint = outlierFilter.Update(targetPoint);
+                }
+                //Kalman Filter Desactivado en favor de usar solo interpolación.
+
+                //if (Settings.I.KalmanFilter.Value > 0)
+                //{
+                //    targetPoint = kalmanFilter.GetFilteredPoint(targetPoint);
+                //}
+                //Interpolation Filter
+
+                if (Settings.I.InterpolationFilter.Value > 0)
+                {
+                    SmoothViewportPoint = Helper.Lerp(SmoothViewportPoint, targetPoint, Settings.I.InterpolationFilter.Value);
+                }
+                else
+                {
+                    SmoothViewportPoint = targetPoint;
+                }
             }
 
 
@@ -363,6 +465,25 @@ namespace GazeStream.Eyetracker
             }
             SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
             SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
+
+            //SmoothViewportPoint = GazePoint.viewportPoint;
+            //if (IsJoacoDevice)
+            //{
+            //    SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
+            //    SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
+            //    //SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
+            //}
+
+
+            ////TEST FILTERS
+            //if (Settings.I.ClampBubblePosition.Value == true)
+            //{
+            //    SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint);
+            //    Vector2 padding = Helper.DipsToViewport01(Settings.I.ClampDistance.Value);
+            //    SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding.X, 1f - padding.X), Math.Clamp(SmoothViewportPoint.Y, 0f + padding.Y, 1f - padding.Y));
+            //}
+            //SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
+            //SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
         }
 
         Vector2 ApplyEdgeBias(Vector2 coord)
@@ -371,8 +492,8 @@ namespace GazeStream.Eyetracker
             float x = coord.X;
             float y = coord.Y;
             if (coord.X < padding.X || coord.X > (1f - padding.X))
-            { 
-                x = EdgeBias(coord.X, .03f);            
+            {
+                x = EdgeBias(coord.X, .03f);
             }
             if (coord.Y < padding.Y || coord.X > (1f - padding.Y))
             {
@@ -419,41 +540,103 @@ namespace GazeStream.Eyetracker
             }
         }
 
-        public async Task TryInitializeGazeDevice()
+        async Task TryInitializeGazeDevice(CancellationToken token)
         {
-            kalmanFilter.ResetStartingValues();
-            DisconnectDevice();
-            Debug.WriteLine("Trying to initialize device.");
-
-
-            //El orden de la lista determina el orden de chequeo de dispositivos.
-            //El primer dispositivo que sea capaz de inicializar va ser asignado como GazeDevice.
-            foreach (IGazeDevice device in supportedDevices)
+            await deviceGate.WaitAsync(token);
+            try
             {
-                Debug.WriteLine("Trying to initialize: " + device.DeviceName);
+                //Otro bucle (de una sesión anterior) pudo haber conectado mientras se esperaba el gate.
+                if (GazeDevice != null) return;
 
-                bool initializeSucessful = await device.Initialize();
+                kalmanFilter.ResetStartingValues();
 
-                if (initializeSucessful)
+                //El orden de la lista determina el orden de chequeo de dispositivos.
+                //El primer dispositivo que sea capaz de inicializar va ser asignado como GazeDevice.
+                foreach (IGazeDevice device in supportedDevices.ToList())
                 {
+                    if (token.IsCancellationRequested) return;
+
+                    bool initializeSucessful = false;
+                    try
+                    {
+                        initializeSucessful = await device.Initialize();
+                    }
+                    catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException || e is BadImageFormatException)
+                    {
+                        //Falta una DLL nativa, o la arquitectura del proceso no coincide (los SDK son x64).
+                        Debug.WriteLine($"{device.DeviceName}: SDK nativo no disponible. {e.Message}");
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine($"{device.DeviceName}: error al inicializar. {e}");
+                    }
+
+                    if (!initializeSucessful) continue;
+
+                    //Si mientras se inicializaba se canceló la sesión (cambio de dispositivo, calibración o cierre de la app),
+                    //no se adopta: se libera para no dejar un SDK abierto sin dueño.
+                    if (token.IsCancellationRequested)
+                    {
+                        Debug.WriteLine($"{device.DeviceName}: inicializado tras la cancelación; se libera.");
+                        SafeDisconnect(device);
+                        return;
+                    }
+
                     GazeDevice = device;
-                    OnGazeDeviceChanged?.Invoke(GazeDevice);
-                    Debug.WriteLine(GazeDevice.DeviceName + " was initialized.");
+                    OnGazeDeviceChanged?.Invoke(device);
+                    GlobalEvents.OnEyetrackerConnected.Invoke();
+                    Debug.WriteLine(device.DeviceName + " was initialized.");
                     return;
                 }
             }
-
-            Debug.WriteLine("There is no usable device.");
+            finally
+            {
+                deviceGate.Release();
+            }
         }
 
+        /// <summary>
+        /// Desconecta el dispositivo actual. Se ejecuta en segundo plano para no bloquear la UI mientras otro hilo
+        /// usa el SDK (una inicialización puede tardar varios segundos). Sólo desconecta el dispositivo que estaba
+        /// activo al llamar: si para entonces ya se conectó otro, no lo toca.
+        /// </summary>
         public void DisconnectDevice()
         {
-            if (GazeDevice != null)
-            {
-                GazeDevice.Disconnect();
-            }
+            IGazeDevice? expected = GazeDevice;
+            if (expected == null) return;
 
-            GazeDevice = null;
+            _ = Task.Run(async () =>
+            {
+                await deviceGate.WaitAsync();
+                try
+                {
+                    if (GazeDevice == expected) DisconnectDeviceCore(expected);
+                }
+                finally
+                {
+                    deviceGate.Release();
+                }
+            });
+        }
+
+        /// <summary>Se llama con deviceGate tomado.</summary>
+        void DisconnectDeviceCore(IGazeDevice device)
+        {
+            if (GazeDevice == device) GazeDevice = null;
+            SafeDisconnect(device);
+            GlobalEvents.OnEyetrackerDisconnected.Invoke();
+        }
+
+        static void SafeDisconnect(IGazeDevice device)
+        {
+            try
+            {
+                device.Disconnect();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"{device.DeviceName}: error al desconectar. {e.Message}");
+            }
         }
 
         public void SetMouseControl(bool enabled)
@@ -468,8 +651,8 @@ namespace GazeStream.Eyetracker
 
         public void RequestCalibration(int pointsArray, int eyes)
         {
-            //DEFAULT
-            if (GazeDevice == null && joacoA11 != null)
+            //DEFAULT: con el Joaco seleccionado se abre su ventana de calibración aunque todavía no esté conectado.
+            if (GazeDevice == null && joacoA11 != null && Settings.I.EyetrackerDevice.Value == Eyetracker_Device.Joaco)
             {
                 joacoA11.RequestCalibration(pointsArray, eyes);
                 return;
@@ -558,7 +741,7 @@ namespace GazeStream.Eyetracker
                 //Debug.WriteLine($"Updating window: {w.Name} Delta time: {UIdeltaTime.TotalSeconds}");
                 if (w == null) continue;
 
-                //Activaci�n solo por mouse.
+                //Activación solo por mouse.
                 System.Drawing.Point screenPos = System.Windows.Forms.Control.MousePosition;
                 UpdateGazeTargetsForWindow(new System.Windows.Point(screenPos.X, screenPos.Y), w);
                 //UpdateGazeTargetsForWindow(SmoothScreenP, w);
@@ -653,13 +836,49 @@ namespace GazeStream.Eyetracker
             gazeTargets.Clear();
         }
 
+        /// <summary>
+        /// Cierre ordenado al salir de la app: cancela los dos bucles, espera a que terminen y libera el SDK del dispositivo.
+        /// Antes sólo se cancelaba el bucle de lectura (el de búsqueda de dispositivos seguía vivo y podía inicializar
+        /// un SDK durante el cierre), no se esperaba a ninguno y se desconectaba en paralelo a una lectura en curso.
+        /// </summary>
         public void Dispose()
         {
-            if (loopCts == null) return;
-            loopCts.Cancel();
-            loopCts.Dispose();
-            loopCts = null;
-            DisconnectDevice();
+            Task?[] tasks;
+            lock (loopGate)
+            {
+                if (disposed) return;
+                disposed = true;
+                loopCts?.Cancel();
+                tasks = new[] { loopTask, getDeviceTask };
+            }
+
+            Settings.I.EyetrackerDevice.OnChanged -= StartLoopWithSelectedDevice;
+
+            //Los bucles sólo hacen BeginInvoke a la UI, así que esperar acá (en el hilo de UI) no los bloquea.
+            Task[] running = tasks.Where(t => t != null).Cast<Task>().ToArray();
+            try
+            {
+                if (running.Length > 0 && !Task.WaitAll(running, LOOP_STOP_TIMEOUT))
+                {
+                    Debug.WriteLine("GazeManager: los bucles no terminaron a tiempo; se libera el dispositivo igual.");
+                }
+            }
+            catch (AggregateException e)
+            {
+                Debug.WriteLine("GazeManager: error al terminar los bucles. " + e.Flatten().InnerException?.Message);
+            }
+
+            bool gateTaken = deviceGate.Wait(DEVICE_GATE_TIMEOUT_ON_EXIT);
+            try
+            {
+                IGazeDevice? device = GazeDevice;
+                GazeDevice = null;
+                if (device != null) SafeDisconnect(device);
+            }
+            finally
+            {
+                if (gateTaken) deviceGate.Release();
+            }
         }
     }
 }

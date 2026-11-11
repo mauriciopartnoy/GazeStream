@@ -43,7 +43,9 @@ namespace GazeStream.Windows
                 Debug.WriteLine("Gaze device changed." + gazeDevice.DeviceName + isIntelligaze);
 
             }
-            Dispatcher.Invoke(() =>
+            //BeginInvoke: este evento llega desde el bucle de búsqueda de dispositivos; un Invoke sincrónico
+            //lo bloquearía mientras la UI espera a que ese bucle termine al cerrar la app.
+            Dispatcher.BeginInvoke(() =>
             {
                 //TEST ONLY
 

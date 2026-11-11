@@ -58,7 +58,7 @@ public class Eye
     public float pupilDistanceMm;
     public float pupilDiameterMm;
     public float pupilDiameter;
-    //public float openness; //No est· implementado todavÌa en el SDK
+    //public float openness; //No est√° implementado todav√≠a en el SDK
 
     public Vector2 GetViewportPos()
     {

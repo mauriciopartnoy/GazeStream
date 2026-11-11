@@ -2,32 +2,36 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Diagnostics;
+using System.Numerics;
+using GazeStream.Utilities;
 
 namespace SkyleAvaloniaExample.Interop;
 
 /// <summary>Decoded gaze sample handed to the UI.</summary>
-internal sealed class GazeSnapshot
+public class GazeSnapshot
 {
     public float X { get; }
     public float Y { get; }
+    public float RawX { get; }
+    public float RawY { get; }
     public SkyleEyeMovementType Movement { get; }
     public bool Valid { get; }
 
-    public GazeSnapshot(float x, float y, SkyleEyeMovementType movement, bool valid)
+    public GazeSnapshot(float x, float y, float rawX, float rawY, SkyleEyeMovementType movement, bool valid)
     {
-        X = x; Y = y; Movement = movement; Valid = valid;
+        X = x; Y = y; RawX = rawX; RawY = rawY; Movement = movement; Valid = valid;
     }
 }
 
 /// <summary>One positioning frame (full face structure) for the diagnostic view.</summary>
-internal sealed class PositioningSnapshot
+public class PositioningSnapshot
 {
     public SkyleComplexFace Face { get; }
     public PositioningSnapshot(SkyleComplexFace face) => Face = face;
 }
 
 /// <summary>One decoded video frame; pixels copied out of the transient native buffer.</summary>
-internal sealed class VideoFrame
+public class VideoFrame
 {
     public int Width { get; }
     public int Height { get; }
@@ -45,7 +49,7 @@ internal sealed class VideoFrame
 /// marshals callbacks off the library's background I/O thread, and raises plain
 /// C# events. All events fire on a NON-UI thread — subscribers must marshal.
 /// </summary>
-internal sealed class SkyleClient : IDisposable
+public class SkyleClient : IDisposable
 {
     private const ushort SkyleVendorId = 0x3729;
     private const ushort SkyleProductId = 0x7333;
@@ -64,7 +68,16 @@ internal sealed class SkyleClient : IDisposable
     private delegate void VersionCb(IntPtr client, IntPtr version, IntPtr user);
 
     //Calibration callbacks
-
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void CalibrationPointCb(IntPtr client, IntPtr version, IntPtr user);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void CalibrationProgressCb(IntPtr client, IntPtr version, IntPtr user);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void CalibrationPausedCb(IntPtr client, IntPtr user);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void CalibrationFinishedCb(IntPtr client, IntPtr result, IntPtr user);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void CalibrationAbortedCb(IntPtr client, IntPtr user);
 
     private IntPtr _client;
     private IntPtr _transport;
@@ -76,14 +89,35 @@ internal sealed class SkyleClient : IDisposable
     private StateCb? _stateCb;
     private VersionCb? _versionCb;
 
+    private CalibrationPointCb? _calibrationPointCb;
+    private CalibrationProgressCb? _calibrationProgressCb;
+    private CalibrationPausedCb? _calibrationPausedCb;
+    private CalibrationFinishedCb? _calibrationFinishedCb;
+    private CalibrationAbortedCb? _calibrationAbortedCb;
+    //TODO: add ControlCb for control messages.
+
+
     public event Action<GazeSnapshot>? GazeReceived;
     public event Action<PositioningSnapshot>? PositioningReceived;
     public event Action<VideoFrame>? VideoReceived;
     public event Action<SkyleConnectionState>? StateChanged;
+    public event Action<SkyleControlMessage>? OnControlSend;
     public event Action<string>? VersionReceived;
 
+    public event Action<SkyleNextCalibrationPoint>? CalibrationPointReceived;
+    public event Action<SkyleCollectingCalibrationPoints>? CalibrationProgressReceived;
+    public event Action? CalibrationPausedReceived;
+    public event Action<SkyleFinishedCalibration>? CalibrationFinishedReceived;
+    public event Action? CalibrationAbortedReceived;
+
+    Vector2 monitorPhysicalSize;
+    Vector2 screenPixels;
+    SkyleCalibrationConfig calConfig5 = new();
     public void Start()
     {
+        monitorPhysicalSize = WindowsHelper.GetPhysicalScreenSizeInMillimetres();
+        screenPixels = WindowsHelper.GetFullScreenSize();
+        CreateCalibrationConfigs(screenPixels, monitorPhysicalSize);
         VerifyStructLayouts();
 
         _client = NativeMethods.skyle_client_get_instance();
@@ -107,7 +141,7 @@ internal sealed class SkyleClient : IDisposable
         Debug.WriteLine("Is Local Link: " + isLocalLink);
         if (!isLocalLink)
         {
-          int result = NativeMethods.skyle_client_connect(_client);
+            int result = NativeMethods.skyle_client_connect(_client);
             Debug.WriteLine("Connect result: " + result);
         }
     }
@@ -150,7 +184,7 @@ internal sealed class SkyleClient : IDisposable
         {
             Debug.WriteLine("An exception occured: Was not able to setup transport.");
         }
-       
+
     }
 
     private void SetupCallbacks()
@@ -161,6 +195,12 @@ internal sealed class SkyleClient : IDisposable
         _stateCb = OnState;
         _versionCb = OnVersion;
 
+        _calibrationPointCb = OnCalibrationPoint;
+        _calibrationProgressCb = OnCalibrationProgress;
+        _calibrationPausedCb = OnCalibrationPaused;
+        _calibrationFinishedCb = OnCalibrationFinished;
+        _calibrationAbortedCb = OnCalibrationAborted;
+
         var callbacks = new SkyleCallbackConfig
         {
             OnGaze = Marshal.GetFunctionPointerForDelegate(_gazeCb),
@@ -168,6 +208,14 @@ internal sealed class SkyleClient : IDisposable
             OnVideo = Marshal.GetFunctionPointerForDelegate(_videoCb),
             OnStateChange = Marshal.GetFunctionPointerForDelegate(_stateCb),
             OnVersion = Marshal.GetFunctionPointerForDelegate(_versionCb),
+
+            OnCalibrationPoint = Marshal.GetFunctionPointerForDelegate(_calibrationPointCb),
+            OnCalibrationProgress = Marshal.GetFunctionPointerForDelegate(_calibrationProgressCb),
+            OnCalibrationPaused = Marshal.GetFunctionPointerForDelegate(_calibrationPausedCb),
+            OnCalibrationFinished = Marshal.GetFunctionPointerForDelegate(_calibrationFinishedCb),
+            OnCalibrationAborted = Marshal.GetFunctionPointerForDelegate(_calibrationAbortedCb),
+
+
             UserData = IntPtr.Zero,
         };
         int result = NativeMethods.skyle_client_set_callbacks(_client, ref callbacks);
@@ -179,17 +227,20 @@ internal sealed class SkyleClient : IDisposable
 
     public void EnableGaze(bool enable) => SafeCall(() => NativeMethods.skyle_client_enable_gaze(_client, enable));
     public void EnablePositioning(bool enable) => SafeCall(() => NativeMethods.skyle_client_enable_positioning(_client, enable));
+    public void EnableControl(bool enable) => SafeCall(() => NativeMethods.skyle_client_enable_control(_client, enable));
+
     public void EnableVideo(bool enable) => SafeCall(() => NativeMethods.skyle_client_enable_video(_client, enable));
 
     private void SafeCall(Func<int> action)
     {
         Debug.WriteLine("Starting Skyle safe call");
         if (_client == IntPtr.Zero || _disposed) return;
-        try 
+        try
         {
             Debug.WriteLine("Safe call succesful");
             action();
-        } catch { /* best-effort streaming toggles */ }
+        }
+        catch { /* best-effort streaming toggles */ }
     }
 
     // ---- Skyle Link host control (commands to the hub-hosting Skyle app) ----
@@ -203,7 +254,7 @@ internal sealed class SkyleClient : IDisposable
     {
         Debug.WriteLine("Starting Skyle SendHostControl");
         if (_client == IntPtr.Zero || _disposed) return (int)SkyleResult.InvalidState;
-        try 
+        try
         {
             int result = NativeMethods.skyle_link_send_host_control(_client, controlId, value, (ushort)(value?.Length ?? 0));
             Debug.WriteLine("Skyle link SendHostControl result: " + result);
@@ -218,7 +269,100 @@ internal sealed class SkyleClient : IDisposable
 
     public int StartHostCalibration() => SendHostControl((ushort)SkyleLinkHostControl.StartCalibration, null); // empty value = app default points
 
+
+    void CreateCalibrationConfigs(Vector2 pixelResolution, Vector2 physicalSize)
+    {
+        calConfig5 = new SkyleCalibrationConfig();
+        calConfig5.Resolution = new SkyleSizeU(pixelResolution.X, pixelResolution.Y);
+        calConfig5.Size = new SkyleSizeF(physicalSize.X, physicalSize.Y);
+    }
+
+    //Índices de la grilla 3x3 del Skyle (0 = arriba a la izquierda, 4 = centro).
+    public static readonly byte[] CalibrationPoints9 = { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+    public static readonly byte[] CalibrationPoints5 = { 0, 2, 4, 6, 8 };
+    public static readonly byte[] CalibrationPoints3 = { 0, 4, 8 };
+
+    //Memoria nativa con la lista de puntos; se mantiene viva hasta la próxima calibración o el Dispose.
+    IntPtr calibrationPointsPtr;
+
+    /// <summary>
+    /// Inicia la calibración con los índices de la grilla indicados.
+    /// Sin lista de puntos el Skyle responde "finished" de inmediato y no calibra nada.
+    /// </summary>
+    public int StartCalibration(byte[] pointIndices)
+    {
+        if (_client == IntPtr.Zero || _disposed) return (int)SkyleResult.InvalidState;
+        if (pointIndices == null || pointIndices.Length == 0) return (int)SkyleResult.InvalidState;
+
+        FreeCalibrationPoints();
+        calibrationPointsPtr = Marshal.AllocHGlobal(pointIndices.Length);
+        Marshal.Copy(pointIndices, 0, calibrationPointsPtr, pointIndices.Length);
+
+        //Recalcula por si cambió la resolución o el monitor desde que se conectó.
+        CreateCalibrationConfigs(WindowsHelper.GetFullScreenSize(), WindowsHelper.GetPhysicalScreenSizeInMillimetres());
+        calConfig5.PointsCount = (ushort)pointIndices.Length;
+        calConfig5.Points = calibrationPointsPtr;
+
+        int result = NativeMethods.skyle_client_start_calibration(_client, ref calConfig5);
+        Debug.WriteLine($"Skyle start calibration ({pointIndices.Length} puntos, {calConfig5.Resolution.Width}x{calConfig5.Resolution.Height}): {(SkyleResult)result}");
+        return result;
+    }
+
+    void FreeCalibrationPoints()
+    {
+        if (calibrationPointsPtr != IntPtr.Zero)
+        {
+            Marshal.FreeHGlobal(calibrationPointsPtr);
+            calibrationPointsPtr = IntPtr.Zero;
+        }
+    }
+
+    public SkyleConnectionState State =>
+        _client == IntPtr.Zero || _disposed ? SkyleConnectionState.Disconnected : (SkyleConnectionState)NativeMethods.skyle_client_get_state(_client);
+
+    /// <summary>True cuando otra app (por ej. Skyle X) es dueña del USB y esta app recibe datos como cliente del link local.</summary>
+    public bool IsLocalLink => _client != IntPtr.Zero && !_disposed && NativeMethods.skyle_client_is_local_link(_client);
+
+    public void AbortCalibration()
+    {
+        if (_client == IntPtr.Zero || _disposed) return;
+        int result = NativeMethods.skyle_client_abort_calibration(_client);
+        Debug.WriteLine("Abort Calibration result: " + result);
+    }
+
     // ---- native callbacks (run on the library's background I/O thread) ----
+
+    private void OnCalibrationPoint(IntPtr client, IntPtr calibrationPoint, IntPtr user)
+    {
+        Debug.WriteLine("Native OnCalibrationPoint received");
+        var r = Marshal.PtrToStructure<SkyleNextCalibrationPoint>(calibrationPoint);
+        CalibrationPointReceived?.Invoke(r);
+    }
+
+    private void OnCalibrationProgress(IntPtr client, IntPtr progress, IntPtr user)
+    {
+        Debug.WriteLine("Native OnCalibrationProgress received");
+        var r = Marshal.PtrToStructure<SkyleCollectingCalibrationPoints>(progress);
+        CalibrationProgressReceived?.Invoke(r);
+    }
+
+    private void OnCalibrationPaused(IntPtr client, IntPtr user)
+    {
+        CalibrationPausedReceived?.Invoke();
+    }
+
+    private void OnCalibrationFinished(IntPtr client, IntPtr finishedData, IntPtr user)
+    {
+        Debug.WriteLine("Native OnCalibrationFinished received");
+        var r = Marshal.PtrToStructure<SkyleFinishedCalibration>(finishedData);
+        CalibrationFinishedReceived?.Invoke(r);
+    }
+
+    private void OnCalibrationAborted(IntPtr client, IntPtr user)
+    {
+        CalibrationAbortedReceived?.Invoke();
+    }
+
 
     private void OnGaze(IntPtr client, IntPtr gaze, IntPtr user)
     {
@@ -226,7 +370,7 @@ internal sealed class SkyleClient : IDisposable
         var r = Marshal.PtrToStructure<SkyleGazeResponse>(gaze);
         var both = r.Both;
         bool valid = both.Smoothed.X != 0f || both.Smoothed.Y != 0f;
-        GazeReceived?.Invoke(new GazeSnapshot(both.Smoothed.X, both.Smoothed.Y, (SkyleEyeMovementType)both.Type, valid));
+        GazeReceived?.Invoke(new GazeSnapshot(both.Smoothed.X, both.Smoothed.Y, both.Raw.X, both.Raw.Y, (SkyleEyeMovementType)both.Type, valid));
     }
 
     private void OnPositioning(IntPtr client, IntPtr positioning, IntPtr user)
@@ -243,6 +387,12 @@ internal sealed class SkyleClient : IDisposable
         if (r.PixelData != IntPtr.Zero && len > 0)
             Marshal.Copy(r.PixelData, buffer, 0, len); // copy now — pointer is transient
         VideoReceived?.Invoke(new VideoFrame(r.Width, r.Height, r.Channels, buffer));
+    }
+
+    private void OnControl(IntPtr client, SkyleControlMessage control)
+    {
+        Debug.WriteLine("On Control received");
+        OnControlSend?.Invoke(control);
     }
 
     private void OnState(IntPtr client, int oldState, int newState, IntPtr user)
@@ -290,6 +440,14 @@ internal sealed class SkyleClient : IDisposable
         }
     }
 
+    //skylelib.dll no exporta skyle_client_collect_calibration_points_at: se usa la versión que recolecta el punto actual.
+    public void CollectCalibrationPoint()
+    {
+        if (_client == IntPtr.Zero || _disposed) return;
+        int result = NativeMethods.skyle_client_collect_calibration_points(_client);
+        Debug.WriteLine("Skyle collect calibration point: " + (SkyleResult)result);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -316,11 +474,19 @@ internal sealed class SkyleClient : IDisposable
             _transport = IntPtr.Zero;
         }
 
+        FreeCalibrationPoints();
+
         // Delegates intentionally kept referenced until after the I/O thread has stopped.
         _gazeCb = null;
         _posCb = null;
         _videoCb = null;
         _stateCb = null;
         _versionCb = null;
+
+        _calibrationPointCb = null;
+        _calibrationProgressCb = null;
+        _calibrationPausedCb = null;
+        _calibrationFinishedCb = null;
+        _calibrationAbortedCb = null;
     }
 }

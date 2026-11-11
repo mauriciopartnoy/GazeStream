@@ -82,12 +82,20 @@ public class WebSocketStream : IDisposable
         ws.AddWebSocketService<GazeService>("/gaze");
         service = ws.WebSocketServices["/gaze"];
         ws.WebSocketServices.KeepClean = true;
-        ws.Start();
+        try
+        {
+            ws.Start();
+        }
+        catch (Exception e)
+        {
+            //Normalmente: el puerto 3000 está ocupado. Antes la excepción cerraba la app al arrancar.
+            Debug.WriteLine("No se pudo iniciar el servidor WebSocket en el puerto 3000: " + e.Message);
+        }
     }
 
     public void WriteLine(string message)
     {
-        if (ws == null)
+        if (ws == null || service == null)
         {
             Debug.WriteLine("Websocket is null.");
             return;
@@ -149,9 +157,15 @@ public class WebSocketStream : IDisposable
 
     public void Dispose()
     {
-        WriteLine(CALLBACK_INSTANCE_QUIT);
+        UnsubscribeToGazeManager();
         if (ws == null) return;
-        ws.Stop();
+        if (ws.IsListening)
+        {
+            WriteLine(CALLBACK_INSTANCE_QUIT);
+            //Stop cierra las sesiones y espera al hilo del listener: libera el puerto antes de que arranque otra instancia.
+            ws.Stop();
+        }
+        ws = null;
     }
 }
 

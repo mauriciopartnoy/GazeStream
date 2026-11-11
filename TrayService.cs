@@ -149,7 +149,10 @@ namespace GazeStream
         {
             if (GazeManager.I.GazeDevice == null)
             {
-                GazeManager.I.joacoA11.OpenCalibrationPage();
+                if (AppData.Settings.I.EyetrackerDevice.Value == AppData.Eyetracker_Device.Skyle)
+                    GazeManager.I.skyle?.OpenCalibrationPage();
+                else
+                    GazeManager.I.joacoA11?.OpenCalibrationPage();
                 return;
             }
 

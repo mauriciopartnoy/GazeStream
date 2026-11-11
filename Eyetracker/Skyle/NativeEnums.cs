@@ -1,7 +1,7 @@
 namespace SkyleAvaloniaExample.Interop;
 
 /// <summary>Mirror of <c>skyle_connection_state</c> (skyle_client.h).</summary>
-internal enum SkyleConnectionState
+public enum SkyleConnectionState
 {
     Disconnected = 0,
     WaitingPing,
@@ -15,7 +15,7 @@ internal enum SkyleConnectionState
 }
 
 /// <summary>Mirror of <c>skyle_result</c> (skyle_client.h).</summary>
-internal enum SkyleResult
+public enum SkyleResult
 {
     Ok = 0,
     NotFound = -1,
@@ -26,8 +26,18 @@ internal enum SkyleResult
     Memory = -6,
 }
 
+public enum SkyleCalibrationFailureReason : int
+{
+    Unspecified = 0,
+    Timeout = 1,
+    PointTimeout = 2,
+    FitRejected = 3,
+    OtherClientCalibrating = 4,
+    ConfigurationRejected = 5
+}
+
 /// <summary>Mirror of <c>skyle_link_host_control</c> (skyle_link.h).</summary>
-internal enum SkyleLinkHostControl : ushort
+public enum SkyleLinkHostControl : ushort
 {
     MenuBar = 1,
     PointerOverlay = 2,
@@ -35,7 +45,7 @@ internal enum SkyleLinkHostControl : ushort
 }
 
 /// <summary>Mirror of <c>skyle_eye_movement_type</c> (skyle_types.h).</summary>
-internal enum SkyleEyeMovementType : byte
+public enum SkyleEyeMovementType : byte
 {
     Fixation = 0,
     Saccade = 1,

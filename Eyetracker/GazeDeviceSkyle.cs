@@ -1,175 +1,218 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Threading;
-using SkyleAvaloniaExample.Interop;
 using System.Diagnostics;
 using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
+using SkyleAvaloniaExample.Interop;
 using GazeStream.Utilities;
+using GazeStream.Windows;
+using GazeStream.AppData;
 
 namespace GazeStream.Eyetracker
 {
+    /// <summary>
+    /// Adaptador para Skyle (eyeV) mediante skylelib.dll por USB.
+    /// Si Skyle X está abierto, él es dueño del USB y esta app recibe los datos como cliente del link local.
+    /// </summary>
     public class GazeDeviceSkyle : IGazeDevice
     {
+        static readonly TimeSpan CONNECT_TIMEOUT = TimeSpan.FromSeconds(5);
+        //Tiempo sin sincronizar (o sin muestras) tras el cual se considera desconectado.
+        static readonly TimeSpan LOST_LINK_TIMEOUT = TimeSpan.FromSeconds(5);
+        static readonly TimeSpan PRESENCE_TIMEOUT = TimeSpan.FromSeconds(1);
+
         public string DeviceName => "Skyle";
-        public bool IsConnected => true;
-        public bool UserIsPresent => UserIsPresentStatic;
-        public GazePoint GazePoint => gazePointCache;
-        public GazePoint RawGazePoint => rawGazePointCache;
+        public bool IsConnected { get; private set; }
+        public bool UserIsPresent => IsConnected && DateTime.UtcNow.Ticks - Interlocked.Read(ref lastValidSampleTicks) < PRESENCE_TIMEOUT.Ticks;
+        public GazePoint GazePoint { get { lock (sampleLock) return gazePointCache; } }
+        public GazePoint RawGazePoint { get { lock (sampleLock) return rawGazePointCache; } }
         public EyesData Eyes => eyesCache;
 
-        GazePoint gazePointCache = new();
-        GazePoint rawGazePointCache = new();
-        EyesData eyesCache = new();
-        static bool UserIsPresentStatic;
+        //Escritos desde el hilo de I/O de skylelib y leídos desde el bucle de GazeManager.
+        readonly object sampleLock = new();
+        GazePoint gazePointCache = GazePoint.Invalid;
+        GazePoint rawGazePointCache = GazePoint.Invalid;
+        readonly EyesData eyesCache = new();
+        long lastValidSampleTicks;
+        long lastSampleTicks;
+        int latestState = (int)SkyleConnectionState.Disconnected;
+        DateTime lastSyncedUtc;
         Vector2 screenSize;
 
-        private readonly SkyleClient client = new();
-        private readonly DispatcherTimer dispatcherTimer = new(); //no se si lo necesito
-
-
-        // Latest values written from the library's I/O thread (reference swaps are atomic).
-        private volatile PositioningSnapshot? _latestPos;
-        private volatile GazeSnapshot? _latestGaze;
-        private volatile VideoFrame? _latestVideo;
-        private volatile string _latestVersion = string.Empty;
-        private int _latestState = (int)SkyleConnectionState.Disconnected;
-
-        // What the UI has already consumed.
-        private PositioningSnapshot? _posShown;
-        private GazeSnapshot? _gazeShown;
-        private VideoFrame? _videoShown;
-        private SkyleConnectionState _appliedState = (SkyleConnectionState)(-1);
-
-
-        public void Disconnect()
-        {
-            App.Instance.UIDispatcher.BeginInvoke(()=> {
-                try
-                {
-                    Debug.WriteLine("Skyle client is being disposed");
-                    DisposeCallbacks();
-                    client.Dispose();
-                }
-                catch
-                {
-                    Debug.WriteLine("Dispose Skyle was unsuccesful");
-                }
-            });
-       
-        }
+        //Se crea un cliente nuevo en cada conexión: un SkyleClient liberado no se puede reutilizar.
+        SkyleClient? client;
+        public SkyleClient? Client => client;
 
         public async Task<bool> Initialize()
         {
-            screenSize = Helper.GetPrimaryMonitorSize();
             Debug.WriteLine("Initializing SKYLE");
-            SetCallbacks();
+            Disconnect();
+            screenSize = Helper.GetPrimaryMonitorSize();
+
+            var newClient = new SkyleClient();
+            newClient.GazeReceived += OnGazeReceived;
+            newClient.StateChanged += OnStateChanged;
+            Interlocked.Exchange(ref latestState, (int)SkyleConnectionState.Disconnected);
+            Interlocked.Exchange(ref lastSampleTicks, 0);
+
             try
             {
-                client.Start();
-                dispatcherTimer.Start();
+                newClient.Start();
             }
             catch (Exception ex)
             {
+                //DllNotFound, layout de structs, etc.
                 Debug.WriteLine("Could not connect to Skyle: " + ex.Message);
+                ReleaseClient(newClient);
                 return false;
             }
-            return true;
+            client = newClient;
+
+            //Espera a que el enlace quede sincronizado (o a que lleguen muestras si somos cliente del link de Skyle X).
+            Stopwatch sw = Stopwatch.StartNew();
+            while (sw.Elapsed < CONNECT_TIMEOUT)
+            {
+                if (IsLinkAlive(newClient))
+                {
+                    IsConnected = true;
+                    lastSyncedUtc = DateTime.UtcNow;
+                    //Por si el cambio a LinkSynced ocurrió antes de suscribirnos.
+                    EnableStreams(newClient);
+                    Debug.WriteLine($"Skyle conectado (link local: {newClient.IsLocalLink}).");
+                    return true;
+                }
+                await Task.Delay(100);
+            }
+
+            Debug.WriteLine("Skyle: no se pudo sincronizar con el dispositivo. Estado: " + newClient.State);
+            Disconnect();
+            return false;
         }
 
-        void SetCallbacks()
+        bool IsLinkAlive(SkyleClient c)
         {
-
-            client.PositioningReceived += OnPositionReceived;
-            client.GazeReceived += OnGazeReceived;
-            client.VideoReceived += v => _latestVideo = v;
-            client.VersionReceived += v => _latestVersion = v;
-            client.StateChanged += OnStateChanged;
+            if (c.State == SkyleConnectionState.LinkSynced) return true;
+            long last = Interlocked.Read(ref lastSampleTicks);
+            return last != 0 && DateTime.UtcNow.Ticks - last < LOST_LINK_TIMEOUT.Ticks;
         }
 
-        void DisposeCallbacks()
+        static void EnableStreams(SkyleClient c)
         {
-            client.PositioningReceived -= OnPositionReceived;
-            client.GazeReceived -= OnGazeReceived;
-            client.StateChanged -= OnStateChanged;
-
+            c.EnableGaze(true);
+            c.EnablePositioning(true);
+            c.EnableControl(true);
         }
 
-        void OnPositionReceived(PositioningSnapshot pos)
+        public void Disconnect()
         {
+            SkyleClient? old = client;
+            client = null;
+            IsConnected = false;
+            lock (sampleLock)
+            {
+                gazePointCache = GazePoint.Invalid;
+                rawGazePointCache = GazePoint.Invalid;
+            }
+            Interlocked.Exchange(ref lastValidSampleTicks, 0);
+            if (old != null) ReleaseClient(old);
         }
 
+        void ReleaseClient(SkyleClient c)
+        {
+            c.GazeReceived -= OnGazeReceived;
+            c.StateChanged -= OnStateChanged;
+            try
+            {
+                Debug.WriteLine("Skyle client is being disposed");
+                c.Dispose();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Dispose Skyle was unsuccessful: " + e.Message);
+            }
+        }
+
+        //Corre en el hilo de I/O de skylelib.
         void OnGazeReceived(GazeSnapshot gaze)
         {
+            long now = DateTime.UtcNow.Ticks;
+            Interlocked.Exchange(ref lastSampleTicks, now);
             if (!gaze.Valid) return;
-            Vector2 gazePos = Helper.ScreenToViewportClamped(screenSize, gaze.X, gaze.Y);
-            gazePointCache = new GazePoint(gazePos);
-            //Debug.WriteLine("Gaze pos: " + gazePos.X);
+
+            //Skyle entrega píxeles físicos de la pantalla principal.
+            var smoothed = new GazePoint(Helper.ScreenToViewportClamped(screenSize, gaze.X, gaze.Y));
+            var raw = new GazePoint(Helper.ScreenToViewportClamped(screenSize, gaze.RawX, gaze.RawY));
+            lock (sampleLock)
+            {
+                gazePointCache = smoothed;
+                rawGazePointCache = raw;
+            }
+            Interlocked.Exchange(ref lastValidSampleTicks, now);
         }
 
+        //Corre en el hilo de I/O de skylelib.
         void OnStateChanged(SkyleConnectionState state)
         {
-            Debug.WriteLine("Skyle State: " + state.ToString());
-            Interlocked.Exchange(ref _latestState, (int)state);
-            if (state == SkyleConnectionState.LinkSynced)
+            Debug.WriteLine("Skyle State: " + state);
+            Interlocked.Exchange(ref latestState, (int)state);
+            SkyleClient? c = client;
+            if (state == SkyleConnectionState.LinkSynced && c != null)
             {
-                client.SetHostPointerVisible(true);
-                client.SetHostMenuBarVisible(true);
-                client.EnableGaze(true);
-                client.EnablePositioning(true);
+                EnableStreams(c);
+            }
+        }
+
+        public void UpdateData()
+        {
+            SkyleClient? c = client;
+            if (c == null) { IsConnected = false; return; }
+
+            //skylelib reconecta solo; si el enlace no vuelve en LOST_LINK_TIMEOUT se avisa la desconexión.
+            if (IsLinkAlive(c))
+            {
+                lastSyncedUtc = DateTime.UtcNow;
+            }
+            else if (DateTime.UtcNow - lastSyncedUtc > LOST_LINK_TIMEOUT)
+            {
+                Debug.WriteLine("Skyle: se perdió el enlace con el dispositivo.");
+                IsConnected = false;
             }
         }
 
         public void OpenCalibrationPage()
         {
-            TryCalibrate();
+            RunOnUI(() => WindowManager.OpenWindow<SkyleCalibrationWindow>());
         }
 
-
+        /// <param name="pointsArray">0: 3 puntos, 1: 5 puntos, 2: 9 puntos.</param>
+        /// <param name="eyes">Skyle calibra siempre ambos ojos; se guarda sólo como preferencia.</param>
         public void RequestCalibration(int pointsArray, int eyes)
         {
-            TryCalibrate();
+            Settings.I.LastPointsOption.Value = pointsArray;
+            Settings.I.LastEyesOption.Value = eyes;
+            RunOnUI(() =>
+            {
+                var window = WindowManager.OpenWindow<SkyleCalibrationWindow>();
+                window.StartCalibration(pointsArray, closeOnFinished: true);
+            });
         }
-        private void TryCalibrate()
+
+        public static byte[] GetCalibrationPoints(int pointsArray) => pointsArray switch
         {
-            int result = client.StartHostCalibration();
-            Debug.WriteLine("Current state: " + _appliedState.ToString());
-            Debug.WriteLine("Skyle Host Calibration result: " + result);
-        }
+            0 => SkyleClient.CalibrationPoints3,
+            1 => SkyleClient.CalibrationPoints5,
+            _ => SkyleClient.CalibrationPoints9,
+        };
 
         public void ShowCameraPreview(bool show)
         {
         }
 
-        public void UpdateData()
+        static void RunOnUI(Action action)
         {
-            var state = (SkyleConnectionState)Volatile.Read(ref _latestState);
-            if (state != _appliedState)
-            {
-                _appliedState = state;             
-            }
-
-            //UPDATE
-            if (state == SkyleConnectionState.LinkSynced)
-            {
-                //DO STUFF AT UI
-            }
+            var dispatcher = App.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess()) action();
+            else dispatcher.BeginInvoke(action);
         }
-
-        public void StartHostCalibration() => NoteHostControl("Calibrate", client.StartHostCalibration());
-
-        private string _hostControlNote = string.Empty;
-
-        private void NoteHostControl(string what, int result)
-        {
-            _hostControlNote = result == (int)SkyleResult.Ok ? $"{what}: sent" : $"{what}: {(SkyleResult)result} (not a link client)";
-            if (_appliedState != (SkyleConnectionState)(-1))
-            {
-                Debug.WriteLine(_appliedState);
-            }
-        }
-
     }
 }

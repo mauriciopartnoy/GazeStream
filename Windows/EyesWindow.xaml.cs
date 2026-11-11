@@ -85,13 +85,20 @@ namespace GazeStream.Windows
             GazeManager.OnGazeUpdateUI += UpdateGazeDisplay;
             handle = GCHandle.Alloc(this);
             ptr = GCHandle.ToIntPtr(handle);
-            ASeeTracker._7i_set_image_callback(Marshal.GetFunctionPointerForDelegate(imageCB), ptr);
+            //Sin un Joaco conectado no hay SDK cargado (se elige según el modelo): no hay imagen que mostrar.
+            if (GazeStream.Eyetracker.JoacoSdkLoader.Loaded != null)
+            {
+                ASeeTracker._7i_set_image_callback(Marshal.GetFunctionPointerForDelegate(imageCB), ptr);
+            }
         }
 
         void OnClosed(object sender, EventArgs e)
         {
             GazeManager.OnGazeUpdateUI -= UpdateGazeDisplay;
-            ASeeTracker._7i_set_image_callback(IntPtr.Zero, IntPtr.Zero);
+            if (GazeStream.Eyetracker.JoacoSdkLoader.Loaded != null)
+            {
+                ASeeTracker._7i_set_image_callback(IntPtr.Zero, IntPtr.Zero);
+            }
             Thread.Sleep(250);
             if (handle.IsAllocated)
             {

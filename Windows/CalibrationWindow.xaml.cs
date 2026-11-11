@@ -26,6 +26,8 @@ namespace GazeStream.Windows
         List<CalibrationPointGraphic> points = new List<CalibrationPointGraphic>();
         static CalibrationPointGraphic? currentPoint;
         static bool pointComplete;
+        static int lastPointError;
+        const int MAX_POINT_ATTEMPTS = 3;
         static bool calibrationPointChanged;
         static DateTime lastCalibrationPointChangeTime;
         static TimeSpan calibrationPointUnchangedTime;
@@ -86,7 +88,7 @@ namespace GazeStream.Windows
             //InitializePointArraysUsingScreenSpace();
             ResetPage();
             LoadToggleOptions();
-            Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
+            //Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
         }
         void InitializePointArraysUsingScreenSpace()
         {
@@ -159,7 +161,7 @@ namespace GazeStream.Windows
         {
             SetEyesSelectionRadioButton(Settings.I.LastEyesOption.Value);
             SetPointsSettingRadioButton(Settings.I.LastPointsOption.Value);
-            SetFilterSelectionRadioButton(Settings.I.FilterProfile.Value);
+            //SetFilterSelectionRadioButton(Settings.I.FilterProfile.Value);
         }
 
         public static void process_callback(int index, int percent, IntPtr context)
@@ -176,6 +178,7 @@ namespace GazeStream.Windows
             CalibrationPointProgress01 = 0;
             CalibrationPointProgress = 0;
             Debug.WriteLine($"finish: {index}, {error}");
+            lastPointError = error;
             pointComplete = true;
         }
 
@@ -285,6 +288,7 @@ namespace GazeStream.Windows
         public void StartCalibration_Click(object sender, RoutedEventArgs e)
         {
             if (isCalibrating) return;
+            Debug.WriteLine("Starting calibration!");
             StartCalibrationTaskUsingPanelSettings();
         }
 
@@ -312,13 +316,16 @@ namespace GazeStream.Windows
             try
             {
 
-                if (!GazeManager.I.joacoA11.IsConnected)
+                if (GazeManager.I?.joacoA11?.IsConnected != true)
                 {
+                    Debug.WriteLine("No se puede calibrar: el Joaco no está conectado.");
+                    GlobalEvents.OnCalibrationFailed.Invoke();
                     CancelCalibration();
                     return;
                 }
 
                 DisableButtons();
+                await FadeText.ShowMessage($"Iniciando calibración: {EyesOptionToString(eyes)} - {PointsOptionToString(pointsArrayIndex)} puntos.", .5, 1.2, token);
                 await FadeText.ShowMessage("Estos son tus ojos.", .5, 2, token);
                 await ShowEyeDisplay(token);
                 await FadeText.ShowMessage("Mira los puntos para hacerlos desaparecer.", .5, 2, token);
@@ -332,7 +339,7 @@ namespace GazeStream.Windows
             {
                 ResetPage();
                 isCalibrating = false;
-                GazeManager.I?.GazeDevice?.Initialize();
+                //GazeManager.I?.GazeDevice?.Initialize();
                 GlobalEvents.OnCalibrationFinished.Invoke();
                 Debug.WriteLine("Calibration Finished!");
                 if (closeOnFinished)
@@ -390,45 +397,74 @@ namespace GazeStream.Windows
 
             //Calibration Mode - 0: ambos ojos, 1: ojo izq, 2: ojo der.
             int setModeResult = ASeeTracker._7i_set_calibration_mode(eyes);
+            Debug.WriteLine("_7i_set_calibration_mode: " + aSeeResults.SetCalibrationModeResultToString(setModeResult));
             int result = ASeeTracker._7i_start_calibration(pointCount);
+            Debug.WriteLine("_7i_start_calibration: " + aSeeResults.StartCalibrationResultToString(result));
+            if (result != 0)
+            {
+                await FailCalibration("No se pudo iniciar la calibración del eyetracker.", token);
+                return;
+            }
 
             for (int i = 0; isCalibrating && i < pointCount; i++)
             {
-                pointComplete = false;
-
-                //El gráfico de calibración se muestra antes para que el usuario pueda tener la mirada en la posición correcta al iniciar cada punto.              
-                SpawnCalibrationPoint(new Vector2(points[i].X, points[i].Y));
-                await Task.Delay(TimeSpan.FromSeconds(2), token);
-
-                lastCalibrationPointChangeTime = DateTime.Now;
-                _7i_point2d_t point = new _7i_point2d_t();
-                point.x = points[i].X;
-                point.y = points[i].Y;
-                result = ASeeTracker._7i_start_calibration_point(pointIndex, ref point,
-                Marshal.GetFunctionPointerForDelegate(processCB), IntPtr.Zero,
-                Marshal.GetFunctionPointerForDelegate(finishCB), IntPtr.Zero);
-                Debug.WriteLine($"_7i_start_calibration_point: {pointIndex}, {result}");
-
-
-                while (!pointComplete)
+                bool pointOk = false;
+                for (int attempt = 1; attempt <= MAX_POINT_ATTEMPTS && !pointOk; attempt++)
                 {
-                    //Open Restart Dialog if a point is not calibrated after a period
-                    if (calibrationPointChanged)
+                    pointComplete = false;
+                    lastPointError = 0;
+
+                    //El gráfico de calibración se muestra antes para que el usuario pueda tener la mirada en la posición correcta al iniciar cada punto.
+                    SpawnCalibrationPoint(new Vector2(points[i].X, points[i].Y));
+                    await Task.Delay(TimeSpan.FromSeconds(2), token);
+
+                    lastCalibrationPointChangeTime = DateTime.Now;
+                    _7i_point2d_t point = new _7i_point2d_t();
+                    point.x = points[i].X;
+                    point.y = points[i].Y;
+                    result = ASeeTracker._7i_start_calibration_point(pointIndex, ref point,
+                    Marshal.GetFunctionPointerForDelegate(processCB), IntPtr.Zero,
+                    Marshal.GetFunctionPointerForDelegate(finishCB), IntPtr.Zero);
+                    Debug.WriteLine($"_7i_start_calibration_point: {pointIndex}, {aSeeResults.StartCalibrationPointResultToString(result)}");
+                    if (result != 0)
                     {
-                        lastCalibrationPointChangeTime = DateTime.Now;
+                        continue;
                     }
-                    calibrationPointUnchangedTime = DateTime.Now - lastCalibrationPointChangeTime;
-                    App.Instance.Dispatcher.BeginInvoke(() => ShowRestartCalibrationWindow(calibrationPointUnchangedTime.Seconds > 5));
-                    await Task.Delay(16, token);
+
+                    while (!pointComplete)
+                    {
+                        //Open Restart Dialog if a point is not calibrated after a period
+                        if (calibrationPointChanged)
+                        {
+                            lastCalibrationPointChangeTime = DateTime.Now;
+                        }
+                        calibrationPointUnchangedTime = DateTime.Now - lastCalibrationPointChangeTime;
+                        App.Instance.Dispatcher.BeginInvoke(() => ShowRestartCalibrationWindow(calibrationPointUnchangedTime.Seconds > 5));
+                        await Task.Delay(16, token);
+                    }
+
+                    pointOk = lastPointError == 0;
+                    if (!pointOk)
+                    {
+                        Debug.WriteLine($"Punto {pointIndex} con error {lastPointError}. Intento {attempt}/{MAX_POINT_ATTEMPTS}.");
+                    }
+                }
+
+                if (!pointOk)
+                {
+                    ASeeTracker._7i_cancel_calibration();
+                    await FailCalibration("No se pudo calibrar uno de los puntos.", token);
+                    return;
                 }
 
                 ++pointIndex;
             }
 
-            //En caso de interrupción
+            //En caso de interrupción: no se calcula nada con puntos incompletos.
             if (pointIndex != pointCount + 1)
             {
                 CancelCalibration();
+                return;
             }
 
             //En caso de exito
@@ -459,6 +495,18 @@ namespace GazeStream.Windows
                 SaveCalibrationAsPreset(points.Length, eyes, left_score, right_score, coefficient.buf);
                 GlobalEvents.OnCalibrationSuccess.Invoke();
             }
+            else
+            {
+                await FailCalibration("La calibración no fue exitosa. Volvé a intentarlo.", token);
+            }
+        }
+
+        async Task FailCalibration(string message, CancellationToken token)
+        {
+            Debug.WriteLine("Calibration failed: " + message);
+            DestroyCurrentCalibrationPoint();
+            GlobalEvents.OnCalibrationFailed.Invoke();
+            await FadeText.ShowMessage(message, .5, 2, token);
         }
 
         void ShowRestartCalibrationWindow(bool show)
@@ -521,10 +569,7 @@ namespace GazeStream.Windows
             Debug.WriteLine("Resetting Page");
             pointComplete = false;
             CloseRestartCalibrationWindow(null, null);
-            Debug.WriteLine("1");
-
             DestroyCurrentCalibrationPoint();
-            Debug.WriteLine("2");
 
             EyeDisplay.Visibility = Visibility.Collapsed;
             EnableButtons();
@@ -608,56 +653,60 @@ namespace GazeStream.Windows
             }
         }
 
-        public int GetFilterSelection()
-        {
-            if (FilterSetting_Bajo.IsChecked == true)
-            {
-                return 0;
-            }
-            else if (FilterSetting_Medio.IsChecked == true)
-            {
-                return 1;
-            }
-            else return 2;  //Filter Alto
-        }
+        //SELECCION DE FILTER PROFILE REMOVIDO EN FAVOR DE CONFIGURACIÓN DE FILTROS INDIVIDUALES
 
-        public void SetFilterSelectionRadioButton(FilterProfile profile)
-        {
-            int filterOption = (int)profile;
-            if (filterOption == 0)
-            {
-                FilterSetting_Bajo.IsChecked = true;
-            }
-            else if (filterOption == 1)
-            {
-                FilterSetting_Medio.IsChecked = true;
-            }
-            else
-            {
-                FilterSetting_Alto.IsChecked = true;
-            }
-        }
+        //public int GetFilterSelection()
+        //{
+        //    if (FilterSetting_Bajo.IsChecked == true)
+        //    {
+        //        return 0;
+        //    }
+        //    else if (FilterSetting_Medio.IsChecked == true)
+        //    {
+        //        return 1;
+        //    }
+        //    else return 2;  //Filter Alto
+        //}
 
-        private void FilterSetting_Checked(object sender, RoutedEventArgs e)
-        {
-            if (sender is System.Windows.Controls.RadioButton rb)
-            {
-                switch (rb.Name)
-                {
-                    case nameof(FilterSetting_Bajo):
-                        Settings.I.FilterProfile.Value = (FilterProfile)0;
-                        break;
+        //public void SetFilterSelectionRadioButton(FilterProfile profile)
+        //{
+        //    int filterOption = (int)profile;
+        //    if (filterOption == 0)
+        //    {
+        //        FilterSetting_Bajo.IsChecked = true;
+        //    }
+        //    else if (filterOption == 1)
+        //    {
+        //        FilterSetting_Medio.IsChecked = true;
+        //    }
+        //    else
+        //    {
+        //        FilterSetting_Alto.IsChecked = true;
+        //    }
+        //}
 
-                    case nameof(FilterSetting_Medio):
-                        Settings.I.FilterProfile.Value = (FilterProfile)1;
-                        break;
+        //private void FilterSetting_Checked(object sender, RoutedEventArgs e)
+        //{
+        //    //QUITADOS LOS PERFILES EN FAVOR DE CONFIGURACION MANUAL DE FILTROS
 
-                    case nameof(FilterSetting_Alto):
-                        Settings.I.FilterProfile.Value = (FilterProfile)2;
-                        break;
-                }
-            }
-        }
+        //    if (sender is System.Windows.Controls.RadioButton rb)
+        //    {
+        //        switch (rb.Name)
+        //        {
+        //            case nameof(FilterSetting_Bajo):
+        //                Settings.I.FilterProfile.Value = (FilterProfile)0;
+        //                break;
+
+        //            case nameof(FilterSetting_Medio):
+        //                Settings.I.FilterProfile.Value = (FilterProfile)1;
+        //                break;
+
+        //            case nameof(FilterSetting_Alto):
+        //                Settings.I.FilterProfile.Value = (FilterProfile)2;
+        //                break;
+        //        }
+        //    }
+        //}
 
         public int GetPointsSelection()
         {
@@ -688,6 +737,30 @@ namespace GazeStream.Windows
                 case 2: points = points9; break;
             }
             return points;
+        }
+
+        public string PointsOptionToString(int option)
+        {
+            string points = "1";
+            switch (option)
+            {
+                case 0: points = "3"; break;
+                case 1: points = "5"; break;
+                case 2: points = "9"; break;
+            }
+            return points;
+        }
+
+        public string EyesOptionToString(int eyesOption)
+        {
+            string eyes = "1";
+            switch (eyesOption)
+            {
+                case 0: eyes = "Ambos Ojos"; break;
+                case 1: eyes = "Ojo Izquierdo"; break;
+                case 2: eyes = "Ojo Derecho"; break;
+            }
+            return eyes;
         }
 
         public void SetPointsSettingRadioButton(int pointsOption)

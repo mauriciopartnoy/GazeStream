@@ -20,8 +20,8 @@ internal static class NativeMethods
 
     static NativeMethods()
     {
-        NativeLibrary.SetDllImportResolver(typeof(NativeMethods).Assembly,
-            (name, _, _) => name == Lib ? LibraryHandle : IntPtr.Zero);
+        //Resolver compartido: el ensamblado sólo admite uno y el SDK del Joaco también lo usa.
+        GazeStream.Eyetracker.NativeLibraryResolver.Register(Lib, () => LibraryHandle);
         Debug.WriteLine("Skyle library handle: " + LibraryHandle);
     }
 
@@ -76,6 +76,7 @@ internal static class NativeMethods
     [DllImport(Lib)] public static extern int skyle_client_request_version(IntPtr client);
 
     [DllImport(Lib)] public static extern int skyle_client_enable_gaze(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
+    [DllImport(Lib)] public static extern int skyle_client_enable_control(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
     [DllImport(Lib)] public static extern int skyle_client_enable_positioning(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
     [DllImport(Lib)] public static extern int skyle_client_enable_video(IntPtr client, [MarshalAs(UnmanagedType.U1)] bool enable);
 
@@ -105,7 +106,8 @@ internal static class NativeMethods
 
     [DllImport(Lib)] public static extern int skyle_client_start_calibration(IntPtr client, ref SkyleCalibrationConfig cfg);
     [DllImport(Lib)] public static extern int skyle_client_collect_calibration_points(IntPtr client);
+    [DllImport(Lib)] public static extern int skyle_client_collect_calibration_points_at(IntPtr client, byte index);
     [DllImport(Lib)] public static extern int skyle_client_abort_calibration(IntPtr client);
-
+    [DllImport(Lib)] public static extern int skyle_free_finished_calibration();
 
 }
