@@ -39,7 +39,6 @@ public class GazeDeviceA11 : IGazeDevice
     {
         screenSizeMillimetres = WindowsHelper.GetPhysicalScreenSizeInMillimetres();
         Debug.WriteLine("About to initialize Joaco.");
-        int startResult = 1;
 
         //PRE INIT CONFIG
         ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
@@ -48,7 +47,6 @@ public class GazeDeviceA11 : IGazeDevice
         SetDetectEyelid(true);
         SetSmoothWay(0);
 
-        startResult = ASeeTracker._7i_start();
         //DEVICE INITIALIZE
         string path = "./config";
         ret = ASeeTracker._7i_init(path);
@@ -56,6 +54,19 @@ public class GazeDeviceA11 : IGazeDevice
         {
             return false;
         }
+
+        int startResult = 1;
+        startResult = ASeeTracker._7i_start();
+        int startCounter = 0;
+        while (startResult != 0 && startCounter < 10)
+        {
+            startResult = ASeeTracker._7i_start();
+            Debug.WriteLine("Start result: " + startResult);
+            startCounter++;
+            await Task.Delay(1000);
+        }
+
+
 
         //DEVICE CONNECT
         _7i_ukey_info_t keyInfo = new _7i_ukey_info_t();
@@ -69,14 +80,7 @@ public class GazeDeviceA11 : IGazeDevice
         }
 
         //DEVICE START
-        try
-        {
-        }
-        catch
-        {
-            return false;
-        }
-
+       
 
         Debug.WriteLine("Initializing Joaco. Start result: " + startResult);
         if (startResult == 0)

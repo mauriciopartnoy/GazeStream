@@ -98,12 +98,15 @@ namespace GazeStream.Windows
             CalibrationPointProgress = percent;
             CalibrationPointProgress01 = (float)percent / 255f; //Progress devuelve un valor entre 0 - 255
             
+
             App.Instance.UIDispatcher.BeginInvoke(() =>
             {
                 currentPoint?.UpdateCalibrationPoint(CalibrationPointProgress01);
-                if (points.Index == currentCalibrationPointCount - 1)
+                if (points.Index == currentCalibrationPointCount - 1 && points.Progress >= 255)
                 {
-                    CalibrationFinishedAction();
+                    Debug.WriteLine("Call finish calibration...?");
+                    //Client.FreeFinishedCalibration();
+                   // CalibrationFinishedAction();
                 }
             });
 

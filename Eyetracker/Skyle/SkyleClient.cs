@@ -292,6 +292,11 @@ public class SkyleClient : IDisposable
         Debug.WriteLine("Abort Calibration result: " + result);
     }
 
+    public void FreeFinishedCalibration()
+    {
+        int result = NativeMethods.skyle_free_finished_calibration();
+        Debug.WriteLine("Abort Calibration result: " + result);
+    }
     // ---- native callbacks (run on the library's background I/O thread) ----
 
     private void OnCalibrationPoint(IntPtr client, IntPtr calibrationPoint, IntPtr user)
@@ -322,6 +327,7 @@ public class SkyleClient : IDisposable
 
     private void OnCalibrationAborted(IntPtr client, IntPtr user)
     {
+        Debug.WriteLine("Native OnCalibrationAborted received");
         CalibrationAbortedReceived?.Invoke();
     }
 

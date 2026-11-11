@@ -113,17 +113,39 @@
                             </ToggleButton>
                         </eye:GazeButton.Content>
                     </eye:GazeButton>
+
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
+                        <eye:GazeButton.Content>
+                            <ToggleButton Style="{StaticResource GazeStyle}" IsChecked="{Binding FilterOutlierPoints.Value}">
+                                <StackPanel>
+                                    <Ellipse Width="100" Height="100" Fill="LightBlue"/>
+                                    <TextBlock Text="Filtrar puntos dudosos" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </ToggleButton>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
+
+                    <eye:GazeButton Width="200" Height="200" Margin="0,0,10,0">
+                        <eye:GazeButton.Content>
+                            <ToggleButton Style="{StaticResource GazeStyle}" IsChecked="{Binding FilterOutlierPoints.Value}">
+                                <StackPanel>
+                                    <Border BorderThickness="2" Width="100" Height="100" BorderBrush="Red"/>
+                                    <TextBlock Text="Activar límite de puntero" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </ToggleButton>
+                        </eye:GazeButton.Content>
+                    </eye:GazeButton>
                 </StackPanel>
 
 
                 <TextBlock Text="Método de accesibilidad" Style="{StaticResource OptionTitle}"/>
                 <controls:EnumSelectorUniform SelectedValue="{Binding AccessibilityMethod.Value}" Height="200"/>
 
-                <!--<TextBlock Text="Filtro de Eyetracker" Style="{StaticResource OptionTitle}"/>
-                <controls:EnumSelectorUniform SelectedValue="{Binding FilterProfile.Value}" Height="200"/>-->
+                <TextBlock Text="Suavizado" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding FilterProfile.Value}" Height="200"/>
 
-                <TextBlock Text="Filtro de Kalman" Style="{StaticResource OptionTitle}"/>
-                <controls:EnumSelectorUniform SelectedValue="{Binding KalmanFilterOption.Value}" Height="200"/>
+                <!--<TextBlock Text="Filtro de Kalman" Style="{StaticResource OptionTitle}"/>
+                <controls:EnumSelectorUniform SelectedValue="{Binding KalmanFilterOption.Value}" Height="200"/>-->
                 
                 <TextBlock Text="Tiempo de activación" Style="{StaticResource OptionTitle}"/>
                 <controls:EnumSelectorUniform SelectedValue="{Binding OpcionTiempoDeActivacion.Value}" Height="200"/>

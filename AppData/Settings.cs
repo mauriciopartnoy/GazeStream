@@ -160,11 +160,11 @@ namespace GazeStream.AppData
         Violeta
     }
     public enum FilterProfile 
-    {
+    {   
         Bajo,
         Medio,
-        Alto,
-        Custom
+        Alto
+        //Custom
     }
     public enum AccessibilityMethod 
     {
@@ -438,7 +438,7 @@ namespace GazeStream.AppData
         public FilterProfileSetting FilterProfile { get; } = new FilterProfileSetting(SettingKeys.FILTER_PROFILE);
         public IntSetting SmoothFilter { get; } = new IntSetting(SettingKeys.JOACO_SMOOTH_FILTER, 10, new Int2(1, 10));
         public IntSetting KalmanFilter { get; } = new IntSetting(SettingKeys.KALMAN_FILTER, 20, new Int2(0, 100));
-        public FloatSetting InterpolationFilter { get; } = new FloatSetting(SettingKeys.INTERPOLATION_FILTER, 0.05f, new Float2(0, 100));
+        public FloatSetting InterpolationFilter { get; } = new FloatSetting(SettingKeys.INTERPOLATION_FILTER, 0.1f, new Float2(0, 100));
         public KalmanFilterOptionSetting KalmanFilterOption { get; } = new KalmanFilterOptionSetting(SettingKeys.KALMAN_FILTER_OPTION, Percent.Twenty);
         public IntSetting EdgeBiasFilter { get; } = new IntSetting(SettingKeys.EDGE_BIAS, 0);
         public BoolSetting ClampBubblePosition { get; } = new BoolSetting(SettingKeys.CLAMP_BUBBLE, true);
@@ -683,7 +683,7 @@ namespace GazeStream.AppData
 
 
     #region STATE CHANGE SETTINGS
-    //PROFILE SETTINGS
+    //PROFILE SETTINGS - IMPORTANTE: El filter profile Custom fue deprecado en favor de solo tener filtros Bajo/Medio/Alto
     public class FilterProfileSetting : BaseSetting<FilterProfile>
     {
         SettingDescriptor descriptor;
@@ -705,25 +705,27 @@ namespace GazeStream.AppData
         bool aplyingProfile;
         void OnFilterChanged(FilterProfile profile)
         {
-            //TODO: Agregar Interpolation/Smooth Damp
-            //TODO: Repensar perfiles como settings guardables. 
+             
             aplyingProfile = true;
             switch (profile)
             {
                 case FilterProfile.Bajo:
                     //Settings.I.KalmanFilter.Value = 0;
-                    Settings.I.SmoothFilter.Value = 1;
+                    Settings.I.SmoothFilter.Value = 10;
+                    Settings.I.InterpolationFilter.Value = .20f;
                     break;
                 case FilterProfile.Medio:
                     //Settings.I.KalmanFilter.Value = 5;
                     Settings.I.SmoothFilter.Value = 10;
+                    Settings.I.InterpolationFilter.Value = .10f;
                     break;
                 case FilterProfile.Alto:
                     //Settings.I.KalmanFilter.Value = 10;
                     Settings.I.SmoothFilter.Value = 10;
+                    Settings.I.InterpolationFilter.Value = .07f;
                     break;
-                case FilterProfile.Custom:
-                    break;
+                //case FilterProfile.Custom:
+                //    break;
             }
             aplyingProfile = false;
         }
@@ -732,7 +734,7 @@ namespace GazeStream.AppData
         void SetCustomProfileOnFilterChange()
         {
             if (aplyingProfile) return;
-            this.Value = FilterProfile.Custom;
+            //this.Value = FilterProfile.Custom;
         }
 
         public override string GetDocumentationReference()

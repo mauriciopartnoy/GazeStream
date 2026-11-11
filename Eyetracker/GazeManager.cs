@@ -277,6 +277,7 @@ namespace GazeStream.Eyetracker
 
         async Task FindGazeDeviceLoop(CancellationToken token)
         {
+            await Task.Delay(1000, token);
             while (!token.IsCancellationRequested)
             {
                 if (GazeDevice == null)

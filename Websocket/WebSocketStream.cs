@@ -32,6 +32,7 @@ public class WebSocketStream : IDisposable
     public const string CALLBACK_CALIBRATION_FINISHED = "CALIBRATION_FINISHED";
     public const string CALLBACK_INSTANCE_QUIT = "INSTANCE_QUIT";
 
+
     public bool IsAlive
     {
         get
@@ -41,6 +42,7 @@ public class WebSocketStream : IDisposable
         }
     }
 
+    bool sendEyesData;
     bool wasAliveLastFrame;
 
     public WebSocketStream()
@@ -114,6 +116,7 @@ public class WebSocketStream : IDisposable
     {
         if (ws == null || !IsAlive) return;
         SendPointNew();
+        SendEyesData();
     }
 
     void SendPointNew()
@@ -124,7 +127,7 @@ public class WebSocketStream : IDisposable
         GazePointMessage p = new GazePointMessage(point.viewportPoint.X, point.viewportPoint.Y, rawPoint.viewportPoint.X, rawPoint.viewportPoint.Y);
         string jsonPoint = JsonConvert.SerializeObject(p);
         WriteLine(jsonPoint);
-        //Debug.Log($"Smooth X: {p.xSmooth} Y: {p.ySmooth}");
+        //Debug.WriteLine(jsonPoint);
     }
 
     void SendPointOld()
@@ -136,6 +139,22 @@ public class WebSocketStream : IDisposable
         //p.t = CurrentTimeInMilliseconds;
         string jsonPoint = JsonConvert.SerializeObject(p);
         WriteLine(jsonPoint);
+    }
+
+    void SendEyesData()
+    {
+        if (sendEyesData == false) return;
+        EyesData eyes = GazeManager.I.Eyes;
+        if (eyes == null) return;
+        EyesDataMessage m = new EyesDataMessage(eyes.leftEye, eyes.rightEye);
+        string jsonPoint = JsonConvert.SerializeObject(m);
+        WriteLine(jsonPoint);
+        Debug.WriteLine(jsonPoint);
+    }
+
+    public void EnableEyesData(bool enabled)
+    {
+        sendEyesData = enabled;
     }
 
     public void SendOnSettingChangedNotification(string saveKey)
@@ -307,6 +326,12 @@ public class GazeService : WebSocketBehavior
                 case "SetSampleRate60":
                     Settings.I.SampleRateHZ.Value = 60;
                     break;
+                case "StartEyesData":
+                    SendEyesData(true);
+                    break;
+                case "StopEyesData":
+                    SendEyesData(false);
+                    break;
                 default: break;
             }
         });
@@ -342,6 +367,11 @@ public class GazeService : WebSocketBehavior
         GlobalEvents.OnCalibrationCancel.Invoke();
     }
 
+    public void SendEyesData(bool send)
+    {
+        WebSocketStream.I.EnableEyesData(send);
+    }
+
     public void PauseEyetrackerDataStream()
     {
         WebSocketStream.I.UnsubscribeToGazeManager();
@@ -364,6 +394,7 @@ public class GazePointMessage
     public float viewportY;
     public float rawViewportX;
     public float rawViewportY;
+
     public GazePointMessage(float x, float y, float xRaw, float yRaw)
     {
         this.messageType = "GazePointData";
@@ -371,6 +402,20 @@ public class GazePointMessage
         this.viewportY = y;
         this.rawViewportX = xRaw;
         this.rawViewportY = yRaw;
+    }
+}
+
+public class EyesDataMessage
+{
+    public string messageType;
+    public Eye leftEye;
+    public Eye rightEye;
+
+    public EyesDataMessage(Eye leftEye, Eye rightEye)
+    {
+        this.messageType = "EyesData";
+        this.leftEye = leftEye;
+        this.rightEye = rightEye;
     }
 }
 

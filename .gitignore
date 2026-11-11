@@ -364,4 +364,6 @@ FodyWeavers.xsd
 
 publish/
 Releases/
+Releases_Joaco3/
+Releases_Surface/
 *.nupkg
