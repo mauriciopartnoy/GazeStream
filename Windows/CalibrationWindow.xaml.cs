@@ -29,6 +29,7 @@ namespace GazeStream.Windows
         static bool calibrationPointChanged;
         static DateTime lastCalibrationPointChangeTime;
         static TimeSpan calibrationPointUnchangedTime;
+        static int eyesSelected;
 
         //DEFAULT CALIBRATION POINT POSITIONS
         Vector2[] points3 = {
@@ -168,7 +169,7 @@ namespace GazeStream.Windows
             CalibrationPointProgress = percent;
             CalibrationPointProgress01 = (float)percent / 100f;
             currentPoint?.UpdateCalibrationPoint(CalibrationPointProgress01);
-            //Debug.WriteLine($"process: {index},{percent}");
+            Debug.WriteLine($"process: {index},{percent}");
         }
 
         public static void finish_callback(int index, int error, IntPtr context)
@@ -384,11 +385,11 @@ namespace GazeStream.Windows
         async Task CalibrationTask(int pointsArrayIndex, int eyes, CancellationToken token)
         {
             Debug.WriteLine("Starting calibration Task.");
+            eyesSelected = eyes;
             Vector2[] points = GetCalibrationPointsArray(pointsArrayIndex);
             _7i_coefficient_t coefficient = new _7i_coefficient_t();
             int pointIndex = 1;
             int pointCount = points.Length;
-
 
             //Calibration Mode - 0: ambos ojos, 1: ojo izq, 2: ojo der.
             int setModeResult = ASeeTracker._7i_set_calibration_mode(eyes);

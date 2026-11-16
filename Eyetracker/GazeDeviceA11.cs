@@ -375,7 +375,7 @@ public class GazeDeviceA11 : IGazeDevice
         {
             float x = eyes.recom_gaze.gaze_point.x;
             float y = eyes.recom_gaze.gaze_point.y;
-            Debug.WriteLine($"Recomm point: X: {x} Y:{y}");
+            //Debug.WriteLine($"Recomm point: X: {x} Y:{y}");
 
             if (float.IsNaN(x) || float.IsNaN(y)) return;
             if (x == 0.0 || y == 0.0) return;
