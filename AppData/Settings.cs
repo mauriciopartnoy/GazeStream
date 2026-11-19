@@ -683,7 +683,8 @@ namespace GazeStream.AppData
 
 
     #region STATE CHANGE SETTINGS
-    //PROFILE SETTINGS - IMPORTANTE: El filter profile Custom fue deprecado en favor de solo tener filtros Bajo/Medio/Alto
+    //PROFILE SETTINGS - IMPORTANTE: El filter profile Custom fue deprecado en favor de solo tener filtros Bajo/Medio/Alto.
+    //Kalmann es reemplazado por interpolación.
     public class FilterProfileSetting : BaseSetting<FilterProfile>
     {
         SettingDescriptor descriptor;
