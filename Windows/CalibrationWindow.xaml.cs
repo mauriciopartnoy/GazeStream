@@ -317,7 +317,7 @@ namespace GazeStream.Windows
             try
             {
 
-                if (!GazeManager.I?.joacoA11?.IsConnected)
+                if (GazeManager.I?.joacoA11?.IsConnected != true)
                 {
                     Debug.WriteLine("No se puede calibrar: el Joaco no está conectado.");
                     GlobalEvents.OnCalibrationFailed.Invoke();
@@ -483,8 +483,8 @@ namespace GazeStream.Windows
             DestroyCurrentCalibrationPoint();
 
             //Función recursiva que reinicia la calibración hasta lograr un puntaje mínimo. Comentada porque múltiples intentos erroneos frustran a los pacientes.
-            //bool scoreIsValid = left_score >= 3 && right_score >= 3;
 
+            //bool scoreIsValid = left_score >= 3 && right_score >= 3;
             //if (!scoreIsValid)
             //{
             //    await FadeText.ShowMessage($"La calibración no es válida. Intentalo de nuevo.", .5, 2, token);
@@ -497,7 +497,7 @@ namespace GazeStream.Windows
             //}
 
             //OnSuccess
-            if (0 == calibration_success && scoreIsValid)
+            if (0 == calibration_success)
             {
                 Debug.WriteLine("Calibration success!");
                 GazeManager.I.joacoA11.StartTrackingWithCoefficient(coefficient.buf);

@@ -312,6 +312,19 @@ namespace GazeStream.Eyetracker
             UpdateCalibrationUsingLocalDatabase();
         }
 
+        void UpdateTimeoutTimer()
+        {
+            if (IsUserPresent && timeOutTimer.IsRunning)
+            {
+                timeOutTimer.Reset();
+            }
+
+            if (!IsUserPresent && !timeOutTimer.IsRunning)
+            {
+                timeOutTimer.Restart();
+            }
+        }
+
         private void UpdateCalibrationUsingLocalDatabase()
         {
             if (Settings.I.DynamicCalibrationToggle.Value == false) return;
@@ -356,6 +369,62 @@ namespace GazeStream.Eyetracker
                 //Cancelación normal.
             }
         }
+
+        async Task TryInitializeGazeDevice(CancellationToken token)
+        {
+            await deviceGate.WaitAsync(token);
+            try
+            {
+                //Otro bucle (de una sesi�n anterior) pudo haber conectado mientras se esperaba el gate.
+                if (GazeDevice != null) return;
+
+                kalmanFilter.ResetStartingValues();
+
+                //El orden de la lista determina el orden de chequeo de dispositivos.
+                //El primer dispositivo que sea capaz de inicializar va ser asignado como GazeDevice.
+                foreach (IGazeDevice device in supportedDevices.ToList())
+                {
+                    if (token.IsCancellationRequested) return;
+
+                    bool initializeSucessful = false;
+                    try
+                    {
+                        initializeSucessful = await device.Initialize();
+                    }
+                    catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException || e is BadImageFormatException)
+                    {
+                        //Falta una DLL nativa, o la arquitectura del proceso no coincide (los SDK son x64).
+                        Debug.WriteLine($"{device.DeviceName}: SDK nativo no disponible. {e.Message}");
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine($"{device.DeviceName}: error al inicializar. {e}");
+                    }
+
+                    if (!initializeSucessful) continue;
+
+                    //Si mientras se inicializaba se cancel� la sesi�n (cambio de dispositivo, calibraci�n o cierre de la app),
+                    //no se adopta: se libera para no dejar un SDK abierto sin due�o.
+                    if (token.IsCancellationRequested)
+                    {
+                        Debug.WriteLine($"{device.DeviceName}: inicializado tras la cancelaci�n; se libera.");
+                        SafeDisconnect(device);
+                        return;
+                    }
+
+                    GazeDevice = device;
+                    OnGazeDeviceChanged?.Invoke(device);
+                    GlobalEvents.OnEyetrackerConnected.Invoke();
+                    Debug.WriteLine(device.DeviceName + " was initialized.");
+                    return;
+                }
+            }
+            finally
+            {
+                deviceGate.Release();
+            }
+        }
+        
 
         private void UpdateGazeTargetsAndUI()
         {
@@ -437,155 +506,82 @@ namespace GazeStream.Eyetracker
                     targetPoint = outlierFilter.Update(targetPoint);
                 }
 
-          
-            //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
-            //Los filtros se aplican a todos los dispositivos. Antes dependían de IsJoacoDevice,
-            //que por error era true para cualquier equipo; al corregirlo, Tobii e Intelligaze se habrían quedado sin suavizado.
-            {
-                targetPoint = GazePoint.viewportPoint;
-                //Filter outlier points
-                if (Settings.I.FilterOutlierPoints.Value == true)
+
+                //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
+                //Los filtros se aplican a todos los dispositivos. Antes dependían de IsJoacoDevice,
+                //que por error era true para cualquier equipo; al corregirlo, Tobii e Intelligaze se habrían quedado sin suavizado.
                 {
-                    targetPoint = outlierFilter.Update(targetPoint);
+                    targetPoint = GazePoint.viewportPoint;
+                    //Filter outlier points
+                    if (Settings.I.FilterOutlierPoints.Value == true)
+                    {
+                        targetPoint = outlierFilter.Update(targetPoint);
+                    }
+                    //Kalman Filter Desactivado en favor de usar solo interpolación.
+
+                    //if (Settings.I.KalmanFilter.Value > 0)
+                    //{
+                    //    targetPoint = kalmanFilter.GetFilteredPoint(targetPoint);
+                    //}
+                    //Interpolation Filter
+
+                    if (Settings.I.InterpolationFilter.Value > 0)
+                    {
+                        SmoothViewportPoint = Helper.Lerp(SmoothViewportPoint, targetPoint, Settings.I.InterpolationFilter.Value);
+                    }
+                    else
+                    {
+                        SmoothViewportPoint = targetPoint;
+                    }
                 }
-                //Kalman Filter Desactivado en favor de usar solo interpolación.
 
-                //if (Settings.I.KalmanFilter.Value > 0)
-                //{
-                //    targetPoint = kalmanFilter.GetFilteredPoint(targetPoint);
-                //}
-                //Interpolation Filter
 
-                if (Settings.I.InterpolationFilter.Value > 0)
+                //TEST FILTERS
+                if (Settings.I.ClampBubblePosition.Value == true)
                 {
-                    SmoothViewportPoint = Helper.Lerp(SmoothViewportPoint, targetPoint, Settings.I.InterpolationFilter.Value);
+                    SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint);
+                    Vector2 padding = Helper.DipsToViewport01(Settings.I.ClampDistance.Value);
+                    SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding.X, 1f - padding.X), Math.Clamp(SmoothViewportPoint.Y, 0f + padding.Y, 1f - padding.Y));
                 }
-                else
+                SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
+                SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
+            }
+
+            Vector2 ApplyEdgeBias(Vector2 coord)
+            {
+                Vector2 padding = Helper.DipsToViewport01(Settings.I.EdgeBiasFilter.Value);
+                float x = coord.X;
+                float y = coord.Y;
+                if (coord.X < padding.X || coord.X > (1f - padding.X))
                 {
-                    SmoothViewportPoint = targetPoint;
+                    x = EdgeBias(coord.X, .03f);
                 }
-            }
-
-
-            //TEST FILTERS
-            if (Settings.I.ClampBubblePosition.Value == true)
-            {
-                SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint);
-                Vector2 padding = Helper.DipsToViewport01(Settings.I.ClampDistance.Value);
-                SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding.X, 1f - padding.X), Math.Clamp(SmoothViewportPoint.Y, 0f + padding.Y, 1f - padding.Y));
-            }
-            SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
-            SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
-        }
-
-        Vector2 ApplyEdgeBias(Vector2 coord)
-        {
-            Vector2 padding = Helper.DipsToViewport01(Settings.I.EdgeBiasFilter.Value);
-            float x = coord.X;
-            float y = coord.Y;
-            if (coord.X < padding.X || coord.X > (1f - padding.X))
-            {
-                x = EdgeBias(coord.X, .03f);
-            }
-            if (coord.Y < padding.Y || coord.X > (1f - padding.Y))
-            {
-                y = EdgeBias(coord.Y, .03f);
-            }
-            return new Vector2(x, y);
-        }
-
-        float EdgeBias(float t, float amount)
-        {
-
-            float centered = (t - 0.5f) * 2f; // -1 .. +1
-            float bias = centered * centered * centered;
-
-            return t + bias * amount;
-        }
-
-        //float EdgeBias(float t, float amount)
-        //{
-        //    return Helper.Lerp(t, t + amount * (t - 0.5f) * Math.Abs(t - 0.5f) * 2f, 1f);
-        //}
-
-
-        void UpdateUIDeltaTime()
-        {
-            TimeSpan now = UIdeltaTimeWatch.Elapsed;
-            UIdeltaTime = now - UIdeltaTimeLastSample;
-            UIdeltaTimeLastSample = now;
-            if (UIdeltaTime > TimeSpan.FromMilliseconds(100))
-            {
-                UIdeltaTime = TimeSpan.FromMilliseconds(100);
-            }
-        }
-        void UpdateTimeoutTimer()
-        {
-            if (IsUserPresent && timeOutTimer.IsRunning)
-            {
-                timeOutTimer.Reset();
-            }
-
-            if (!IsUserPresent && !timeOutTimer.IsRunning)
-            {
-                timeOutTimer.Restart();
-            }
-        }
-
-        async Task TryInitializeGazeDevice(CancellationToken token)
-        {
-            await deviceGate.WaitAsync(token);
-            try
-            {
-                //Otro bucle (de una sesi�n anterior) pudo haber conectado mientras se esperaba el gate.
-                if (GazeDevice != null) return;
-
-                kalmanFilter.ResetStartingValues();
-
-                //El orden de la lista determina el orden de chequeo de dispositivos.
-                //El primer dispositivo que sea capaz de inicializar va ser asignado como GazeDevice.
-                foreach (IGazeDevice device in supportedDevices.ToList())
+                if (coord.Y < padding.Y || coord.X > (1f - padding.Y))
                 {
-                    if (token.IsCancellationRequested) return;
-
-                    bool initializeSucessful = false;
-                    try
-                    {
-                        initializeSucessful = await device.Initialize();
-                    }
-                    catch (Exception e) when (e is DllNotFoundException || e is EntryPointNotFoundException || e is BadImageFormatException)
-                    {
-                        //Falta una DLL nativa, o la arquitectura del proceso no coincide (los SDK son x64).
-                        Debug.WriteLine($"{device.DeviceName}: SDK nativo no disponible. {e.Message}");
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.WriteLine($"{device.DeviceName}: error al inicializar. {e}");
-                    }
-
-                    if (!initializeSucessful) continue;
-
-                    //Si mientras se inicializaba se cancel� la sesi�n (cambio de dispositivo, calibraci�n o cierre de la app),
-                    //no se adopta: se libera para no dejar un SDK abierto sin due�o.
-                    if (token.IsCancellationRequested)
-                    {
-                        Debug.WriteLine($"{device.DeviceName}: inicializado tras la cancelaci�n; se libera.");
-                        SafeDisconnect(device);
-                        return;
-                    }
-
-                    GazeDevice = device;
-                    OnGazeDeviceChanged?.Invoke(device);
-                    GlobalEvents.OnEyetrackerConnected.Invoke();
-                    Debug.WriteLine(device.DeviceName + " was initialized.");
-                    return;
+                    y = EdgeBias(coord.Y, .03f);
                 }
+                return new Vector2(x, y);
             }
-            finally
+
+            float EdgeBias(float t, float amount)
             {
-                deviceGate.Release();
+
+                float centered = (t - 0.5f) * 2f; // -1 .. +1
+                float bias = centered * centered * centered;
+
+                return t + bias * amount;
             }
         }
+            //float EdgeBias(float t, float amount)
+            //{
+            //    return Helper.Lerp(t, t + amount * (t - 0.5f) * Math.Abs(t - 0.5f) * 2f, 1f);
+            //}
+
+
+         
+         
+
+         
 
         /// <summary>
         /// Desconecta el dispositivo actual. Se ejecuta en segundo plano para no bloquear la UI mientras otro hilo
@@ -822,6 +818,16 @@ namespace GazeStream.Eyetracker
             }
         }
 
+        void UpdateUIDeltaTime()
+        {
+            TimeSpan now = UIdeltaTimeWatch.Elapsed;
+            UIdeltaTime = now - UIdeltaTimeLastSample;
+            UIdeltaTimeLastSample = now;
+            if (UIdeltaTime > TimeSpan.FromMilliseconds(100))
+            {
+                UIdeltaTime = TimeSpan.FromMilliseconds(100);
+            }
+        }
         public void Clear()
         {
             CurrentGazeTarget = null;
