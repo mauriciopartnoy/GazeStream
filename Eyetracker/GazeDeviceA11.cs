@@ -122,6 +122,14 @@ public class GazeDeviceA11 : IGazeDevice
     /// <summary>SDK A8_1106.x (PID 0x2CD1): _7i_init → _7i_device_connect → configuración → _7i_start().</summary>
     bool StartCurrentSdk()
     {
+        //0. CONFIGURACIÓN (callback, pantalla y parámetros) Antes de llamar la función Init. (Si se llama este bloque después el gazeCB no devuelve los datos de los ojos)
+
+        ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
+        ASeeTracker._7i_set_screen_size(screenSizeMillimetres.X, screenSizeMillimetres.Y);
+        SetCheckCalib(true);
+        SetDetectEyelid(true);
+        SetSmoothWay(0);
+
         //1. INICIALIZAR SDK
         int ret = ASeeTracker._7i_init(ConfigDirectory);
         Debug.WriteLine($"_7i_init: {ret}");
@@ -143,12 +151,7 @@ public class GazeDeviceA11 : IGazeDevice
         }
         deviceConnected = true;
 
-        //3. CONFIGURACIÓN (callback, pantalla y parámetros) antes de arrancar el stream.
-        ASeeTracker._7i_set_gaze_callback(Marshal.GetFunctionPointerForDelegate(gazeCB), IntPtr.Zero);
-        ASeeTracker._7i_set_screen_size(screenSizeMillimetres.X, screenSizeMillimetres.Y);
-        SetCheckCalib(true);
-        SetDetectEyelid(true);
-        SetSmoothWay(0);
+        //3.
         PreFlashData();
 
         //4. ARRANCAR
