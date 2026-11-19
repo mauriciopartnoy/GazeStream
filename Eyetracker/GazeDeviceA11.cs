@@ -534,59 +534,21 @@ public class GazeDeviceA11 : IGazeDevice
         float yDist = (eyes.left_gaze.gaze_origin.y + eyes.right_gaze.gaze_origin.y) / 2;
         float zDist = (eyes.left_pupil.pupil_distance + eyes.right_pupil.pupil_distance) / 2;   //Este valor está en mm.
         gazeOrigin = new Vector3(xDist, yDist, zDist);
-
-        bool valid = 1 == _is_valid_recom_eye_gaze_point(ref eyes);
-        float x = eyes.recom_gaze.gaze_point.x;
-        float y = eyes.recom_gaze.gaze_point.y;
-
-        //-1 es el valor que devuelve el SDK cuando el punto no es válido.
-        if (valid && (!float.IsFinite(x) || !float.IsFinite(y) || x == -1f || y == -1f || (x == 0f && y == 0f)))
+        if (1 == _is_valid_recom_eye_gaze_point(ref eyes) && eyes.recom_gaze.gaze_point.x != -1)
         {
-            valid = false;
+            //if (eyes.recom_gaze.gaze_point.x == -1) return; //-1, -1 es el valor que devuelve cuando el punto es falopa.
+            gazePointChanged = true;
+            gaze_x = eyes.recom_gaze.gaze_point.x;
+            gaze_y = eyes.recom_gaze.gaze_point.y;
+            rawGaze_x = (eyes.left_gaze.gaze_point.x + eyes.right_gaze.gaze_point.x) * 0.50f;
+            rawGaze_y = (eyes.left_gaze.gaze_point.y + eyes.right_gaze.gaze_point.y) * 0.50f;
+            UserIsPresentStatic = true;
         }
-
-        lock (sampleLock)
+        else
         {
-            if (valid)
-            {
-                gazePointChanged = true;
-                gaze_x = x;
-                gaze_y = y;
-
-                //Promedio de ambos ojos; si uno no es válido se usa el otro, y si ninguno, el recomendado.
-                bool leftOk = IsValidPoint(eyes.left_gaze.gaze_point);
-                bool rightOk = IsValidPoint(eyes.right_gaze.gaze_point);
-                if (leftOk && rightOk)
-                {
-                    rawGaze_x = (eyes.left_gaze.gaze_point.x + eyes.right_gaze.gaze_point.x) * 0.50f;
-                    rawGaze_y = (eyes.left_gaze.gaze_point.y + eyes.right_gaze.gaze_point.y) * 0.50f;
-                }
-                else if (leftOk)
-                {
-                    rawGaze_x = eyes.left_gaze.gaze_point.x;
-                    rawGaze_y = eyes.left_gaze.gaze_point.y;
-                }
-                else if (rightOk)
-                {
-                    rawGaze_x = eyes.right_gaze.gaze_point.x;
-                    rawGaze_y = eyes.right_gaze.gaze_point.y;
-                }
-                else
-                {
-                    rawGaze_x = x;
-                    rawGaze_y = y;
-                }
-                UserIsPresentStatic = true;
-            }
-            else
-            {
-                UserIsPresentStatic = false;
-            }
+            UserIsPresentStatic = false;
+            gazePointChanged = false;
         }
-
-
-
-        //GazeManager.I.UpdatePointer(gaze_x, gaze_y);
     }
 
     private static void ShowDebugData(_7i_eye_data_ex_t eyes)
@@ -644,12 +606,14 @@ public class GazeDeviceA11 : IGazeDevice
         {
             //Se consume la muestra: si no llega una nueva, no se re-emite la anterior con un timestamp nuevo.
             if (!gazePointChanged) return;
-            gazePointChanged = false;
+            if (float.IsNaN(gaze_x) || float.IsNaN(gaze_y)) return;
 
+            gazePointChanged = false;
             gazePointCache = new GazePoint(new Vector2(gaze_x, gaze_y));
             rawGazePointCache = new GazePoint(new Vector2(rawGaze_x, rawGaze_y));
         }
     }
+      
 
     void UpdateEyeData()
     {

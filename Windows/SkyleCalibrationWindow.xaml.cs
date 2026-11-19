@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Numerics;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using System.Numerics;
+using System.Diagnostics;
+using GazeStream.Eyetracker;
+using GazeStream.Utilities;
 using GazeStream.AppData;
 using GazeStream.Controls;
 using GazeStream.Eyetracker;
@@ -23,8 +24,6 @@ namespace GazeStream.Windows
     public partial class SkyleCalibrationWindow : Window
     {
         public static SkyleCalibrationWindow I { get; private set; } //Singleton Instance
-        public static int CalibrationPointProgress { get; private set; }
-        public static float CalibrationPointProgress01 { get; private set; }
 
         //Tiempo que se muestra cada punto antes de empezar a recolectar, para que el usuario llegue a mirarlo.
         static readonly TimeSpan POINT_SETTLE_TIME = TimeSpan.FromSeconds(1.5);
@@ -305,6 +304,13 @@ namespace GazeStream.Windows
         public void Back_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+            Debug.WriteLine("Back pressed. Closing window.");
+        }
+
+        public void StartCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            if (isCalibrating) return;
+            //StartCalibrationTaskUsingPanelSettings();
         }
 
         void CancelCalibration_Click(object e, RoutedEventArgs args)
@@ -339,5 +345,6 @@ namespace GazeStream.Windows
             EnableButtons();
             FadeText.HideMessage();
         }
+
     }
 }

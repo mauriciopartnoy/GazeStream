@@ -31,6 +31,7 @@ namespace GazeStream.Windows
         static bool calibrationPointChanged;
         static DateTime lastCalibrationPointChangeTime;
         static TimeSpan calibrationPointUnchangedTime;
+        static int eyesSelected;
 
         //DEFAULT CALIBRATION POINT POSITIONS
         Vector2[] points3 = {
@@ -88,7 +89,7 @@ namespace GazeStream.Windows
             //InitializePointArraysUsingScreenSpace();
             ResetPage();
             LoadToggleOptions();
-            //Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
+            Settings.I.FilterProfile.OnValueChanged += SetFilterSelectionRadioButton;
         }
         void InitializePointArraysUsingScreenSpace()
         {
@@ -161,7 +162,7 @@ namespace GazeStream.Windows
         {
             SetEyesSelectionRadioButton(Settings.I.LastEyesOption.Value);
             SetPointsSettingRadioButton(Settings.I.LastPointsOption.Value);
-            //SetFilterSelectionRadioButton(Settings.I.FilterProfile.Value);
+            SetFilterSelectionRadioButton(Settings.I.FilterProfile.Value);
         }
 
         public static void process_callback(int index, int percent, IntPtr context)
@@ -316,7 +317,7 @@ namespace GazeStream.Windows
             try
             {
 
-                if (GazeManager.I?.joacoA11?.IsConnected != true)
+                if (!GazeManager.I?.joacoA11?.IsConnected)
                 {
                     Debug.WriteLine("No se puede calibrar: el Joaco no está conectado.");
                     GlobalEvents.OnCalibrationFailed.Invoke();
@@ -339,7 +340,6 @@ namespace GazeStream.Windows
             {
                 ResetPage();
                 isCalibrating = false;
-                //GazeManager.I?.GazeDevice?.Initialize();
                 GlobalEvents.OnCalibrationFinished.Invoke();
                 Debug.WriteLine("Calibration Finished!");
                 if (closeOnFinished)
@@ -389,11 +389,11 @@ namespace GazeStream.Windows
         async Task CalibrationTask(int pointsArrayIndex, int eyes, CancellationToken token)
         {
             Debug.WriteLine("Starting calibration Task.");
+            eyesSelected = eyes;
             Vector2[] points = GetCalibrationPointsArray(pointsArrayIndex);
             _7i_coefficient_t coefficient = new _7i_coefficient_t();
             int pointIndex = 1;
             int pointCount = points.Length;
-
 
             //Calibration Mode - 0: ambos ojos, 1: ojo izq, 2: ojo der.
             int setModeResult = ASeeTracker._7i_set_calibration_mode(eyes);
@@ -482,12 +482,27 @@ namespace GazeStream.Windows
             //Limpieza de gráficos
             DestroyCurrentCalibrationPoint();
 
+            //Función recursiva que reinicia la calibración hasta lograr un puntaje mínimo. Comentada porque múltiples intentos erroneos frustran a los pacientes.
+            //bool scoreIsValid = left_score >= 3 && right_score >= 3;
+
+            //if (!scoreIsValid)
+            //{
+            //    await FadeText.ShowMessage($"La calibración no es válida. Intentalo de nuevo.", .5, 2, token);
+            //    await CalibrationTask(pointsArrayIndex, eyes, token); //Función recursiva, hasta tener un puntaje válido.
+            //}
+            //else
+            //{
+            //    await FadeText.ShowMessage($"¡La calibración fue exitosa!", .5, 2, token);
+            //    await FadeText.ShowMessage($"Puntaje: Izq[{left_score.ToString("0.00")}] Der[{right_score.ToString("0.00")}]", .5, 2, token);
+            //}
+
             //OnSuccess
-            if (0 == calibration_success)
+            if (0 == calibration_success && scoreIsValid)
             {
                 Debug.WriteLine("Calibration success!");
                 GazeManager.I.joacoA11.StartTrackingWithCoefficient(coefficient.buf);
-                await FadeText.ShowMessage("¡La calibración fue exitosa!", .5, 2, token);
+                await FadeText.ShowMessage($"¡La calibración fue exitosa!", .5, 2, token);
+                await FadeText.ShowMessage($"Puntaje: Izq[{left_score.ToString("0.00")}] Der[{right_score.ToString("0.00")}]", .5, 2, token);
                 Settings.I.LastEyesOption.Value = eyes;
                 Settings.I.LastPointsOption.Value = pointsArrayIndex;
                 Settings.I.LastCalibrationBuff.Value = coefficient.buf;
@@ -653,60 +668,58 @@ namespace GazeStream.Windows
             }
         }
 
-        //SELECCION DE FILTER PROFILE REMOVIDO EN FAVOR DE CONFIGURACIÓN DE FILTROS INDIVIDUALES
 
-        //public int GetFilterSelection()
-        //{
-        //    if (FilterSetting_Bajo.IsChecked == true)
-        //    {
-        //        return 0;
-        //    }
-        //    else if (FilterSetting_Medio.IsChecked == true)
-        //    {
-        //        return 1;
-        //    }
-        //    else return 2;  //Filter Alto
-        //}
+        public int GetFilterSelection()
+        {
+            if (FilterSetting_Bajo.IsChecked == true)
+            {
+                return 0;
+            }
+            else if (FilterSetting_Medio.IsChecked == true)
+            {
+                return 1;
+            }
+            else return 2;  //Filter Alto
+        }
 
-        //public void SetFilterSelectionRadioButton(FilterProfile profile)
-        //{
-        //    int filterOption = (int)profile;
-        //    if (filterOption == 0)
-        //    {
-        //        FilterSetting_Bajo.IsChecked = true;
-        //    }
-        //    else if (filterOption == 1)
-        //    {
-        //        FilterSetting_Medio.IsChecked = true;
-        //    }
-        //    else
-        //    {
-        //        FilterSetting_Alto.IsChecked = true;
-        //    }
-        //}
+        public void SetFilterSelectionRadioButton(FilterProfile profile)
+        {
+            int filterOption = (int)profile;
+            if (filterOption == 0)
+            {
+                FilterSetting_Bajo.IsChecked = true;
+            }
+            else if (filterOption == 1)
+            {
+                FilterSetting_Medio.IsChecked = true;
+            }
+            else
+            {
+                FilterSetting_Alto.IsChecked = true;
+            }
+        }
 
-        //private void FilterSetting_Checked(object sender, RoutedEventArgs e)
-        //{
-        //    //QUITADOS LOS PERFILES EN FAVOR DE CONFIGURACION MANUAL DE FILTROS
+        private void FilterSetting_Checked(object sender, RoutedEventArgs e)
+        {
 
-        //    if (sender is System.Windows.Controls.RadioButton rb)
-        //    {
-        //        switch (rb.Name)
-        //        {
-        //            case nameof(FilterSetting_Bajo):
-        //                Settings.I.FilterProfile.Value = (FilterProfile)0;
-        //                break;
+            if (sender is System.Windows.Controls.RadioButton rb)
+            {
+                switch (rb.Name)
+                {
+                    case nameof(FilterSetting_Bajo):
+                        Settings.I.FilterProfile.Value = (FilterProfile)0;
+                        break;
 
-        //            case nameof(FilterSetting_Medio):
-        //                Settings.I.FilterProfile.Value = (FilterProfile)1;
-        //                break;
+                    case nameof(FilterSetting_Medio):
+                        Settings.I.FilterProfile.Value = (FilterProfile)1;
+                        break;
 
-        //            case nameof(FilterSetting_Alto):
-        //                Settings.I.FilterProfile.Value = (FilterProfile)2;
-        //                break;
-        //        }
-        //    }
-        //}
+                    case nameof(FilterSetting_Alto):
+                        Settings.I.FilterProfile.Value = (FilterProfile)2;
+                        break;
+                }
+            }
+        }
 
         public int GetPointsSelection()
         {

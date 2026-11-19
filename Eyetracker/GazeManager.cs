@@ -76,7 +76,7 @@ namespace GazeStream.Eyetracker
         InputSimulator input;
         Task? loopTask;
         Task? getDeviceTask;
-        //Una sola cancelación para los dos bucles de la sesión actual.
+        //Una sola cancelaci�n para los dos bucles de la sesi�n actual.
         CancellationTokenSource? loopCts;
 
         Stopwatch UIdeltaTimeWatch;
@@ -87,7 +87,7 @@ namespace GazeStream.Eyetracker
 
         public bool IsThisAJoacoDevice(string deviceName)
         {
-            //Antes comparaba el nombre recibido con el del dispositivo activo, por lo que devolvía true para cualquier dispositivo.
+            //Antes comparaba el nombre recibido con el del dispositivo activo, por lo que devolv�a true para cualquier dispositivo.
             return joacoA11 != null && deviceName == joacoA11.DeviceName;
         }
 
@@ -198,17 +198,17 @@ namespace GazeStream.Eyetracker
         // ---- Ciclo de vida de los bucles y del dispositivo ----
         //
         // Hay dos bucles en el thread pool: FindGazeDeviceLoop (conecta el dispositivo) y UpdateLoop (lee datos).
-        // Los dos comparten un único CancellationTokenSource por "sesión" de bucles.
+        // Los dos comparten un �nico CancellationTokenSource por "sesi�n" de bucles.
         //
         // deviceGate serializa todo lo que toca el SDK nativo del dispositivo: Initialize, UpdateData y Disconnect.
-        // Antes podían correr a la vez (por ejemplo, UpdateData en un hilo mientras otro desconectaba), y una
-        // inicialización lenta de un bucle ya cancelado podía terminar dejando conectado un dispositivo viejo.
+        // Antes pod�an correr a la vez (por ejemplo, UpdateData en un hilo mientras otro desconectaba), y una
+        // inicializaci�n lenta de un bucle ya cancelado pod�a terminar dejando conectado un dispositivo viejo.
 
         readonly SemaphoreSlim deviceGate = new(1, 1);
         readonly object loopGate = new();
         bool disposed;
 
-        //Al cerrar la app se espera a que los bucles terminen; una inicialización en curso (Skyle, Intelligaze) puede tardar varios segundos.
+        //Al cerrar la app se espera a que los bucles terminen; una inicializaci�n en curso (Skyle, Intelligaze) puede tardar varios segundos.
         static readonly TimeSpan LOOP_STOP_TIMEOUT = TimeSpan.FromSeconds(6);
         static readonly TimeSpan DEVICE_GATE_TIMEOUT_ON_EXIT = TimeSpan.FromSeconds(3);
 
@@ -225,8 +225,8 @@ namespace GazeStream.Eyetracker
             lock (loopGate)
             {
                 if (disposed) return;
-                //Si hay una sesión activa no se crea otra. Si la anterior se canceló (por ejemplo al calibrar) se arranca
-                //una nueva aunque la vieja todavía esté terminando: deviceGate y el token evitan que se pisen.
+                //Si hay una sesi�n activa no se crea otra. Si la anterior se cancel� (por ejemplo al calibrar) se arranca
+                //una nueva aunque la vieja todav�a est� terminando: deviceGate y el token evitan que se pisen.
                 if (loopCts != null && !loopCts.IsCancellationRequested) return;
 
                 UIdeltaTimeWatch.Restart();
@@ -261,7 +261,7 @@ namespace GazeStream.Eyetracker
                 {
                     if (IsCalibrating || App.IsUpdating)
                     {
-                        //Sin este delay el bucle giraba sin pausa y consumía un núcleo entero.
+                        //Sin este delay el bucle giraba sin pausa y consum�a un n�cleo entero.
                         await Task.Delay(100, token);
                         continue;
                     }
@@ -273,8 +273,8 @@ namespace GazeStream.Eyetracker
                     }
                     catch (Exception e)
                     {
-                        //Antes una excepción terminaba el bucle en silencio y la mirada dejaba de enviarse para siempre.
-                        Debug.WriteLine("GazeManager: error en el bucle de actualización. " + e);
+                        //Antes una excepci�n terminaba el bucle en silencio y la mirada dejaba de enviarse para siempre.
+                        Debug.WriteLine("GazeManager: error en el bucle de actualizaci�n. " + e);
                     }
                     finally
                     {
@@ -292,7 +292,7 @@ namespace GazeStream.Eyetracker
             }
         }
 
-        /// <summary>Una iteración de lectura del dispositivo. Se llama con deviceGate tomado.</summary>
+        /// <summary>Una iteraci�n de lectura del dispositivo. Se llama con deviceGate tomado.</summary>
         void UpdateDeviceStep()
         {
             IGazeDevice? device = GazeDevice;
@@ -428,6 +428,17 @@ namespace GazeStream.Eyetracker
             //}
 
             //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
+            if (IsJoacoDevice)
+            {
+                targetPoint = GazePoint.viewportPoint;
+                //Filter outlier points
+                if (Settings.I.FilterOutlierPoints.Value == true)
+                {
+                    targetPoint = outlierFilter.Update(targetPoint);
+                }
+
+          
+            //Debug.WriteLine("GM:" + GazePoint.viewportPoint);
             //Los filtros se aplican a todos los dispositivos. Antes dependían de IsJoacoDevice,
             //que por error era true para cualquier equipo; al corregirlo, Tobii e Intelligaze se habrían quedado sin suavizado.
             {
@@ -465,25 +476,6 @@ namespace GazeStream.Eyetracker
             }
             SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
             SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
-
-            //SmoothViewportPoint = GazePoint.viewportPoint;
-            //if (IsJoacoDevice)
-            //{
-            //    SmoothViewportPoint = outlierFilter.Update(SmoothViewportPoint);
-            //    SmoothViewportPoint = kalmanFilter.GetFilteredPoint(SmoothViewportPoint);
-            //    //SmoothViewportPoint = interpolationFilter.GetFilteredPoint(SmoothViewportPoint);
-            //}
-
-
-            ////TEST FILTERS
-            //if (Settings.I.ClampBubblePosition.Value == true)
-            //{
-            //    SmoothViewportPoint = ApplyEdgeBias(SmoothViewportPoint);
-            //    Vector2 padding = Helper.DipsToViewport01(Settings.I.ClampDistance.Value);
-            //    SmoothViewportPoint = new Vector2(Math.Clamp(SmoothViewportPoint.X, 0f + padding.X, 1f - padding.X), Math.Clamp(SmoothViewportPoint.Y, 0f + padding.Y, 1f - padding.Y));
-            //}
-            //SmoothScreenPoint = Helper.ViewportToScreenVector2(SmoothViewportPoint);
-            //SmoothScreenP = Helper.ViewportToScreenPoint(SmoothViewportPoint);
         }
 
         Vector2 ApplyEdgeBias(Vector2 coord)
@@ -545,7 +537,7 @@ namespace GazeStream.Eyetracker
             await deviceGate.WaitAsync(token);
             try
             {
-                //Otro bucle (de una sesión anterior) pudo haber conectado mientras se esperaba el gate.
+                //Otro bucle (de una sesi�n anterior) pudo haber conectado mientras se esperaba el gate.
                 if (GazeDevice != null) return;
 
                 kalmanFilter.ResetStartingValues();
@@ -573,11 +565,11 @@ namespace GazeStream.Eyetracker
 
                     if (!initializeSucessful) continue;
 
-                    //Si mientras se inicializaba se canceló la sesión (cambio de dispositivo, calibración o cierre de la app),
-                    //no se adopta: se libera para no dejar un SDK abierto sin dueño.
+                    //Si mientras se inicializaba se cancel� la sesi�n (cambio de dispositivo, calibraci�n o cierre de la app),
+                    //no se adopta: se libera para no dejar un SDK abierto sin due�o.
                     if (token.IsCancellationRequested)
                     {
-                        Debug.WriteLine($"{device.DeviceName}: inicializado tras la cancelación; se libera.");
+                        Debug.WriteLine($"{device.DeviceName}: inicializado tras la cancelaci�n; se libera.");
                         SafeDisconnect(device);
                         return;
                     }
@@ -597,8 +589,8 @@ namespace GazeStream.Eyetracker
 
         /// <summary>
         /// Desconecta el dispositivo actual. Se ejecuta en segundo plano para no bloquear la UI mientras otro hilo
-        /// usa el SDK (una inicialización puede tardar varios segundos). Sólo desconecta el dispositivo que estaba
-        /// activo al llamar: si para entonces ya se conectó otro, no lo toca.
+        /// usa el SDK (una inicializaci�n puede tardar varios segundos). S�lo desconecta el dispositivo que estaba
+        /// activo al llamar: si para entonces ya se conect� otro, no lo toca.
         /// </summary>
         public void DisconnectDevice()
         {
@@ -651,7 +643,7 @@ namespace GazeStream.Eyetracker
 
         public void RequestCalibration(int pointsArray, int eyes)
         {
-            //DEFAULT: con el Joaco seleccionado se abre su ventana de calibración aunque todavía no esté conectado.
+            //DEFAULT: con el Joaco seleccionado se abre su ventana de calibraci�n aunque todav�a no est� conectado.
             if (GazeDevice == null && joacoA11 != null && Settings.I.EyetrackerDevice.Value == Eyetracker_Device.Joaco)
             {
                 joacoA11.RequestCalibration(pointsArray, eyes);
@@ -741,7 +733,7 @@ namespace GazeStream.Eyetracker
                 //Debug.WriteLine($"Updating window: {w.Name} Delta time: {UIdeltaTime.TotalSeconds}");
                 if (w == null) continue;
 
-                //Activación solo por mouse.
+                //Activaci�n solo por mouse.
                 System.Drawing.Point screenPos = System.Windows.Forms.Control.MousePosition;
                 UpdateGazeTargetsForWindow(new System.Windows.Point(screenPos.X, screenPos.Y), w);
                 //UpdateGazeTargetsForWindow(SmoothScreenP, w);
@@ -838,7 +830,7 @@ namespace GazeStream.Eyetracker
 
         /// <summary>
         /// Cierre ordenado al salir de la app: cancela los dos bucles, espera a que terminen y libera el SDK del dispositivo.
-        /// Antes sólo se cancelaba el bucle de lectura (el de búsqueda de dispositivos seguía vivo y podía inicializar
+        /// Antes s�lo se cancelaba el bucle de lectura (el de b�squeda de dispositivos segu�a vivo y pod�a inicializar
         /// un SDK durante el cierre), no se esperaba a ninguno y se desconectaba en paralelo a una lectura en curso.
         /// </summary>
         public void Dispose()
@@ -854,7 +846,7 @@ namespace GazeStream.Eyetracker
 
             Settings.I.EyetrackerDevice.OnChanged -= StartLoopWithSelectedDevice;
 
-            //Los bucles sólo hacen BeginInvoke a la UI, así que esperar acá (en el hilo de UI) no los bloquea.
+            //Los bucles s�lo hacen BeginInvoke a la UI, as� que esperar ac� (en el hilo de UI) no los bloquea.
             Task[] running = tasks.Where(t => t != null).Cast<Task>().ToArray();
             try
             {
