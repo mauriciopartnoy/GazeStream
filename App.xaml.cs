@@ -78,7 +78,6 @@ namespace GazeStream
             SettingsManager.Initialize();
 
             SettingsManager.SampleRateHZ.Value = 60;
-           // SettingsManager.EyetrackerDevice.Value = Eyetracker_Device.Skyle; //SKYLE TEST ONLY
             LoadStartupState();
 
             InputSim = new InputSimulator();
@@ -96,7 +95,7 @@ namespace GazeStream
             _ = KeepOverlaysTopmost();
 
             //El chequeo de Updates se hace con delay para dar tiempo a que windows inicie y conecte a la interné.
-            //_ = UpdateApp(5000);
+            _ = UpdateApp(5000);
         }
 
         async Task KeepOverlaysTopmost()
