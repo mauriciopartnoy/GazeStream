@@ -38,7 +38,7 @@ namespace GazeStream.Eyetracker
         public static readonly IReadOnlyList<JoacoSdkProfile> Profiles = new[]
         {
             new JoacoSdkProfile(0x29D0, "pid_29D0", JoacoSdkApi.Legacy, "aSee A8 (SDK 11.0.2.006)", "20240904_1024_COMPUTECHANGE"),
-            new JoacoSdkProfile(0x2CD1, "pid_2CD1", JoacoSdkApi.Current, "SDK A8_1106.20260825", "20260825_2048_CALIB1"),
+            new JoacoSdkProfile(0x2CD1, "pid_2CD1", JoacoSdkApi.Current, "SDK A8_20260825", "20260825_2048_CALIB1"),
         };
 
         // ---- Compatibilidad de calibraciones ----
