@@ -253,7 +253,6 @@ namespace GazeStream
             await Task.Delay(delay, updateCts.Token);
             try
             {
-                IsUpdating = true;
                 var mgr = new UpdateManager(new GithubSource(AppPaths.GIT_REPOSITORY_URL, null, false));
                 if (mgr.IsInstalled && mgr.CurrentVersion != null)
                 {
@@ -262,6 +261,7 @@ namespace GazeStream
                 var newVersion = await mgr.CheckForUpdatesAsync();
 
                 if (newVersion == null) return;
+                IsUpdating = true;
                 NewestVersion = newVersion.TargetFullRelease.Version.ToNormalizedString();
 
                 //OPEN UPDATE WINDOW
